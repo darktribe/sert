@@ -1,0 +1,168 @@
+/* リセットCSS */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* メニューバー */
+.menu-bar {
+  background-color: #2d2d30;
+  border-bottom: 1px solid #3e3e40;
+  display: flex;
+  padding: 0;
+  position: relative;
+  z-index: 1000;
+}
+
+.menu-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+}
+
+.menu-item:hover {
+  background-color: #3e3e40;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #2d2d30;
+  border: 1px solid #3e3e40;
+  min-width: 150px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dropdown-menu.show {
+  display: block;
+}
+
+.menu-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.menu-option:hover {
+  background-color: #094771;
+}
+
+.menu-separator {
+  height: 1px;
+  background-color: #3e3e40;
+  margin: 4px 0;
+}
+
+/* エディタ領域 */
+.editor-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.line-numbers {
+  background-color: #262626;
+  color: #858585;
+  padding: 8px 8px 8px 12px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  border-right: 1px solid #3e3e40;
+  user-select: none;
+  white-space: pre;
+  min-width: 50px;
+  text-align: right;
+}
+
+.editor-textarea {
+  flex: 1;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  border: none;
+  outline: none;
+  padding: 8px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: none;
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+.editor-textarea:focus {
+  background-color: #1e1e1e;
+}
+
+/* ステータスバー */
+.status-bar {
+  background-color: #007acc;
+  color: white;
+  padding: 4px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  border-top: 1px solid #3e3e40;
+}
+
+.status-bar span {
+  margin-right: 16px;
+}
+
+.status-bar span:last-child {
+  margin-right: 0;
+}
+
+/* スクロールバーのスタイル */
+.editor-textarea::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.editor-textarea::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.editor-textarea::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 6px;
+}
+
+.editor-textarea::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.line-numbers::-webkit-scrollbar {
+  width: 12px;
+}
+
+.line-numbers::-webkit-scrollbar-track {
+  background: #262626;
+}
+
+.line-numbers::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 6px;
+}
+
+.line-numbers::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
