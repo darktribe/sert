@@ -1,10 +1,24 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+/*
+ * =====================================================
+ * Sert Editor - Rustバックエンド
+ * Python拡張機能対応のシンプルなテキストエディタ
+ * =====================================================
+ */
+
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 
-// PyO3の基本テスト関数
+// =====================================================
+// Python統合機能（PyO3）
+// =====================================================
+
+/**
+ * PyO3の基本テスト関数
+ * Python環境が正常に動作するかテストする
+ */
 #[tauri::command]
 fn test_python() -> Result<String, String> {
     Python::with_gil(|py| {
@@ -16,7 +30,10 @@ fn test_python() -> Result<String, String> {
     })
 }
 
-// Python実行関数（任意のPythonコードを実行）
+/**
+ * 任意のPythonコードを実行
+ * 機能拡張で使用される予定
+ */
 #[tauri::command]
 fn execute_python(code: String) -> Result<String, String> {
     Python::with_gil(|py| {
@@ -34,7 +51,10 @@ fn execute_python(code: String) -> Result<String, String> {
     })
 }
 
-// Python式を評価する関数
+/**
+ * Python式を評価する関数
+ * 機能拡張で使用される予定
+ */
 #[tauri::command]
 fn evaluate_python_expression(expression: String) -> Result<String, String> {
     Python::with_gil(|py| {
@@ -45,7 +65,10 @@ fn evaluate_python_expression(expression: String) -> Result<String, String> {
     })
 }
 
-// Pythonでファイルを実行する関数
+/**
+ * Pythonファイルを実行する関数
+ * 機能拡張読み込みで使用される予定
+ */
 #[tauri::command]
 fn run_python_file(file_path: String) -> Result<String, String> {
     Python::with_gil(|py| {
@@ -62,16 +85,10 @@ fn run_python_file(file_path: String) -> Result<String, String> {
     })
 }
 
-// アプリ終了コマンド（最も確実な版）
-#[tauri::command]
-fn exit_app() {
-    println!("🔥 Exit app command called - immediate shutdown");
-    
-    // 即座に強制終了（最も確実な方法）
-    std::process::exit(0);
-}
-
-// Pythonのバージョン情報を取得
+/**
+ * Pythonのバージョン情報を取得
+ * デバッグ・環境確認用
+ */
 #[tauri::command]
 fn get_python_info() -> Result<String, String> {
     Python::with_gil(|py| {
@@ -89,9 +106,28 @@ fn get_python_info() -> Result<String, String> {
     })
 }
 
-// ===== クリップボード操作関連のコマンド =====
+// =====================================================
+// アプリケーション制御
+// =====================================================
 
-// クリップボードにテキストを書き込む
+/**
+ * アプリケーション終了コマンド
+ * 即座に強制終了する
+ */
+#[tauri::command]
+fn exit_app() {
+    println!("🔥 Exit app command called - immediate shutdown");
+    std::process::exit(0);
+}
+
+// =====================================================
+// クリップボード操作（クロスプラットフォーム対応）
+// =====================================================
+
+/**
+ * クリップボードにテキストを書き込む
+ * Windows/macOS/Linux対応
+ */
 #[tauri::command]
 fn write_clipboard(text: String) -> Result<(), String> {
     println!("📋 Writing to clipboard: {} characters", text.len());
@@ -194,7 +230,10 @@ fn write_clipboard(text: String) -> Result<(), String> {
     }
 }
 
-// クリップボードからテキストを読み込む
+/**
+ * クリップボードからテキストを読み込む
+ * Windows/macOS/Linux対応
+ */
 #[tauri::command]
 fn read_clipboard() -> Result<String, String> {
     println!("📋 Reading from clipboard");
@@ -270,9 +309,13 @@ fn read_clipboard() -> Result<String, String> {
     }
 }
 
-// ===== ファイル操作関連のコマンド（JavaScript側でダイアログを使用するため、読み書きのみ） =====
+// =====================================================
+// ファイル操作（読み書きのみ、ダイアログはJavaScript側で処理）
+// =====================================================
 
-// ファイルを読み込む
+/**
+ * ファイルを読み込む
+ */
 #[tauri::command]
 async fn read_file(path: String) -> Result<String, String> {
     println!("📖 Reading file: {}", path);
@@ -290,7 +333,9 @@ async fn read_file(path: String) -> Result<String, String> {
     }
 }
 
-// ファイルに書き込む
+/**
+ * ファイルに書き込む
+ */
 #[tauri::command]
 async fn write_file(path: String, content: String) -> Result<(), String> {
     println!("💾 Writing file: {} ({} characters)", path, content.len());
@@ -308,25 +353,21 @@ async fn write_file(path: String, content: String) -> Result<(), String> {
     }
 }
 
-// 既存のファイル読み書き関数（互換性のため残す）
-#[tauri::command]
-async fn read_file_content(path: String) -> Result<String, String> {
-    read_file(path).await
-}
-
-#[tauri::command]
-async fn write_file_content(path: String, content: String) -> Result<(), String> {
-    write_file(path, content).await
-}
+// =====================================================
+// メイン関数とアプリケーション設定
+// =====================================================
 
 fn main() {
     // PyO3の初期化
     pyo3::prepare_freethreaded_python();
     
     tauri::Builder::default()
+        // プラグインの初期化
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
+        
+        // Tauriコマンドの登録
         .invoke_handler(tauri::generate_handler![
             // Python関連
             test_python,
@@ -334,20 +375,21 @@ fn main() {
             evaluate_python_expression,
             run_python_file,
             get_python_info,
-            // アプリ終了
+            
+            // アプリケーション制御
             exit_app,
-            // クリップボード関連
+            
+            // クリップボード操作
             write_clipboard,
             read_clipboard,
-            // ファイル操作関連（読み書きのみ）
+            
+            // ファイル操作
             read_file,
-            write_file,
-            // 互換性のため（将来削除予定）
-            read_file_content,
-            write_file_content
+            write_file
         ])
+        
+        // アプリケーション初期化処理
         .setup(|_app| {
-            // アプリケーションの初期化処理
             println!("🚀 Sert Editor starting up...");
             
             // PyO3の初期化テスト
@@ -369,6 +411,8 @@ fn main() {
             
             Ok(())
         })
+        
+        // アプリケーション実行
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

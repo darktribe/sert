@@ -8,8 +8,12 @@
 </head>
 <body>
     <div class="container">
-        <!-- メニューバー -->
+        <!-- =====================================================
+             メニューバー
+             ファイル操作、編集操作のメニューを提供
+             ===================================================== -->
         <div class="menu-bar">
+            <!-- ファイルメニュー -->
             <div class="menu-item" onclick="toggleMenu('file-menu')">
                 ファイル
                 <div class="dropdown-menu" id="file-menu">
@@ -22,6 +26,7 @@
                 </div>
             </div>
             
+            <!-- 編集メニュー -->
             <div class="menu-item" onclick="toggleMenu('edit-menu')">
                 編集
                 <div class="dropdown-menu" id="edit-menu">
@@ -37,20 +42,37 @@
             </div>
         </div>
 
-        <!-- エディタエリア -->
+        <!-- =====================================================
+             エディタエリア
+             行番号とテキスト編集領域を含む
+             ===================================================== -->
         <div class="editor-container">
+            <!-- 行番号表示 -->
             <div class="line-numbers" id="line-numbers">1</div>
-            <textarea class="editor-textarea" id="editor" placeholder="ここにテキストを入力してください..."></textarea>
+            
+            <!-- メインテキストエディタ -->
+            <textarea 
+                class="editor-textarea" 
+                id="editor" 
+                placeholder="ここにテキストを入力してください..."
+                spellcheck="false"
+            ></textarea>
         </div>
 
-        <!-- ステータスバー -->
+        <!-- =====================================================
+             ステータスバー
+             カーソル位置と文字数を表示
+             ===================================================== -->
         <div class="status-bar">
             <span id="cursor-position">行: 1, 列: 1</span>
             <span id="char-count">総文字数: 0</span>
         </div>
     </div>
 
-    <!-- Tauri初期化の確認 -->
+    <!-- =====================================================
+         JavaScript初期化
+         Tauriの読み込み確認後にメインスクリプトを実行
+         ===================================================== -->
     <script>
         console.log('HTML loaded, checking for Tauri...');
         console.log('window.__TAURI__ at load time:', typeof window.__TAURI__);
