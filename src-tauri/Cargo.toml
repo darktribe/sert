@@ -2,18 +2,16 @@
 name = "sert"
 version = "0.1.0"
 description = "Simple Editor by Rust and Tauri"
-authors = ["you"]
+authors = ["Akihiko Ouchi"]
 license = ""
 repository = ""
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
 tauri-build = { version = "2.0", features = [] }
 
 [dependencies]
-tauri = { version = "^2.0", features = [] }
+tauri = { version = "^2.0", features = ["devtools"] }
 tauri-plugin-shell = "^2.0"
 tauri-plugin-fs = "2.0"
 tauri-plugin-dialog = "2.0"
@@ -21,6 +19,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 pyo3 = { version = "0.22.0", features = ["auto-initialize"] }
 tokio = { version = "1", features = ["full"] }
+clipboard = "0.5"
 
 [target."cfg(not(any(target_os = \"android\", target_os = \"ios\")))".dependencies]
 tauri-plugin-shell = "2.0"

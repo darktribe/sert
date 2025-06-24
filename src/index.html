@@ -3,29 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sert - Simple Editor</title>
+    <title>Sert Editor</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="app">
+    <div class="container">
         <!-- メニューバー -->
         <div class="menu-bar">
             <div class="menu-item" onclick="toggleMenu('file-menu')">
                 ファイル
-                <div id="file-menu" class="dropdown-menu">
+                <div class="dropdown-menu" id="file-menu">
                     <div class="menu-option" onclick="newFile()">新規作成</div>
                     <div class="menu-option" onclick="openFile()">開く</div>
-                    <div class="menu-option" onclick="saveFile()">上書き保存</div>
-                    <div class="menu-option" onclick="saveAsFile()">名前をつけて保存</div>
+                    <div class="menu-option" onclick="saveFile()">保存</div>
+                    <div class="menu-option" onclick="saveAsFile()">名前を付けて保存</div>
                     <div class="menu-separator"></div>
                     <div class="menu-option" onclick="exitApp()">終了</div>
                 </div>
             </div>
+            
             <div class="menu-item" onclick="toggleMenu('edit-menu')">
                 編集
-                <div id="edit-menu" class="dropdown-menu">
-                    <div class="menu-option" onclick="undo()">もとに戻す</div>
-                    <div class="menu-option" onclick="redo()">やりなおし</div>
+                <div class="dropdown-menu" id="edit-menu">
+                    <div class="menu-option" onclick="undo()">元に戻す</div>
+                    <div class="menu-option" onclick="redo()">やり直し</div>
                     <div class="menu-separator"></div>
                     <div class="menu-option" onclick="cut()">切り取り</div>
                     <div class="menu-option" onclick="copy()">コピー</div>
@@ -36,26 +37,39 @@
             </div>
         </div>
 
-        <!-- エディタ領域 -->
+        <!-- エディタエリア -->
         <div class="editor-container">
             <div class="line-numbers" id="line-numbers">1</div>
-            <textarea 
-                id="editor" 
-                class="editor-textarea" 
-                placeholder="テキストを入力してください..."
-                spellcheck="false"
-                wrap="off"
-            ></textarea>
+            <textarea class="editor-textarea" id="editor" placeholder="ここにテキストを入力してください..."></textarea>
         </div>
 
         <!-- ステータスバー -->
         <div class="status-bar">
             <span id="cursor-position">行: 1, 列: 1</span>
-            <span id="encoding">UTF-8</span>
             <span id="char-count">総文字数: 0</span>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Tauri初期化の確認 -->
+    <script>
+        console.log('HTML loaded, checking for Tauri...');
+        console.log('window.__TAURI__ at load time:', typeof window.__TAURI__);
+        
+        // Tauriが読み込まれるまで少し待つ
+        let checkCount = 0;
+        const checkTauri = () => {
+            checkCount++;
+            console.log(`Tauri check ${checkCount}: ${typeof window.__TAURI__}`);
+            if (window.__TAURI__ || checkCount >= 10) {
+                console.log('Loading main script...');
+                const script = document.createElement('script');
+                script.src = 'script.js';
+                document.head.appendChild(script);
+            } else {
+                setTimeout(checkTauri, 100);
+            }
+        };
+        checkTauri();
+    </script>
 </body>
 </html>

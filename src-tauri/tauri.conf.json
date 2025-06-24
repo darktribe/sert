@@ -10,6 +10,7 @@
     "devUrl": "http://localhost:1420"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "title": "Sert Editor",
@@ -20,7 +21,8 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost",
+      "capabilities": ["default"]
     }
   },
   "bundle": {

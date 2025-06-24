@@ -90,6 +90,11 @@ body {
   white-space: pre;
   min-width: 50px;
   text-align: right;
+  overflow: hidden;
+  flex-shrink: 0; /* 行番号が縮まないようにする */
+  
+  /* エディタとの同期のため */
+  box-sizing: border-box;
 }
 
 .editor-textarea {
@@ -103,12 +108,57 @@ body {
   font-size: 14px;
   line-height: 1.5;
   resize: none;
-  white-space: pre;
-  overflow-wrap: normal;
+  
+  /* 行端での折り返し設定 */
+  white-space: pre-wrap; /* 改行を保持しつつ画面端で折り返し */
+  word-wrap: break-word; /* 長い単語も折り返し */
+  overflow-wrap: break-word; /* さらなる折り返し対応 */
+  word-break: break-word; /* より強力な折り返し */
+  
+  /* IME未確定文字の折り返し対応 */
+  /* 幅を明示的に制限してIME入力でも確実に折り返す */
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  
+  /* スクロール設定 */
+  overflow-x: hidden; /* 横スクロールを無効にして強制的に折り返し */
+  overflow-y: auto;
+  
+  /* カーソルの色 */
+  caret-color: #ffffff;
+  
+  /* IME対応の強化 */
+  ime-mode: auto;
+  -webkit-ime-mode: auto;
+  
+  /* IME入力中のスムーズなスクロール */
+  scroll-behavior: smooth;
+  
+  /* 追加のIME対応プロパティ */
+  -webkit-text-size-adjust: none;
+  -moz-text-size-adjust: none;
+  text-size-adjust: none;
+  
+  /* IME変換候補ウィンドウ対応のための余白確保 */
+  padding-bottom: 200px; /* IMEポップアップ分の余白を確保 */
+  margin-bottom: -200px; /* 実際の表示位置は変えない */
 }
 
 .editor-textarea:focus {
   background-color: #1e1e1e;
+  caret-color: #ffffff; /* フォーカス時のカーソル色も白に指定 */
+}
+
+/* 選択範囲のスタイル */
+.editor-textarea::selection {
+  background-color: #264f78;
+  color: #ffffff;
+}
+
+.editor-textarea::-moz-selection {
+  background-color: #264f78;
+  color: #ffffff;
 }
 
 /* ステータスバー */
@@ -129,6 +179,41 @@ body {
 
 .status-bar span:last-child {
   margin-right: 0;
+}
+
+/* カスタムコンテキストメニュー */
+.context-menu {
+  position: absolute;
+  background-color: #2d2d30;
+  border: 1px solid #3e3e40;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  padding: 4px 0;
+  min-width: 120px;
+  z-index: 2000;
+  font-size: 13px;
+}
+
+.context-menu-item {
+  padding: 6px 12px;
+  cursor: pointer;
+  color: #d4d4d4;
+  white-space: nowrap;
+}
+
+.context-menu-item:hover:not(.disabled) {
+  background-color: #094771;
+}
+
+.context-menu-item.disabled {
+  color: #666666;
+  cursor: default;
+}
+
+.context-menu-separator {
+  height: 1px;
+  background-color: #3e3e40;
+  margin: 4px 0;
 }
 
 /* スクロールバーのスタイル */
@@ -165,4 +250,23 @@ body {
 
 .line-numbers::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Firefox用のスクロールバー */
+.editor-textarea {
+  scrollbar-width: thin;
+  scrollbar-color: #424242 #1e1e1e;
+}
+
+.line-numbers {
+  scrollbar-width: thin;
+  scrollbar-color: #424242 #262626;
+}
+
+/* テキストエリアの選択可能設定 */
+.editor-textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
 }

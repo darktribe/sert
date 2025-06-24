@@ -1,43 +1,60 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="stylesheet" href="/src/styles.css" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tauri App</title>
-    <script type="module" src="/src/main.ts" defer></script>
-  </head>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sert - Simple Editor</title>
+    <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- メニューバー -->
+        <div class="menu-bar">
+            <div class="menu-item" onclick="toggleMenu('file-menu')">
+                ファイル
+                <div id="file-menu" class="dropdown-menu">
+                    <div class="menu-option" onclick="newFile()">新規作成</div>
+                    <div class="menu-option" onclick="openFile()">開く</div>
+                    <div class="menu-option" onclick="saveFile()">上書き保存</div>
+                    <div class="menu-option" onclick="saveAsFile()">名前をつけて保存</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" onclick="exitApp()">終了</div>
+                </div>
+            </div>
+            <div class="menu-item" onclick="toggleMenu('edit-menu')">
+                編集
+                <div id="edit-menu" class="dropdown-menu">
+                    <div class="menu-option" onclick="undo()">もとに戻す</div>
+                    <div class="menu-option" onclick="redo()">やりなおし</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" onclick="cut()">切り取り</div>
+                    <div class="menu-option" onclick="copy()">コピー</div>
+                    <div class="menu-option" onclick="paste()">貼り付け</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" onclick="selectAll()">すべて選択</div>
+                </div>
+            </div>
+        </div>
 
-  <body>
-    <main class="container">
-      <h1>Welcome to Tauri</h1>
+        <!-- エディタ領域 -->
+        <div class="editor-container">
+            <div class="line-numbers" id="line-numbers">1</div>
+            <textarea
+                id="editor"
+                class="editor-textarea"
+                placeholder="テキストを入力してください..."
+                spellcheck="false"
+                wrap="off"
+            ></textarea>
+        </div>
 
-      <div class="row">
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/src/assets/vite.svg" class="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img
-            src="/src/assets/tauri.svg"
-            class="logo tauri"
-            alt="Tauri logo"
-          />
-        </a>
-        <a href="https://www.typescriptlang.org/docs" target="_blank">
-          <img
-            src="/src/assets/typescript.svg"
-            class="logo typescript"
-            alt="typescript logo"
-          />
-        </a>
-      </div>
-      <p>Click on the Tauri logo to learn more about the framework</p>
-
-      <form class="row" id="greet-form">
-        <input id="greet-input" placeholder="Enter a name..." />
-        <button type="submit">Greet</button>
-      </form>
-      <p id="greet-msg"></p>
-    </main>
-  </body>
+        <!-- ステータスバー -->
+        <div class="status-bar">
+            <span id="cursor-position">行: 1, 列: 1</span>
+            <span id="encoding">UTF-8</span>
+            <span id="char-count">総文字数: 0</span>
+        </div>
+    </div>
+    <script src="/src/script.js"></script>
+</body>
 </html>
