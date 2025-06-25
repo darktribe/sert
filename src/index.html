@@ -17,12 +17,12 @@
             <div class="menu-item" onclick="toggleMenu('file-menu')">
                 ファイル
                 <div class="dropdown-menu" id="file-menu">
-                    <div class="menu-option" onclick="newFile()">新規作成</div>
-                    <div class="menu-option" onclick="openFile()">開く</div>
-                    <div class="menu-option" onclick="saveFile()">保存</div>
-                    <div class="menu-option" onclick="saveAsFile()">名前を付けて保存</div>
+                    <div class="menu-option" onclick="event.stopPropagation(); newFile()">新規作成</div>
+                    <div class="menu-option" onclick="event.stopPropagation(); openFile()">開く</div>
+                    <div class="menu-option" onclick="event.stopPropagation(); saveFile()">保存</div>
+                    <div class="menu-option" onclick="event.stopPropagation(); saveAsFile()">名前を付けて保存</div>
                     <div class="menu-separator"></div>
-                    <div class="menu-option" onclick="exitApp()">終了</div>
+                    <div class="menu-option" onclick="event.stopPropagation(); exitApp()">終了</div>
                 </div>
             </div>
             
@@ -30,14 +30,14 @@
             <div class="menu-item" onclick="toggleMenu('edit-menu')">
                 編集
                 <div class="dropdown-menu" id="edit-menu">
-                    <div class="menu-option" onclick="undo()">元に戻す</div>
-                    <div class="menu-option" onclick="redo()">やり直し</div>
+                    <div class="menu-option" onclick="event.stopPropagation(); undo()">元に戻す</div>
+                    <div class="menu-option" onclick="event.stopPropagation(); redo()">やり直し</div>
                     <div class="menu-separator"></div>
-                    <div class="menu-option" onclick="cut()">切り取り</div>
-                    <div class="menu-option" onclick="copy()">コピー</div>
-                    <div class="menu-option" onclick="paste()">貼り付け</div>
+                    <div class="menu-option" onclick="event.stopPropagation(); cut()">切り取り</div>
+                    <div class="menu-option" onclick="event.stopPropagation(); copy()">コピー</div>
+                    <div class="menu-option" onclick="event.stopPropagation(); paste()">貼り付け</div>
                     <div class="menu-separator"></div>
-                    <div class="menu-option" onclick="selectAll()">すべて選択</div>
+                    <div class="menu-option" onclick="event.stopPropagation(); selectAll()">すべて選択</div>
                 </div>
             </div>
         </div>
@@ -70,8 +70,7 @@
     </div>
 
     <!-- =====================================================
-         JavaScript初期化
-         Tauriの読み込み確認後にメインスクリプトを実行
+         JavaScript初期化（ES6モジュール対応）
          ===================================================== -->
     <script>
         console.log('HTML loaded, checking for Tauri...');
@@ -85,7 +84,8 @@
             if (window.__TAURI__ || checkCount >= 10) {
                 console.log('Loading main script...');
                 const script = document.createElement('script');
-                script.src = 'script.js';
+                script.type = 'module';
+                script.src = 'js/main.js';
                 document.head.appendChild(script);
             } else {
                 setTimeout(checkTauri, 100);
