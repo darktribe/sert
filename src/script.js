@@ -1,56 +1,31 @@
-/*
- * =====================================================
- * Sert Editor - メインJavaScriptファイル Part 1
- * グローバル変数定義とアプリケーション初期化
- * =====================================================
- */
-
-// =====================================================
-// グローバル変数の定義
-// =====================================================
-
-// DOM要素の参照
+// グローバル変数の初期化
 let editor;
-
-// ファイル管理関連
-let currentFilePath = null;      // 現在開いているファイルのパス
-let isModified = false;          // ファイルが変更されているかのフラグ
-let currentContent = '';         // 現在のエディタ内容（比較用）
-
-// アンドゥ・リドゥ機能関連
-let undoStack = [];              // アンドゥ用の履歴スタック
-let redoStack = [];              // リドゥ用の履歴スタック
-let maxUndoStackSize = 50;       // 履歴の最大保存数
-let isUndoRedoOperation = false; // アンドゥ・リドゥ操作中フラグ
-
-// IME（日本語入力）対応関連
-let isComposing = false;         // IME変換中フラグ
+let currentFilePath = null;
+let isModified = false;
+let currentContent = '';
+let undoStack = [];
+let redoStack = [];
+let maxUndoStackSize = 50;
+let isUndoRedoOperation = false;
+let isComposing = false;
 let compositionStartContent = '';
 let compositionStartCursor = 0;
 let justFinishedComposition = false;
 
-// クリップボード操作関連
+// Tauri invoke関数の初期化
+let tauriInvoke = null;
+
+// 選択範囲とカーソル位置を保存するグローバル変数
 let lastSelectionStart = 0;
 let lastSelectionEnd = 0;
-let lastOperationType = null;    // 'copy', 'cut', null
+let lastOperationType = null; // 'copy', 'cut', null
 
-// Tauri API関連
-let tauriInvoke = null;          // Tauri invoke関数の参照
-
-// =====================================================
-// アプリケーション初期化
-// =====================================================
-
-/**
- * Tauri APIの初期化
- * ウィンドウクローズイベントの設定も行う
- */
+// Tauri API初期化
 async function initializeTauri() {
     try {
         if (window.__TAURI__ && window.__TAURI__.core) {
             tauriInvoke = window.__TAURI__.core.invoke;
             
-            // ウィンドウクローズイベントの設定
             if (window.__TAURI__.window) {
                 const { getCurrentWindow } = window.__TAURI__.window;
                 const currentWindow = getCurrentWindow();
@@ -66,9 +41,7 @@ async function initializeTauri() {
     }
 }
 
-/**
- * ページ読み込み時の初期化処理
- */
+// ページ読み込み時の初期化
 window.addEventListener('DOMContentLoaded', async () => {
     await initializeTauri();
     
@@ -78,7 +51,6 @@ window.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     
-    // エディタの初期設定
     currentContent = editor.value;
     initializeUndoStack();
     updateLineNumbers();
@@ -90,39 +62,22 @@ window.addEventListener('DOMContentLoaded', async () => {
     editor.focus();
 });
 
-// =====================================================
 // イベントリスナーの設定
-// =====================================================
-
-/**
- * エディタのイベントリスナーを設定
- */
 function setupEventListeners() {
-    // テキスト入力関連
     editor.addEventListener('input', handleInput);
     editor.addEventListener('keydown', handleKeydown);
-    
-    // スクロール・フォーカス関連
     editor.addEventListener('scroll', syncScroll);
     editor.addEventListener('click', updateStatus);
     editor.addEventListener('keyup', updateStatus);
     
-    // IME（日本語入力）関連
     editor.addEventListener('compositionstart', handleCompositionStart);
     editor.addEventListener('compositionend', handleCompositionEnd);
     editor.addEventListener('compositionupdate', handleCompositionUpdate);
     
-    // メニュー制御
     document.addEventListener('click', handleGlobalClick);
 }
 
-// =====================================================
-// IME（日本語入力）処理
-// =====================================================
-
-/**
- * IME変換開始時の処理
- */
+// IMEイベントハンドラー（修正版）
 function handleCompositionStart(e) {
     isComposing = true;
     justFinishedComposition = false;
@@ -131,17 +86,10 @@ function handleCompositionStart(e) {
     compositionStartCursor = editor.selectionStart;
 }
 
-/**
- * IME変換中の処理
- */
 function handleCompositionUpdate(e) {
-    // 変換中の表示更新
+    // IME変換中の処理
 }
 
-/**
- * IME変換終了時の処理
- * 確定されたテキストをアンドゥ履歴に保存
- */
 function handleCompositionEnd(e) {
     isComposing = false;
     
@@ -188,16 +136,8 @@ function handleCompositionEnd(e) {
     }, 10);
 }
 
-// =====================================================
-// テキスト入力処理
-// =====================================================
-
-/**
- * テキスト入力時の処理
- * アンドゥ履歴の管理と画面更新を行う
- */
+// 入力処理（修正版）
 function handleInput(e) {
-    // アンドゥ・リドゥ操作中は履歴作成をスキップ
     if (isUndoRedoOperation) {
         isUndoRedoOperation = false;
         updateLineNumbers();
@@ -205,7 +145,6 @@ function handleInput(e) {
         return;
     }
     
-    // IME変換中は履歴作成をスキップ
     if (isComposing) {
         updateLineNumbers();
         updateStatus();
@@ -240,53 +179,77 @@ function handleInput(e) {
     updateStatus();
 }
 
-// =====================================================
-// キーボードショートカット処理
-// =====================================================
+// アンドゥスタックに状態を保存
+function saveToUndoStack(content = null, cursorPos = null) {
+    const state = {
+        content: content !== null ? content : currentContent,
+        cursorPosition: cursorPos !== null ? cursorPos : editor.selectionStart,
+        timestamp: Date.now()
+    };
+    
+    if (undoStack.length > 0) {
+        const lastState = undoStack[undoStack.length - 1];
+        if (lastState.content === state.content && lastState.cursorPosition === state.cursorPosition) {
+            return;
+        }
+    }
+    
+    undoStack.push(state);
+    
+    if (undoStack.length > maxUndoStackSize) {
+        undoStack.shift();
+    }
+}
 
-/**
- * キーボードイベントの処理
- * 各種ショートカットキーを処理する
- */
+// 初期状態をアンドゥスタックに保存（修正版）
+function initializeUndoStack() {
+    undoStack = [];
+    redoStack = [];
+    currentContent = editor.value;
+    
+    // 初期状態を履歴に保存
+    const initialState = {
+        content: currentContent,
+        cursorPosition: 0,
+        timestamp: Date.now()
+    };
+    undoStack.push(initialState);
+    
+    console.log('アンドゥスタック初期化:', JSON.stringify(currentContent));
+}
+// キーボードイベント処理
 async function handleKeydown(e) {
-    // アプリ終了ショートカット (Ctrl/Cmd+Q, Ctrl/Cmd+W)
     if ((e.metaKey || e.ctrlKey) && (e.key === 'q' || e.key === 'w')) {
         e.preventDefault();
         await exitApp();
         return;
     }
     
-    // ファイル保存 (Ctrl/Cmd+S)
     if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
         await saveFile();
         return;
     }
     
-    // リドゥ (Ctrl/Cmd+Y または Ctrl/Cmd+Shift+Z)
     if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
         e.preventDefault();
         redo();
         return;
     }
     
-    // アンドゥ (Ctrl/Cmd+Z)
     if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         undo();
         return;
     }
     
-    // Homeキー処理
     if (e.key === 'Home') {
         e.preventDefault();
         
         if (e.metaKey || e.ctrlKey) {
-            // ファイルの先頭へ (Ctrl/Cmd+Home)
             editor.setSelectionRange(0, 0);
             editor.scrollTop = 0;
         } else {
-            // 行の先頭へ (Home)
             const cursorPos = editor.selectionStart;
             const textBeforeCursor = editor.value.substring(0, cursorPos);
             const lastNewlineIndex = textBeforeCursor.lastIndexOf('\n');
@@ -298,17 +261,14 @@ async function handleKeydown(e) {
         return;
     }
     
-    // Endキー処理
     if (e.key === 'End') {
         e.preventDefault();
         
         if (e.metaKey || e.ctrlKey) {
-            // ファイルの末尾へ (Ctrl/Cmd+End)
             const textLength = editor.value.length;
             editor.setSelectionRange(textLength, textLength);
             editor.scrollTop = editor.scrollHeight;
         } else {
-            // 行の末尾へ (End)
             const cursorPos = editor.selectionStart;
             const textAfterCursor = editor.value.substring(cursorPos);
             const nextNewlineIndex = textAfterCursor.indexOf('\n');
@@ -322,105 +282,57 @@ async function handleKeydown(e) {
         return;
     }
     
-    // 新規作成 (Ctrl/Cmd+N)
     if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
         e.preventDefault();
         await newFile();
         return;
     }
     
-    // ファイルを開く (Ctrl/Cmd+O)
     if ((e.metaKey || e.ctrlKey) && e.key === 'o') {
         e.preventDefault();
         await openFile();
         return;
     }
     
-    // 名前を付けて保存 (Ctrl/Cmd+Shift+S)
     if ((e.metaKey || e.ctrlKey) && e.key === 's' && e.shiftKey) {
         e.preventDefault();
         await saveAsFile();
         return;
     }
     
-    // 全選択 (Ctrl/Cmd+A)
     if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
         e.preventDefault();
         selectAll();
         return;
     }
     
-    // コピー (Ctrl/Cmd+C)
     if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
         copy();
         return;
     }
     
-    // 切り取り (Ctrl/Cmd+X)
     if ((e.metaKey || e.ctrlKey) && e.key === 'x') {
         cut();
         return;
     }
     
-    // 貼り付け (Ctrl/Cmd+V)
     if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
         paste();
         return;
     }
 }
 
-// =====================================================
-// アンドゥ・リドゥ機能
-// =====================================================
-
-/**
- * アンドゥスタックの初期化
- */
-function initializeUndoStack() {
-    undoStack = [];
-    redoStack = [];
-    currentContent = editor.value;
-    
-    // 初期状態を履歴に保存
-    const initialState = {
-        content: currentContent,
-        cursorPosition: 0,
-        timestamp: Date.now()
-    };
-    undoStack.push(initialState);
-}
-
-/**
- * アンドゥスタックに状態を保存
- */
-function saveToUndoStack(content = null, cursorPos = null) {
-    const state = {
-        content: content !== null ? content : currentContent,
-        cursorPosition: cursorPos !== null ? cursorPos : editor.selectionStart,
-        timestamp: Date.now()
-    };
-    
-    // 重複チェック
-    if (undoStack.length > 0) {
-        const lastState = undoStack[undoStack.length - 1];
-        if (lastState.content === state.content && lastState.cursorPosition === state.cursorPosition) {
-            return;
-        }
-    }
-    
-    undoStack.push(state);
-    
-    // スタックサイズの制限
-    if (undoStack.length > maxUndoStackSize) {
-        undoStack.shift();
-    }
-}
-
-/**
- * アンドゥ操作
- */
+// アンドゥ・リドゥ機能（デバッグ強化版）
 function undo() {
+    console.log('=== UNDO 開始 ===');
+    console.log('アンドゥスタック長:', undoStack.length);
+    console.log('現在のスタック内容:');
+    undoStack.forEach((state, index) => {
+        console.log(`  [${index}] "${state.content}" (カーソル: ${state.cursorPosition})`);
+    });
+    
     if (undoStack.length <= 1) {
+        console.log('アンドゥ不可: スタックが空または初期状態のみ');
         return;
     }
     
@@ -431,12 +343,15 @@ function undo() {
         timestamp: Date.now()
     };
     redoStack.push(currentState);
+    console.log('現在の状態をリドゥスタックに保存:', JSON.stringify(currentState.content));
     
     // アンドゥスタックから最新の状態を削除
-    undoStack.pop();
+    const removedState = undoStack.pop();
+    console.log('削除された状態:', JSON.stringify(removedState.content));
     
     // 一つ前の状態を取得
     const previousState = undoStack[undoStack.length - 1];
+    console.log('復元する状態:', JSON.stringify(previousState.content));
     
     if (previousState) {
         isUndoRedoOperation = true;
@@ -455,12 +370,11 @@ function undo() {
         updateStatus();
     }
     
+    console.log('=== UNDO 完了 ===');
     closeAllMenus();
+    hideContextMenu();
 }
 
-/**
- * リドゥ操作
- */
 function redo() {
     if (redoStack.length === 0) {
         return;
@@ -490,23 +404,16 @@ function redo() {
     }
     
     closeAllMenus();
+    hideContextMenu();
 }
 
-/**
- * ファイルの変更状態を更新
- */
+// 変更状態を更新する関数
 function updateModifiedState() {
     const originalContent = undoStack.length > 0 ? undoStack[0].content : '';
     isModified = (editor.value !== originalContent);
 }
 
-// =====================================================
-// UI更新機能
-// =====================================================
-
-/**
- * 行番号の更新
- */
+// UI更新関数
 function updateLineNumbers() {
     const lineNumbers = document.getElementById('line-numbers');
     if (!lineNumbers) return;
@@ -522,9 +429,6 @@ function updateLineNumbers() {
     lineNumbers.textContent = lineNumbersContent;
 }
 
-/**
- * 行番号とエディタのスクロール同期
- */
 function syncScroll() {
     const lineNumbers = document.getElementById('line-numbers');
     if (lineNumbers) {
@@ -532,9 +436,6 @@ function syncScroll() {
     }
 }
 
-/**
- * ステータスバーの更新
- */
 function updateStatus() {
     const cursorPosition = document.getElementById('cursor-position');
     const charCount = document.getElementById('char-count');
@@ -554,13 +455,38 @@ function updateStatus() {
     }
 }
 
-// =====================================================
-// メニュー制御
-// =====================================================
+// 編集メニュー項目の関数（既存の関数を呼び出すだけ）
+function menuUndo() {
+    console.log('📝 メニューから「もとに戻す」を実行');
+    undo();
+}
 
-/**
- * ドロップダウンメニューの表示/非表示切り替え
- */
+function menuRedo() {
+    console.log('📝 メニューから「やりなおし」を実行');
+    redo();
+}
+
+function menuCut() {
+    console.log('✂️ メニューから「切り取り」を実行');
+    cut();
+}
+
+function menuCopy() {
+    console.log('📋 メニューから「コピー」を実行');
+    copy();
+}
+
+function menuPaste() {
+    console.log('📋 メニューから「貼り付け」を実行');
+    paste();
+}
+
+function menuSelectAll() {
+    console.log('🔄 メニューから「すべて選択」を実行');
+    selectAll();
+}
+
+// メニュー関連の処理
 function toggleMenu(menuId) {
     const menu = document.getElementById(menuId);
     if (!menu) return;
@@ -569,9 +495,6 @@ function toggleMenu(menuId) {
     menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
 }
 
-/**
- * すべてのメニューを閉じる
- */
 function closeAllMenus() {
     const menus = document.querySelectorAll('.dropdown-menu');
     menus.forEach(menu => {
@@ -579,48 +502,60 @@ function closeAllMenus() {
     });
 }
 
-/**
- * メニュー外クリック時の処理
- */
+function hideContextMenu() {
+    // コンテキストメニューがあれば非表示にする
+}
+
 function handleGlobalClick(e) {
     if (!e.target.closest('.menu-item')) {
         closeAllMenus();
     }
 }
-
-// =====================================================
 // ファイル操作
-// =====================================================
-
-/**
- * 新規ファイル作成
- * 変更がある場合は保存確認ダイアログを表示
- */
 async function newFile() {
+    console.log('📄 新規作成が選択されました');
+    
     // 変更がある場合の確認
     if (isModified) {
+        console.log('📝 変更があります - 確認ダイアログを表示');
         const choice = await showNewFileDialog();
+        console.log('🔍 ダイアログの選択結果:', choice);
         
         if (choice === 'saveAndNew') {
+            console.log('💾 === 保存して新規作成処理開始 ===');
             try {
+                // ファイルの状態に応じて保存処理を分岐
                 if (currentFilePath) {
+                    // 既存ファイルの場合は上書き保存
+                    console.log('📝 既存ファイルを上書き保存してから新規作成:', currentFilePath);
                     await saveFileBeforeNew();
+                    console.log('✅ 上書き保存完了、新規作成を実行');
                 } else {
+                    // 新規ファイルの場合は「名前を付けて保存」
+                    console.log('🆕 新規ファイルのため、名前を付けて保存してから新規作成');
                     const saveSuccess = await saveAsFileForNew();
                     
                     if (!saveSuccess) {
+                        console.log('❌ 保存がキャンセルされたため、新規作成もキャンセルします');
                         closeAllMenus();
+                        hideContextMenu();
                         return;
                     }
                 }
             } catch (error) {
-                console.error('保存に失敗しました:', error);
+                console.error('❌ 保存に失敗しました:', error);
                 alert('保存に失敗しました: ' + error.message + '\n新規作成をキャンセルします。');
                 closeAllMenus();
+                hideContextMenu();
                 return;
             }
+        } else if (choice === 'newWithoutSaving') {
+            console.log('🚫 保存せずに新規作成します');
+            // そのまま続行
         } else if (choice === 'cancel') {
+            console.log('❌ 新規作成がキャンセルされました');
             closeAllMenus();
+            hideContextMenu();
             return;
         }
     }
@@ -644,163 +579,19 @@ async function newFile() {
     editor.setSelectionRange(0, 0);
     editor.focus();
     
+    console.log('✅ 新規ファイルを作成しました');
     closeAllMenus();
+    hideContextMenu();
 }
 
-/**
- * ファイルを開く
- * 変更がある場合は保存確認ダイアログを表示
- */
-async function openFile() {
-    try {
-        if (isModified) {
-            const choice = await showOpenFileDialog();
-            
-            if (choice === 'saveAndOpen') {
-                try {
-                    if (currentFilePath) {
-                        await saveFileBeforeOpen();
-                    } else {
-                        const saveSuccess = await saveAsFileForOpen();
-                        if (!saveSuccess) {
-                            closeAllMenus();
-                            return;
-                        }
-                    }
-                } catch (error) {
-                    alert('保存に失敗しました: ' + error.message + '\nファイルを開く処理をキャンセルします。');
-                    closeAllMenus();
-                    return;
-                }
-            } else if (choice === 'cancel') {
-                closeAllMenus();
-                return;
-            }
-        }
-        
-        await showFileOpenDialog();
-        
-    } catch (error) {
-        alert('ファイルを開くことができませんでした: ' + error.message);
-    }
-    
-    closeAllMenus();
-}
-
-/**
- * ファイルオープンダイアログの表示
- */
-async function showFileOpenDialog() {
-    if (window.__TAURI__ && window.__TAURI__.dialog) {
-        const filePath = await window.__TAURI__.dialog.open({
-            title: "ファイルを開く",
-            multiple: false,
-            filters: [
-                { name: 'テキストファイル', extensions: ['txt', 'md', 'rs', 'js', 'html', 'css', 'json', 'xml', 'py'] },
-                { name: 'すべてのファイル', extensions: ['*'] }
-            ]
-        });
-        
-        if (filePath) {
-            let content;
-            if (window.__TAURI__ && window.__TAURI__.fs) {
-                content = await window.__TAURI__.fs.readTextFile(filePath);
-            } else {
-                content = await tauriInvoke('read_file', { path: filePath });
-            }
-            
-            // エディタに設定してアンドゥスタックを完全リセット
-            editor.value = content;
-            currentFilePath = filePath;
-            isModified = false;
-            currentContent = content;
-            
-            // アンドゥ・リドゥスタックを完全にクリア
-            undoStack = [];
-            redoStack = [];
-            
-            // ファイル内容で初期化
-            initializeUndoStack();
-            updateLineNumbers();
-            updateStatus();
-        }
-    } else {
-        alert('ファイルオープン機能はTauriアプリでのみ利用可能です');
-    }
-}
-
-/**
- * ファイル保存
- */
-async function saveFile() {
-    try {
-        if (currentFilePath) {
-            if (window.__TAURI__ && window.__TAURI__.fs) {
-                await window.__TAURI__.fs.writeTextFile(currentFilePath, editor.value);
-            } else {
-                await tauriInvoke('write_file', { 
-                    path: currentFilePath, 
-                    content: editor.value 
-                });
-            }
-            
-            isModified = false;
-            currentContent = editor.value;
-        } else {
-            await saveAsFile();
-            return;
-        }
-    } catch (error) {
-        alert('ファイルを保存できませんでした: ' + error.message);
-    }
-    
-    closeAllMenus();
-}
-
-/**
- * 名前を付けて保存
- */
-async function saveAsFile() {
-    try {
-        if (window.__TAURI__ && window.__TAURI__.dialog) {
-            const filePath = await window.__TAURI__.dialog.save({
-                title: "名前を付けて保存",
-                filters: [
-                    { name: 'テキストファイル', extensions: ['txt'] },
-                    { name: 'Markdownファイル', extensions: ['md'] },
-                    { name: 'すべてのファイル', extensions: ['*'] }
-                ]
-            });
-            
-            if (filePath) {
-                if (window.__TAURI__ && window.__TAURI__.fs) {
-                    await window.__TAURI__.fs.writeTextFile(filePath, editor.value);
-                } else {
-                    await tauriInvoke('write_file', { 
-                        path: filePath, 
-                        content: editor.value 
-                    });
-                }
-                
-                currentFilePath = filePath;
-                isModified = false;
-                currentContent = editor.value;
-            }
-        } else {
-            alert('ファイル保存機能はTauriアプリでのみ利用可能です');
-        }
-    } catch (error) {
-        alert('ファイルを保存できませんでした: ' + error.message);
-    }
-    
-    closeAllMenus();
-}
-
-/**
- * 新規作成前の保存処理（上書き保存）
- */
+// 新規作成前の保存処理（上書き保存）
 async function saveFileBeforeNew() {
+    console.log('🚪 新規作成前の保存処理を実行中...');
+    
     if (currentFilePath) {
+        // 既存ファイルの上書き保存
+        console.log('📝 既存ファイルを上書き保存:', currentFilePath);
+        
         if (window.__TAURI__ && window.__TAURI__.fs) {
             await window.__TAURI__.fs.writeTextFile(currentFilePath, editor.value);
         } else if (tauriInvoke) {
@@ -814,17 +605,26 @@ async function saveFileBeforeNew() {
         
         isModified = false;
         currentContent = editor.value;
+        console.log('✅ 新規作成前の保存完了:', currentFilePath);
     } else {
+        // ファイルパスがない場合はエラー
+        console.log('❌ 新規ファイルのため、名前を付けて保存が必要');
         throw new Error('新規ファイルのため保存できません。先に「名前を付けて保存」を実行してください。');
     }
 }
 
-/**
- * 新規作成前専用の「名前を付けて保存」処理
- */
+// 新規作成前専用の「名前を付けて保存」処理
 async function saveAsFileForNew() {
+    console.log('💾 === saveAsFileForNew() 開始 ===');
+    
     try {
+        console.log('🔍 保存ダイアログを表示中...');
+        
+        // Tauri v2.5のJavaScript API を直接使用
         if (window.__TAURI__ && window.__TAURI__.dialog) {
+            console.log('📋 Tauri Dialog API を使用します');
+            
+            // 保存ダイアログを表示
             const filePath = await window.__TAURI__.dialog.save({
                 title: "ファイルを保存してから新規作成",
                 filters: [
@@ -835,551 +635,41 @@ async function saveAsFileForNew() {
             });
             
             if (filePath) {
+                console.log('📂 保存先が選択されました:', filePath);
+                
+                // ファイルを保存
                 if (window.__TAURI__ && window.__TAURI__.fs) {
                     await window.__TAURI__.fs.writeTextFile(filePath, editor.value);
                 } else {
+                    // フォールバック: Rustコマンドを使用
                     await tauriInvoke('write_file', { 
                         path: filePath, 
                         content: editor.value 
                     });
                 }
                 
+                // 現在のファイルパスを更新
                 currentFilePath = filePath;
                 isModified = false;
                 currentContent = editor.value;
                 
+                console.log('✅ 新規作成前の保存完了:', filePath);
                 return true; // 保存成功
             } else {
+                console.log('❌ 保存ダイアログがキャンセルされました');
                 return false; // 保存キャンセル
             }
         } else {
+            console.error('❌ Tauri Dialog API が利用できません');
             throw new Error('ファイル保存機能はTauriアプリでのみ利用可能です');
         }
     } catch (error) {
+        console.error('❌ saveAsFileForNew() でエラー発生:', error);
         throw error;
     }
 }
 
-/**
- * ファイルを開く前の保存処理
- */
-async function saveFileBeforeOpen() {
-    if (currentFilePath) {
-        if (window.__TAURI__ && window.__TAURI__.fs) {
-            await window.__TAURI__.fs.writeTextFile(currentFilePath, editor.value);
-        } else if (tauriInvoke) {
-            await tauriInvoke('write_file', { 
-                path: currentFilePath, 
-                content: editor.value 
-            });
-        } else {
-            throw new Error('Tauriアプリでのみ利用可能です');
-        }
-        
-        isModified = false;
-        currentContent = editor.value;
-    } else {
-        throw new Error('新規ファイルのため保存できません。先に「名前を付けて保存」を実行してください。');
-    }
-}
-
-/**
- * ファイルを開く前専用の「名前を付けて保存」処理
- */
-async function saveAsFileForOpen() {
-    try {
-        if (window.__TAURI__ && window.__TAURI__.dialog) {
-            const filePath = await window.__TAURI__.dialog.save({
-                title: "ファイルを保存してから開く",
-                filters: [
-                    { name: 'テキストファイル', extensions: ['txt'] },
-                    { name: 'Markdownファイル', extensions: ['md'] },
-                    { name: 'すべてのファイル', extensions: ['*'] }
-                ]
-            });
-            
-            if (filePath) {
-                if (window.__TAURI__ && window.__TAURI__.fs) {
-                    await window.__TAURI__.fs.writeTextFile(filePath, editor.value);
-                } else {
-                    await tauriInvoke('write_file', { 
-                        path: filePath, 
-                        content: editor.value 
-                    });
-                }
-                
-                currentFilePath = filePath;
-                isModified = false;
-                currentContent = editor.value;
-                
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            throw new Error('ファイル保存機能はTauriアプリでのみ利用可能です');
-        }
-    } catch (error) {
-        throw error;
-    }
-}
-
-// =====================================================
-// 編集操作（コピー・切り取り・貼り付け）
-// =====================================================
-
-/**
- * テキストのコピー
- */
-async function copy() {
-    try {
-        const selectedText = editor.value.substring(editor.selectionStart, editor.selectionEnd);
-        
-        if (selectedText) {
-            // 選択範囲を保存
-            lastSelectionStart = editor.selectionStart;
-            lastSelectionEnd = editor.selectionEnd;
-            lastOperationType = 'copy';
-            
-            // Tauri環境でのクリップボード書き込み
-            if (window.__TAURI__ && window.__TAURI__.clipboard) {
-                await window.__TAURI__.clipboard.writeText(selectedText);
-            } else if (tauriInvoke) {
-                // フォールバック: Rustコマンドを使用
-                await tauriInvoke('write_clipboard', { text: selectedText });
-            } else {
-                // 最後の手段: navigator.clipboard
-                await navigator.clipboard.writeText(selectedText);
-            }
-        } else {
-            lastOperationType = null;
-        }
-    } catch (error) {
-        console.error('コピーに失敗:', error);
-        // エラーが発生した場合、ブラウザのデフォルト動作にフォールバック
-        document.execCommand('copy');
-        lastOperationType = 'copy';
-    }
-    
-    closeAllMenus();
-    
-    // エディタにフォーカスを戻し、選択範囲を維持
-    setTimeout(() => {
-        editor.focus();
-        if (lastOperationType === 'copy') {
-            editor.setSelectionRange(lastSelectionStart, lastSelectionEnd);
-        }
-    }, 10);
-}
-
-/**
- * テキストの切り取り
- */
-async function cut() {
-    // カット操作前の状態を履歴に保存
-    const beforeCutState = {
-        content: editor.value,
-        cursorPosition: editor.selectionStart,
-        timestamp: Date.now()
-    };
-    
-    // 重複チェック：最後の履歴と同じでなければ追加
-    if (undoStack.length === 0 || undoStack[undoStack.length - 1].content !== beforeCutState.content) {
-        undoStack.push(beforeCutState);
-        
-        // スタックサイズの制限
-        if (undoStack.length > maxUndoStackSize) {
-            undoStack.shift();
-        }
-    }
-    
-    try {
-        const selectedText = editor.value.substring(editor.selectionStart, editor.selectionEnd);
-        
-        if (selectedText) {
-            // 選択範囲を保存
-            lastSelectionStart = editor.selectionStart;
-            lastSelectionEnd = editor.selectionEnd;
-            lastOperationType = 'cut';
-            
-            // クリップボードにコピー
-            if (window.__TAURI__ && window.__TAURI__.clipboard) {
-                await window.__TAURI__.clipboard.writeText(selectedText);
-            } else if (tauriInvoke) {
-                await tauriInvoke('write_clipboard', { text: selectedText });
-            } else {
-                await navigator.clipboard.writeText(selectedText);
-            }
-            
-            // 選択されたテキストを削除
-            const start = editor.selectionStart;
-            const end = editor.selectionEnd;
-            const newValue = editor.value.substring(0, start) + editor.value.substring(end);
-            
-            editor.value = newValue;
-            editor.setSelectionRange(start, start);
-            
-            // カット後の位置を保存
-            lastSelectionStart = start;
-            lastSelectionEnd = start;
-            
-            // カット後の状態を履歴に保存
-            const afterCutState = {
-                content: editor.value,
-                cursorPosition: start,
-                timestamp: Date.now()
-            };
-            
-            // 重複チェック：最後の履歴と同じでなければ追加
-            if (undoStack.length === 0 || undoStack[undoStack.length - 1].content !== afterCutState.content) {
-                undoStack.push(afterCutState);
-                
-                // スタックサイズの制限
-                if (undoStack.length > maxUndoStackSize) {
-                    undoStack.shift();
-                }
-                
-                // currentContentも更新
-                currentContent = afterCutState.content;
-                
-                // リドゥスタックをクリア
-                redoStack = [];
-                
-                if (!isModified) {
-                    isModified = true;
-                }
-            }
-            
-            updateLineNumbers();
-            updateStatus();
-            
-        } else {
-            lastOperationType = null;
-        }
-    } catch (error) {
-        console.error('切り取りに失敗:', error);
-        // エラーが発生した場合、ブラウザのデフォルト動作にフォールバック
-        document.execCommand('cut');
-        lastOperationType = 'cut';
-        
-        // カット後の状態確認と履歴保存（フォールバック用）
-        setTimeout(() => {
-            const afterCutState = {
-                content: editor.value,
-                cursorPosition: editor.selectionStart,
-                timestamp: Date.now()
-            };
-            
-            if (afterCutState.content !== beforeCutState.content) {
-                if (undoStack.length === 0 || undoStack[undoStack.length - 1].content !== afterCutState.content) {
-                    undoStack.push(afterCutState);
-                    
-                    if (undoStack.length > maxUndoStackSize) {
-                        undoStack.shift();
-                    }
-                    
-                    currentContent = afterCutState.content;
-                    redoStack = [];
-                    
-                    if (!isModified) {
-                        isModified = true;
-                    }
-                }
-            }
-            
-            updateLineNumbers();
-            updateStatus();
-        }, 10);
-    }
-    
-    closeAllMenus();
-    
-    // エディタにフォーカスを戻し、カーソル位置を設定
-    setTimeout(() => {
-        editor.focus();
-        if (lastOperationType === 'cut') {
-            editor.setSelectionRange(lastSelectionStart, lastSelectionStart);
-        }
-    }, 10);
-}
-
-/**
- * テキストの貼り付け
- */
-async function paste() {
-    // ペースト操作前の状態を履歴に保存
-    const beforePasteState = {
-        content: editor.value,
-        cursorPosition: editor.selectionStart,
-        timestamp: Date.now()
-    };
-    
-    // 重複チェック：最後の履歴と同じでなければ追加
-    if (undoStack.length === 0 || undoStack[undoStack.length - 1].content !== beforePasteState.content) {
-        undoStack.push(beforePasteState);
-        
-        // スタックサイズの制限
-        if (undoStack.length > maxUndoStackSize) {
-            undoStack.shift();
-        }
-    }
-    
-    try {
-        let clipboardText = '';
-        
-        // クリップボードからテキストを取得
-        if (window.__TAURI__ && window.__TAURI__.clipboard) {
-            clipboardText = await window.__TAURI__.clipboard.readText();
-        } else if (tauriInvoke) {
-            clipboardText = await tauriInvoke('read_clipboard');
-        } else {
-            clipboardText = await navigator.clipboard.readText();
-        }
-        
-        if (clipboardText) {
-            // 貼り付け位置を決定
-            let pasteStart, pasteEnd;
-            
-            if (lastOperationType === 'copy' && lastSelectionStart !== undefined && lastSelectionEnd !== undefined) {
-                // コピー後の貼り付け：元の選択範囲に貼り付け
-                pasteStart = lastSelectionStart;
-                pasteEnd = lastSelectionEnd;
-            } else if (lastOperationType === 'cut' && lastSelectionStart !== undefined) {
-                // カット後の貼り付け：カット位置に貼り付け
-                pasteStart = lastSelectionStart;
-                pasteEnd = lastSelectionStart;
-            } else {
-                // 通常の貼り付け：現在のカーソル位置または選択範囲
-                pasteStart = editor.selectionStart;
-                pasteEnd = editor.selectionEnd;
-            }
-            
-            // テキストを挿入
-            const newValue = editor.value.substring(0, pasteStart) + clipboardText + editor.value.substring(pasteEnd);
-            editor.value = newValue;
-            
-            // カーソル位置を挿入したテキストの末尾に設定
-            const newCursorPosition = pasteStart + clipboardText.length;
-            editor.setSelectionRange(newCursorPosition, newCursorPosition);
-            
-            // 操作タイプをクリア
-            lastOperationType = null;
-            
-            // ペースト後の状態を履歴に保存
-            const afterPasteState = {
-                content: editor.value,
-                cursorPosition: newCursorPosition,
-                timestamp: Date.now()
-            };
-            
-            // 重複チェック：最後の履歴と同じでなければ追加
-            if (undoStack.length === 0 || undoStack[undoStack.length - 1].content !== afterPasteState.content) {
-                undoStack.push(afterPasteState);
-                
-                // スタックサイズの制限
-                if (undoStack.length > maxUndoStackSize) {
-                    undoStack.shift();
-                }
-                
-                // currentContentも更新
-                currentContent = afterPasteState.content;
-                
-                // リドゥスタックをクリア
-                redoStack = [];
-                
-                if (!isModified) {
-                    isModified = true;
-                }
-            }
-            
-            updateLineNumbers();
-            updateStatus();
-        }
-        
-    } catch (error) {
-        console.error('貼り付けに失敗:', error);
-        
-        // エラーが発生した場合、ブラウザのデフォルト動作にフォールバック
-        try {
-            document.execCommand('paste');
-            
-            // フォールバック用のペースト後状態確認
-            setTimeout(() => {
-                const afterPasteState = {
-                    content: editor.value,
-                    cursorPosition: editor.selectionStart,
-                    timestamp: Date.now()
-                };
-                
-                if (afterPasteState.content !== beforePasteState.content) {
-                    if (undoStack.length === 0 || undoStack[undoStack.length - 1].content !== afterPasteState.content) {
-                        undoStack.push(afterPasteState);
-                        
-                        if (undoStack.length > maxUndoStackSize) {
-                            undoStack.shift();
-                        }
-                        
-                        currentContent = afterPasteState.content;
-                        redoStack = [];
-                        
-                        if (!isModified) {
-                            isModified = true;
-                        }
-                    }
-                }
-                
-                updateLineNumbers();
-                updateStatus();
-            }, 10);
-        } catch (fallbackError) {
-            console.error('フォールバックの貼り付けも失敗:', fallbackError);
-        }
-    }
-    
-    closeAllMenus();
-    
-    // エディタにフォーカスを戻す
-    setTimeout(() => {
-        editor.focus();
-    }, 10);
-}
-
-/**
- * 全選択
- */
-function selectAll() {
-    editor.select();
-    closeAllMenus();
-}
-
-// =====================================================
-// アプリケーション終了処理
-// =====================================================
-
-/**
- * アプリケーション終了
- * 変更がある場合は保存確認ダイアログを表示
- */
-async function exitApp() {
-    if (exitApp.isRunning) {
-        return;
-    }
-    
-    exitApp.isRunning = true;
-    
-    try {
-        if (isModified) {
-            exitApp.isRunning = false;
-            
-            const choice = await showExitDialog();
-            
-            exitApp.isRunning = true;
-            
-            if (choice === 'saveAndExit') {
-                try {
-                    if (currentFilePath) {
-                        await saveFileBeforeExit();
-                        await tauriInvoke('exit_app');
-                    } else {
-                        const saveSuccess = await saveAsFileForExit();
-                        
-                        if (saveSuccess) {
-                            await tauriInvoke('exit_app');
-                        } else {
-                            exitApp.isRunning = false;
-                            return;
-                        }
-                    }
-                } catch (error) {
-                    alert('保存に失敗しました: ' + error.message + '\n終了をキャンセルします。');
-                    exitApp.isRunning = false;
-                    return;
-                }
-            } else if (choice === 'exitWithoutSaving') {
-                await tauriInvoke('exit_app');
-            } else if (choice === 'cancel') {
-                exitApp.isRunning = false;
-                return;
-            }
-        } else {
-            await tauriInvoke('exit_app');
-        }
-    } catch (error) {
-        exitApp.isRunning = false;
-    }
-}
-
-/**
- * 終了前の保存処理
- */
-async function saveFileBeforeExit() {
-    if (currentFilePath) {
-        if (window.__TAURI__ && window.__TAURI__.fs) {
-            await window.__TAURI__.fs.writeTextFile(currentFilePath, editor.value);
-        } else if (tauriInvoke) {
-            await tauriInvoke('write_file', { 
-                path: currentFilePath, 
-                content: editor.value 
-            });
-        } else {
-            throw new Error('Tauriアプリでのみ利用可能です');
-        }
-        
-        isModified = false;
-        currentContent = editor.value;
-    } else {
-        throw new Error('新規ファイルのため保存できません。先に「名前を付けて保存」を実行してください。');
-    }
-}
-
-/**
- * 終了前専用の「名前を付けて保存」処理
- */
-async function saveAsFileForExit() {
-    try {
-        if (window.__TAURI__ && window.__TAURI__.dialog) {
-            const filePath = await window.__TAURI__.dialog.save({
-                title: "ファイルを保存",
-                filters: [
-                    { name: 'テキストファイル', extensions: ['txt'] },
-                    { name: 'Markdownファイル', extensions: ['md'] },
-                    { name: 'すべてのファイル', extensions: ['*'] }
-                ]
-            });
-            
-            if (filePath) {
-                if (window.__TAURI__ && window.__TAURI__.fs) {
-                    await window.__TAURI__.fs.writeTextFile(filePath, editor.value);
-                } else {
-                    await tauriInvoke('write_file', { 
-                        path: filePath, 
-                        content: editor.value 
-                    });
-                }
-                
-                currentFilePath = filePath;
-                isModified = false;
-                currentContent = editor.value;
-                
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            throw new Error('ファイル保存機能はTauriアプリでのみ利用可能です');
-        }
-    } catch (error) {
-        throw error;
-    }
-}
-
-// =====================================================
-// 確認ダイアログ表示
-// =====================================================
-
-/**
- * 新規作成確認ダイアログを表示（キーボードナビゲーション対応）
- */
+// 新規作成確認ダイアログを表示（キーボードナビゲーション対応版）
 async function showNewFileDialog() {
     return new Promise((resolve) => {
         const dialogOverlay = document.createElement('div');
@@ -1453,15 +743,776 @@ async function showNewFileDialog() {
         dialogOverlay.appendChild(dialog);
         document.body.appendChild(dialogOverlay);
         
-        // ダイアログの共通処理を呼び出し
-        setupDialogNavigation(dialogOverlay, ['save-and-new-btn', 'new-without-saving-btn', 'cancel-new-btn'], 
-            ['saveAndNew', 'newWithoutSaving', 'cancel'], resolve);
+        // ボタン要素を取得
+        const saveBtn = document.getElementById('save-and-new-btn');
+        const newBtn = document.getElementById('new-without-saving-btn');
+        const cancelBtn = document.getElementById('cancel-new-btn');
+        const buttons = [saveBtn, newBtn, cancelBtn];
+        
+        let currentButtonIndex = 2; // デフォルトで「キャンセル」を選択
+        
+        // フォーカススタイルを適用する関数
+        function updateFocus() {
+            buttons.forEach((btn, index) => {
+                if (index === currentButtonIndex) {
+                    btn.style.boxShadow = '0 0 0 2px #0078d4';
+                    btn.style.outline = '2px solid #0078d4';
+                    btn.focus();
+                } else {
+                    btn.style.boxShadow = 'none';
+                    btn.style.outline = 'none';
+                }
+            });
+        }
+        
+        // 初期フォーカスを設定
+        updateFocus();
+        
+        // ダイアログ終了処理
+        function closeDialog(choice) {
+            document.body.removeChild(dialogOverlay);
+            document.removeEventListener('keydown', handleDialogKeyDown);
+            setTimeout(() => editor.focus(), 0);
+            resolve(choice);
+        }
+        
+        // キーボードイベントハンドラー
+        function handleDialogKeyDown(e) {
+            switch (e.key) {
+                case 'ArrowLeft':
+                case 'ArrowUp':
+                    e.preventDefault();
+                    currentButtonIndex = (currentButtonIndex - 1 + buttons.length) % buttons.length;
+                    updateFocus();
+                    break;
+                    
+                case 'ArrowRight':
+                case 'ArrowDown':
+                case 'Tab':
+                    e.preventDefault();
+                    if (e.shiftKey && e.key === 'Tab') {
+                        // Shift+Tab で逆方向
+                        currentButtonIndex = (currentButtonIndex - 1 + buttons.length) % buttons.length;
+                    } else {
+                        // Tab / 矢印キーで順方向
+                        currentButtonIndex = (currentButtonIndex + 1) % buttons.length;
+                    }
+                    updateFocus();
+                    break;
+                    
+                case 'Enter':
+                case ' ': // スペースキー
+                    e.preventDefault();
+                    if (currentButtonIndex === 0) {
+                        closeDialog('saveAndNew');
+                    } else if (currentButtonIndex === 1) {
+                        closeDialog('newWithoutSaving');
+                    } else if (currentButtonIndex === 2) {
+                        closeDialog('cancel');
+                    }
+                    break;
+                    
+                case 'Escape':
+                    e.preventDefault();
+                    closeDialog('cancel');
+                    break;
+            }
+        }
+        
+        // ボタンクリックイベントの設定
+        saveBtn.addEventListener('click', () => closeDialog('saveAndNew'));
+        newBtn.addEventListener('click', () => closeDialog('newWithoutSaving'));
+        cancelBtn.addEventListener('click', () => closeDialog('cancel'));
+        
+        // マウスホバーでフォーカス更新
+        buttons.forEach((btn, index) => {
+            btn.addEventListener('mouseenter', () => {
+                currentButtonIndex = index;
+                updateFocus();
+            });
+        });
+        
+        // キーボードイベントリスナーを追加
+        document.addEventListener('keydown', handleDialogKeyDown);
+        
+        // オーバーレイクリックでキャンセル
+        dialogOverlay.addEventListener('click', (e) => {
+            if (e.target === dialogOverlay) {
+                closeDialog('cancel');
+            }
+        });
     });
 }
+async function openFile() {
+    try {
+        if (isModified) {
+            const choice = await showOpenFileDialog();
+            
+            if (choice === 'saveAndOpen') {
+                try {
+                    if (currentFilePath) {
+                        await saveFileBeforeOpen();
+                    } else {
+                        const saveSuccess = await saveAsFileForOpen();
+                        if (!saveSuccess) {
+                            closeAllMenus();
+                            hideContextMenu();
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    alert('保存に失敗しました: ' + error.message + '\nファイルを開く処理をキャンセルします。');
+                    closeAllMenus();
+                    hideContextMenu();
+                    return;
+                }
+            } else if (choice === 'cancel') {
+                closeAllMenus();
+                hideContextMenu();
+                return;
+            }
+        }
+        
+        await showFileOpenDialog();
+        
+    } catch (error) {
+        alert('ファイルを開くことができませんでした: ' + error.message);
+    }
+    
+    closeAllMenus();
+    hideContextMenu();
+}
 
-/**
- * ファイルを開く確認ダイアログを表示（キーボードナビゲーション対応）
- */
+async function showFileOpenDialog() {
+    if (window.__TAURI__ && window.__TAURI__.dialog) {
+        const filePath = await window.__TAURI__.dialog.open({
+            title: "ファイルを開く",
+            multiple: false,
+            filters: [
+                { name: 'テキストファイル', extensions: ['txt', 'md', 'rs', 'js', 'html', 'css', 'json', 'xml', 'py'] },
+                { name: 'すべてのファイル', extensions: ['*'] }
+            ]
+        });
+        
+        if (filePath) {
+            let content;
+            if (window.__TAURI__ && window.__TAURI__.fs) {
+                content = await window.__TAURI__.fs.readTextFile(filePath);
+            } else {
+                content = await tauriInvoke('read_file', { path: filePath });
+            }
+            
+            // エディタに設定してアンドゥスタックを完全リセット
+            editor.value = content;
+            currentFilePath = filePath;
+            isModified = false;
+            currentContent = content;
+            
+            // アンドゥ・リドゥスタックを完全にクリア
+            undoStack = [];
+            redoStack = [];
+            
+            // ファイル内容で初期化
+            initializeUndoStack();
+            updateLineNumbers();
+            updateStatus();
+            
+            console.log('ファイルを開きました - アンドゥスタック初期化完了:', filePath);
+        }
+    } else {
+        alert('ファイルオープン機能はTauriアプリでのみ利用可能です');
+    }
+}
+
+async function saveFileBeforeOpen() {
+    if (currentFilePath) {
+        if (window.__TAURI__ && window.__TAURI__.fs) {
+            await window.__TAURI__.fs.writeTextFile(currentFilePath, editor.value);
+        } else if (tauriInvoke) {
+            await tauriInvoke('write_file', { 
+                path: currentFilePath, 
+                content: editor.value 
+            });
+        } else {
+            throw new Error('Tauriアプリでのみ利用可能です');
+        }
+        
+        isModified = false;
+        currentContent = editor.value;
+    } else {
+        throw new Error('新規ファイルのため保存できません。先に「名前を付けて保存」を実行してください。');
+    }
+}
+
+async function saveAsFileForOpen() {
+    try {
+        if (window.__TAURI__ && window.__TAURI__.dialog) {
+            const filePath = await window.__TAURI__.dialog.save({
+                title: "ファイルを保存してから開く",
+                filters: [
+                    { name: 'テキストファイル', extensions: ['txt'] },
+                    { name: 'Markdownファイル', extensions: ['md'] },
+                    { name: 'すべてのファイル', extensions: ['*'] }
+                ]
+            });
+            
+            if (filePath) {
+                if (window.__TAURI__ && window.__TAURI__.fs) {
+                    await window.__TAURI__.fs.writeTextFile(filePath, editor.value);
+                } else {
+                    await tauriInvoke('write_file', { 
+                        path: filePath, 
+                        content: editor.value 
+                    });
+                }
+                
+                currentFilePath = filePath;
+                isModified = false;
+                currentContent = editor.value;
+                
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            throw new Error('ファイル保存機能はTauriアプリでのみ利用可能です');
+        }
+    } catch (error) {
+        throw error;
+    }
+}
+
+async function saveFile() {
+    try {
+        if (currentFilePath) {
+            if (window.__TAURI__ && window.__TAURI__.fs) {
+                await window.__TAURI__.fs.writeTextFile(currentFilePath, editor.value);
+            } else {
+                await tauriInvoke('write_file', { 
+                    path: currentFilePath, 
+                    content: editor.value 
+                });
+            }
+            
+            isModified = false;
+            currentContent = editor.value;
+        } else {
+            await saveAsFile();
+            return;
+        }
+    } catch (error) {
+        alert('ファイルを保存できませんでした: ' + error.message);
+    }
+    
+    closeAllMenus();
+    hideContextMenu();
+}
+
+async function saveAsFile() {
+    try {
+        if (window.__TAURI__ && window.__TAURI__.dialog) {
+            const filePath = await window.__TAURI__.dialog.save({
+                title: "名前を付けて保存",
+                filters: [
+                    { name: 'テキストファイル', extensions: ['txt'] },
+                    { name: 'Markdownファイル', extensions: ['md'] },
+                    { name: 'すべてのファイル', extensions: ['*'] }
+                ]
+            });
+            
+            if (filePath) {
+                if (window.__TAURI__ && window.__TAURI__.fs) {
+                    await window.__TAURI__.fs.writeTextFile(filePath, editor.value);
+                } else {
+                    await tauriInvoke('write_file', { 
+                        path: filePath, 
+                        content: editor.value 
+                    });
+                }
+                
+                currentFilePath = filePath;
+                isModified = false;
+                currentContent = editor.value;
+            }
+        } else {
+            alert('ファイル保存機能はTauriアプリでのみ利用可能です');
+        }
+    } catch (error) {
+        alert('ファイルを保存できませんでした: ' + error.message);
+    }
+    
+    closeAllMenus();
+    hideContextMenu();
+}
+
+// 編集操作
+// コピー機能（改善版）
+async function copy() {
+    console.log('📋 コピー');
+    
+    try {
+        const selectedText = editor.value.substring(editor.selectionStart, editor.selectionEnd);
+        
+        if (selectedText) {
+            // 選択範囲を保存
+            lastSelectionStart = editor.selectionStart;
+            lastSelectionEnd = editor.selectionEnd;
+            lastOperationType = 'copy';
+            
+            // Tauri環境でのクリップボード書き込み
+            if (window.__TAURI__ && window.__TAURI__.clipboard) {
+                await window.__TAURI__.clipboard.writeText(selectedText);
+                console.log('📋 Tauriクリップボードにコピー完了:', selectedText);
+            } else if (tauriInvoke) {
+                // フォールバック: Rustコマンドを使用
+                await tauriInvoke('write_clipboard', { text: selectedText });
+                console.log('📋 Rustコマンドでクリップボードにコピー完了:', selectedText);
+            } else {
+                // 最後の手段: navigator.clipboard（ユーザージェスチャーが必要）
+                await navigator.clipboard.writeText(selectedText);
+                console.log('📋 navigator.clipboardでコピー完了:', selectedText);
+            }
+        } else {
+            console.log('📋 選択されたテキストがありません');
+            lastOperationType = null;
+        }
+    } catch (error) {
+        console.error('📋 コピーに失敗:', error);
+        // エラーが発生した場合、ブラウザのデフォルト動作にフォールバック
+        document.execCommand('copy');
+        lastOperationType = 'copy';
+    }
+    
+    closeAllMenus();
+    hideContextMenu();
+    
+    // エディタにフォーカスを戻し、選択範囲を維持
+    setTimeout(() => {
+        editor.focus();
+        if (lastOperationType === 'copy') {
+            editor.setSelectionRange(lastSelectionStart, lastSelectionEnd);
+        }
+    }, 10);
+}
+
+// 切り取り機能（改善版）
+async function cut() {
+    console.log('✂️ 切り取り');
+    
+    // カット操作前の状態を履歴に保存
+    const beforeCutState = {
+        content: editor.value,
+        cursorPosition: editor.selectionStart,
+        timestamp: Date.now()
+    };
+    
+    // 重複チェック：最後の履歴と同じでなければ追加
+    if (undoStack.length === 0 || undoStack[undoStack.length - 1].content !== beforeCutState.content) {
+        undoStack.push(beforeCutState);
+        
+        // スタックサイズの制限
+        if (undoStack.length > maxUndoStackSize) {
+            undoStack.shift();
+        }
+        
+        console.log('カット前の状態を履歴に保存:', JSON.stringify(beforeCutState.content));
+    }
+    
+    try {
+        const selectedText = editor.value.substring(editor.selectionStart, editor.selectionEnd);
+        
+        if (selectedText) {
+            // 選択範囲を保存
+            lastSelectionStart = editor.selectionStart;
+            lastSelectionEnd = editor.selectionEnd;
+            lastOperationType = 'cut';
+            
+            // クリップボードにコピー
+            if (window.__TAURI__ && window.__TAURI__.clipboard) {
+                await window.__TAURI__.clipboard.writeText(selectedText);
+                console.log('✂️ Tauriクリップボードにカット内容をコピー:', selectedText);
+            } else if (tauriInvoke) {
+                // フォールバック: Rustコマンドを使用
+                await tauriInvoke('write_clipboard', { text: selectedText });
+                console.log('✂️ Rustコマンドでクリップボードにカット内容をコピー:', selectedText);
+            } else {
+                // 最後の手段: navigator.clipboard
+                await navigator.clipboard.writeText(selectedText);
+                console.log('✂️ navigator.clipboardでカット内容をコピー:', selectedText);
+            }
+            
+            // 選択されたテキストを削除
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const newValue = editor.value.substring(0, start) + editor.value.substring(end);
+            
+            editor.value = newValue;
+            editor.setSelectionRange(start, start);
+            
+            // カット後の位置を保存（貼り付け用）
+            lastSelectionStart = start;
+            lastSelectionEnd = start;
+            
+            // カット後の状態を履歴に保存
+            const afterCutState = {
+                content: editor.value,
+                cursorPosition: start,
+                timestamp: Date.now()
+            };
+            
+            // 重複チェック：最後の履歴と同じでなければ追加
+            if (undoStack.length === 0 || undoStack[undoStack.length - 1].content !== afterCutState.content) {
+                undoStack.push(afterCutState);
+                
+                // スタックサイズの制限
+                if (undoStack.length > maxUndoStackSize) {
+                    undoStack.shift();
+                }
+                
+                console.log('カット後の状態を履歴に保存:', JSON.stringify(afterCutState.content));
+                
+                // currentContentも更新
+                currentContent = afterCutState.content;
+                
+                // リドゥスタックをクリア
+                redoStack = [];
+                
+                if (!isModified) {
+                    isModified = true;
+                }
+            }
+            
+            updateLineNumbers();
+            updateStatus();
+            
+        } else {
+            console.log('✂️ 選択されたテキストがありません');
+            lastOperationType = null;
+        }
+    } catch (error) {
+        console.error('✂️ 切り取りに失敗:', error);
+        // エラーが発生した場合、ブラウザのデフォルト動作にフォールバック
+        document.execCommand('cut');
+        lastOperationType = 'cut';
+        
+        // カット後の状態確認と履歴保存（フォールバック用）
+        setTimeout(() => {
+            const afterCutState = {
+                content: editor.value,
+                cursorPosition: editor.selectionStart,
+                timestamp: Date.now()
+            };
+            
+            if (afterCutState.content !== beforeCutState.content) {
+                if (undoStack.length === 0 || undoStack[undoStack.length - 1].content !== afterCutState.content) {
+                    undoStack.push(afterCutState);
+                    
+                    if (undoStack.length > maxUndoStackSize) {
+                        undoStack.shift();
+                    }
+                    
+                    currentContent = afterCutState.content;
+                    redoStack = [];
+                    
+                    if (!isModified) {
+                        isModified = true;
+                    }
+                }
+            }
+            
+            updateLineNumbers();
+            updateStatus();
+        }, 10);
+    }
+    
+    closeAllMenus();
+    hideContextMenu();
+    
+    // エディタにフォーカスを戻し、カーソル位置を設定
+    setTimeout(() => {
+        editor.focus();
+        if (lastOperationType === 'cut') {
+            editor.setSelectionRange(lastSelectionStart, lastSelectionStart);
+        }
+    }, 10);
+}
+
+// 貼り付け機能（改善版）
+async function paste() {
+    console.log('📋 貼り付け');
+    
+    // ペースト操作前の状態を履歴に保存
+    const beforePasteState = {
+        content: editor.value,
+        cursorPosition: editor.selectionStart,
+        timestamp: Date.now()
+    };
+    
+    // 重複チェック：最後の履歴と同じでなければ追加
+    if (undoStack.length === 0 || undoStack[undoStack.length - 1].content !== beforePasteState.content) {
+        undoStack.push(beforePasteState);
+        
+        // スタックサイズの制限
+        if (undoStack.length > maxUndoStackSize) {
+            undoStack.shift();
+        }
+        
+        console.log('ペースト前の状態を履歴に保存:', JSON.stringify(beforePasteState.content));
+    }
+    
+    try {
+        let clipboardText = '';
+        
+        // クリップボードからテキストを取得
+        if (window.__TAURI__ && window.__TAURI__.clipboard) {
+            clipboardText = await window.__TAURI__.clipboard.readText();
+            console.log('📋 Tauriクリップボードから読み込み:', clipboardText);
+        } else if (tauriInvoke) {
+            // フォールバック: Rustコマンドを使用
+            clipboardText = await tauriInvoke('read_clipboard');
+            console.log('📋 Rustコマンドでクリップボードから読み込み:', clipboardText);
+        } else {
+            // 最後の手段: navigator.clipboard
+            clipboardText = await navigator.clipboard.readText();
+            console.log('📋 navigator.clipboardで読み込み:', clipboardText);
+        }
+        
+        if (clipboardText) {
+            // 貼り付け位置を決定
+            let pasteStart, pasteEnd;
+            
+            if (lastOperationType === 'copy' && lastSelectionStart !== undefined && lastSelectionEnd !== undefined) {
+                // コピー後の貼り付け：元の選択範囲に貼り付け
+                pasteStart = lastSelectionStart;
+                pasteEnd = lastSelectionEnd;
+                console.log('📋 コピー後の貼り付け: 位置', pasteStart, 'から', pasteEnd, 'に貼り付け');
+            } else if (lastOperationType === 'cut' && lastSelectionStart !== undefined) {
+                // カット後の貼り付け：カット位置に貼り付け
+                pasteStart = lastSelectionStart;
+                pasteEnd = lastSelectionStart;
+                console.log('📋 カット後の貼り付け: 位置', pasteStart, 'に貼り付け');
+            } else {
+                // 通常の貼り付け：現在のカーソル位置または選択範囲
+                pasteStart = editor.selectionStart;
+                pasteEnd = editor.selectionEnd;
+                console.log('📋 通常の貼り付け: 位置', pasteStart, 'から', pasteEnd, 'に貼り付け');
+            }
+            
+            // テキストを挿入
+            const newValue = editor.value.substring(0, pasteStart) + clipboardText + editor.value.substring(pasteEnd);
+            editor.value = newValue;
+            
+            // カーソル位置を挿入したテキストの末尾に設定
+            const newCursorPosition = pasteStart + clipboardText.length;
+            editor.setSelectionRange(newCursorPosition, newCursorPosition);
+            
+            // 操作タイプをクリア
+            lastOperationType = null;
+            
+            // ペースト後の状態を履歴に保存
+            const afterPasteState = {
+                content: editor.value,
+                cursorPosition: newCursorPosition,
+                timestamp: Date.now()
+            };
+            
+            // 重複チェック：最後の履歴と同じでなければ追加
+            if (undoStack.length === 0 || undoStack[undoStack.length - 1].content !== afterPasteState.content) {
+                undoStack.push(afterPasteState);
+                
+                // スタックサイズの制限
+                if (undoStack.length > maxUndoStackSize) {
+                    undoStack.shift();
+                }
+                
+                console.log('ペースト後の状態を履歴に保存:', JSON.stringify(afterPasteState.content));
+                
+                // currentContentも更新
+                currentContent = afterPasteState.content;
+                
+                // リドゥスタックをクリア
+                redoStack = [];
+                
+                if (!isModified) {
+                    isModified = true;
+                }
+            }
+            
+            updateLineNumbers();
+            updateStatus();
+            
+            console.log('📋 貼り付け完了:', clipboardText.length + '文字');
+        } else {
+            console.log('📋 クリップボードが空です');
+        }
+        
+    } catch (error) {
+        console.error('📋 貼り付けに失敗:', error);
+        
+        // エラーが発生した場合、ブラウザのデフォルト動作にフォールバック
+        try {
+            document.execCommand('paste');
+            
+            // フォールバック用のペースト後状態確認
+            setTimeout(() => {
+                const afterPasteState = {
+                    content: editor.value,
+                    cursorPosition: editor.selectionStart,
+                    timestamp: Date.now()
+                };
+                
+                if (afterPasteState.content !== beforePasteState.content) {
+                    if (undoStack.length === 0 || undoStack[undoStack.length - 1].content !== afterPasteState.content) {
+                        undoStack.push(afterPasteState);
+                        
+                        if (undoStack.length > maxUndoStackSize) {
+                            undoStack.shift();
+                        }
+                        
+                        currentContent = afterPasteState.content;
+                        redoStack = [];
+                        
+                        if (!isModified) {
+                            isModified = true;
+                        }
+                    }
+                }
+                
+                updateLineNumbers();
+                updateStatus();
+            }, 10);
+            
+            console.log('📋 フォールバックの貼り付けを実行');
+        } catch (fallbackError) {
+            console.error('📋 フォールバックの貼り付けも失敗:', fallbackError);
+        }
+    }
+    
+    closeAllMenus();
+    hideContextMenu();
+    
+    // エディタにフォーカスを戻す
+    setTimeout(() => {
+        editor.focus();
+    }, 10);
+}
+
+function selectAll() {
+    editor.select();
+    closeAllMenus();
+    hideContextMenu();
+}
+
+// アプリ終了処理
+async function exitApp() {
+    if (exitApp.isRunning) {
+        return;
+    }
+    
+    exitApp.isRunning = true;
+    
+    try {
+        if (isModified) {
+            exitApp.isRunning = false;
+            
+            const choice = await showExitDialog();
+            
+            exitApp.isRunning = true;
+            
+            if (choice === 'saveAndExit') {
+                try {
+                    if (currentFilePath) {
+                        await saveFileBeforeExit();
+                        await tauriInvoke('exit_app');
+                    } else {
+                        const saveSuccess = await saveAsFileForExit();
+                        
+                        if (saveSuccess) {
+                            await tauriInvoke('exit_app');
+                        } else {
+                            exitApp.isRunning = false;
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    alert('保存に失敗しました: ' + error.message + '\n終了をキャンセルします。');
+                    exitApp.isRunning = false;
+                    return;
+                }
+            } else if (choice === 'exitWithoutSaving') {
+                await tauriInvoke('exit_app');
+            } else if (choice === 'cancel') {
+                exitApp.isRunning = false;
+                return;
+            }
+        } else {
+            await tauriInvoke('exit_app');
+        }
+    } catch (error) {
+        exitApp.isRunning = false;
+    }
+}
+
+async function saveFileBeforeExit() {
+    if (currentFilePath) {
+        if (window.__TAURI__ && window.__TAURI__.fs) {
+            await window.__TAURI__.fs.writeTextFile(currentFilePath, editor.value);
+        } else if (tauriInvoke) {
+            await tauriInvoke('write_file', { 
+                path: currentFilePath, 
+                content: editor.value 
+            });
+        } else {
+            throw new Error('Tauriアプリでのみ利用可能です');
+        }
+        
+        isModified = false;
+        currentContent = editor.value;
+    } else {
+        throw new Error('新規ファイルのため保存できません。先に「名前を付けて保存」を実行してください。');
+    }
+}
+
+async function saveAsFileForExit() {
+    try {
+        if (window.__TAURI__ && window.__TAURI__.dialog) {
+            const filePath = await window.__TAURI__.dialog.save({
+                title: "ファイルを保存",
+                filters: [
+                    { name: 'テキストファイル', extensions: ['txt'] },
+                    { name: 'Markdownファイル', extensions: ['md'] },
+                    { name: 'すべてのファイル', extensions: ['*'] }
+                ]
+            });
+            
+            if (filePath) {
+                if (window.__TAURI__ && window.__TAURI__.fs) {
+                    await window.__TAURI__.fs.writeTextFile(filePath, editor.value);
+                } else {
+                    await tauriInvoke('write_file', { 
+                        path: filePath, 
+                        content: editor.value 
+                    });
+                }
+                
+                currentFilePath = filePath;
+                isModified = false;
+                currentContent = editor.value;
+                
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            throw new Error('ファイル保存機能はTauriアプリでのみ利用可能です');
+        }
+    } catch (error) {
+        throw error;
+    }
+}
+
+// ダイアログ表示関数
+// ファイルを開く確認ダイアログを表示（キーボードナビゲーション対応版）
 async function showOpenFileDialog() {
     return new Promise((resolve) => {
         const dialogOverlay = document.createElement('div');
@@ -1535,15 +1586,108 @@ async function showOpenFileDialog() {
         dialogOverlay.appendChild(dialog);
         document.body.appendChild(dialogOverlay);
         
-        // ダイアログの共通処理を呼び出し
-        setupDialogNavigation(dialogOverlay, ['save-and-open-btn', 'open-without-saving-btn', 'cancel-open-btn'], 
-            ['saveAndOpen', 'openWithoutSaving', 'cancel'], resolve);
+        // ボタン要素を取得
+        const saveBtn = document.getElementById('save-and-open-btn');
+        const openBtn = document.getElementById('open-without-saving-btn');
+        const cancelBtn = document.getElementById('cancel-open-btn');
+        const buttons = [saveBtn, openBtn, cancelBtn];
+        
+        let currentButtonIndex = 2; // デフォルトで「キャンセル」を選択
+        
+        // フォーカススタイルを適用する関数
+        function updateFocus() {
+            buttons.forEach((btn, index) => {
+                if (index === currentButtonIndex) {
+                    btn.style.boxShadow = '0 0 0 2px #0078d4';
+                    btn.style.outline = '2px solid #0078d4';
+                    btn.focus();
+                } else {
+                    btn.style.boxShadow = 'none';
+                    btn.style.outline = 'none';
+                }
+            });
+        }
+        
+        // 初期フォーカスを設定
+        updateFocus();
+        
+        // ダイアログ終了処理
+        function closeDialog(choice) {
+            document.body.removeChild(dialogOverlay);
+            document.removeEventListener('keydown', handleDialogKeyDown);
+            setTimeout(() => editor.focus(), 0);
+            resolve(choice);
+        }
+        
+        // キーボードイベントハンドラー
+        function handleDialogKeyDown(e) {
+            switch (e.key) {
+                case 'ArrowLeft':
+                case 'ArrowUp':
+                    e.preventDefault();
+                    currentButtonIndex = (currentButtonIndex - 1 + buttons.length) % buttons.length;
+                    updateFocus();
+                    break;
+                    
+                case 'ArrowRight':
+                case 'ArrowDown':
+                case 'Tab':
+                    e.preventDefault();
+                    if (e.shiftKey && e.key === 'Tab') {
+                        // Shift+Tab で逆方向
+                        currentButtonIndex = (currentButtonIndex - 1 + buttons.length) % buttons.length;
+                    } else {
+                        // Tab / 矢印キーで順方向
+                        currentButtonIndex = (currentButtonIndex + 1) % buttons.length;
+                    }
+                    updateFocus();
+                    break;
+                    
+                case 'Enter':
+                case ' ': // スペースキー
+                    e.preventDefault();
+                    if (currentButtonIndex === 0) {
+                        closeDialog('saveAndOpen');
+                    } else if (currentButtonIndex === 1) {
+                        closeDialog('openWithoutSaving');
+                    } else if (currentButtonIndex === 2) {
+                        closeDialog('cancel');
+                    }
+                    break;
+                    
+                case 'Escape':
+                    e.preventDefault();
+                    closeDialog('cancel');
+                    break;
+            }
+        }
+        
+        // ボタンクリックイベントの設定
+        saveBtn.addEventListener('click', () => closeDialog('saveAndOpen'));
+        openBtn.addEventListener('click', () => closeDialog('openWithoutSaving'));
+        cancelBtn.addEventListener('click', () => closeDialog('cancel'));
+        
+        // マウスホバーでフォーカス更新
+        buttons.forEach((btn, index) => {
+            btn.addEventListener('mouseenter', () => {
+                currentButtonIndex = index;
+                updateFocus();
+            });
+        });
+        
+        // キーボードイベントリスナーを追加
+        document.addEventListener('keydown', handleDialogKeyDown);
+        
+        // オーバーレイクリックでキャンセル
+        dialogOverlay.addEventListener('click', (e) => {
+            if (e.target === dialogOverlay) {
+                closeDialog('cancel');
+            }
+        });
     });
 }
 
-/**
- * 終了確認ダイアログを表示（キーボードナビゲーション対応）
- */
+// 終了確認ダイアログを表示（キーボードナビゲーション対応版）
 async function showExitDialog() {
     return new Promise((resolve) => {
         const dialogOverlay = document.createElement('div');
@@ -1617,127 +1761,103 @@ async function showExitDialog() {
         dialogOverlay.appendChild(dialog);
         document.body.appendChild(dialogOverlay);
         
-        // ダイアログの共通処理を呼び出し
-        setupDialogNavigation(dialogOverlay, ['save-and-exit-btn', 'exit-without-saving-btn', 'cancel-exit-btn'], 
-            ['saveAndExit', 'exitWithoutSaving', 'cancel'], resolve);
-    });
-}
-
-/**
- * ダイアログの共通キーボードナビゲーション処理
- */
-function setupDialogNavigation(dialogOverlay, buttonIds, returnValues, resolve) {
-    const buttons = buttonIds.map(id => document.getElementById(id));
-    let currentButtonIndex = 2; // デフォルトで「キャンセル」を選択
-    
-    // フォーカススタイルを適用する関数
-    function updateFocus() {
+        // ボタン要素を取得
+        const saveBtn = document.getElementById('save-and-exit-btn');
+        const exitBtn = document.getElementById('exit-without-saving-btn');
+        const cancelBtn = document.getElementById('cancel-exit-btn');
+        const buttons = [saveBtn, exitBtn, cancelBtn];
+        
+        let currentButtonIndex = 2; // デフォルトで「キャンセル」を選択
+        
+        // フォーカススタイルを適用する関数
+        function updateFocus() {
+            buttons.forEach((btn, index) => {
+                if (index === currentButtonIndex) {
+                    btn.style.boxShadow = '0 0 0 2px #0078d4';
+                    btn.style.outline = '2px solid #0078d4';
+                    btn.focus();
+                } else {
+                    btn.style.boxShadow = 'none';
+                    btn.style.outline = 'none';
+                }
+            });
+        }
+        
+        // 初期フォーカスを設定
+        updateFocus();
+        
+        // ダイアログ終了処理
+        function closeDialog(choice) {
+            document.body.removeChild(dialogOverlay);
+            document.removeEventListener('keydown', handleDialogKeyDown);
+            setTimeout(() => editor.focus(), 0);
+            resolve(choice);
+        }
+        
+        // キーボードイベントハンドラー
+        function handleDialogKeyDown(e) {
+            switch (e.key) {
+                case 'ArrowLeft':
+                case 'ArrowUp':
+                    e.preventDefault();
+                    currentButtonIndex = (currentButtonIndex - 1 + buttons.length) % buttons.length;
+                    updateFocus();
+                    break;
+                    
+                case 'ArrowRight':
+                case 'ArrowDown':
+                case 'Tab':
+                    e.preventDefault();
+                    if (e.shiftKey && e.key === 'Tab') {
+                        // Shift+Tab で逆方向
+                        currentButtonIndex = (currentButtonIndex - 1 + buttons.length) % buttons.length;
+                    } else {
+                        // Tab / 矢印キーで順方向
+                        currentButtonIndex = (currentButtonIndex + 1) % buttons.length;
+                    }
+                    updateFocus();
+                    break;
+                    
+                case 'Enter':
+                case ' ': // スペースキー
+                    e.preventDefault();
+                    if (currentButtonIndex === 0) {
+                        closeDialog('saveAndExit');
+                    } else if (currentButtonIndex === 1) {
+                        closeDialog('exitWithoutSaving');
+                    } else if (currentButtonIndex === 2) {
+                        closeDialog('cancel');
+                    }
+                    break;
+                    
+                case 'Escape':
+                    e.preventDefault();
+                    closeDialog('cancel');
+                    break;
+            }
+        }
+        
+        // ボタンクリックイベントの設定
+        saveBtn.addEventListener('click', () => closeDialog('saveAndExit'));
+        exitBtn.addEventListener('click', () => closeDialog('exitWithoutSaving'));
+        cancelBtn.addEventListener('click', () => closeDialog('cancel'));
+        
+        // マウスホバーでフォーカス更新
         buttons.forEach((btn, index) => {
-            if (index === currentButtonIndex) {
-                btn.style.boxShadow = '0 0 0 2px #0078d4';
-                btn.style.outline = '2px solid #0078d4';
-                btn.focus();
-            } else {
-                btn.style.boxShadow = 'none';
-                btn.style.outline = 'none';
+            btn.addEventListener('mouseenter', () => {
+                currentButtonIndex = index;
+                updateFocus();
+            });
+        });
+        
+        // キーボードイベントリスナーを追加
+        document.addEventListener('keydown', handleDialogKeyDown);
+        
+        // オーバーレイクリックでキャンセル
+        dialogOverlay.addEventListener('click', (e) => {
+            if (e.target === dialogOverlay) {
+                closeDialog('cancel');
             }
         });
-    }
-    
-    // 初期フォーカスを設定
-    updateFocus();
-    
-    // ダイアログ終了処理
-    function closeDialog(choice) {
-        document.body.removeChild(dialogOverlay);
-        document.removeEventListener('keydown', handleDialogKeyDown);
-        setTimeout(() => editor.focus(), 0);
-        resolve(choice);
-    }
-    
-    // キーボードイベントハンドラー
-    function handleDialogKeyDown(e) {
-        switch (e.key) {
-            case 'ArrowLeft':
-            case 'ArrowUp':
-                e.preventDefault();
-                currentButtonIndex = (currentButtonIndex - 1 + buttons.length) % buttons.length;
-                updateFocus();
-                break;
-                
-            case 'ArrowRight':
-            case 'ArrowDown':
-            case 'Tab':
-                e.preventDefault();
-                if (e.shiftKey && e.key === 'Tab') {
-                    currentButtonIndex = (currentButtonIndex - 1 + buttons.length) % buttons.length;
-                } else {
-                    currentButtonIndex = (currentButtonIndex + 1) % buttons.length;
-                }
-                updateFocus();
-                break;
-                
-            case 'Enter':
-            case ' ':
-                e.preventDefault();
-                closeDialog(returnValues[currentButtonIndex]);
-                break;
-                
-            case 'Escape':
-                e.preventDefault();
-                closeDialog('cancel');
-                break;
-        }
-    }
-    
-    // ボタンクリックイベントの設定
-    buttons.forEach((btn, index) => {
-        btn.addEventListener('click', () => closeDialog(returnValues[index]));
-    });
-    
-    // マウスホバーでフォーカス更新
-    buttons.forEach((btn, index) => {
-        btn.addEventListener('mouseenter', () => {
-            currentButtonIndex = index;
-            updateFocus();
-        });
-    });
-    
-    // キーボードイベントリスナーを追加
-    document.addEventListener('keydown', handleDialogKeyDown);
-    
-    // オーバーレイクリックでキャンセル
-    dialogOverlay.addEventListener('click', (e) => {
-        if (e.target === dialogOverlay) {
-            closeDialog('cancel');
-        }
     });
 }
-
-// =====================================================
-// 使用されていない関数のクリーンアップ完了
-// 
-// 削除された不要な関数:
-// - menuUndo, menuRedo, menuCut, menuCopy, menuPaste, menuSelectAll
-//   (直接undo(), redo()等を呼び出すため不要)
-// - hideContextMenu (コンテキストメニュー未実装のため不要)
-// - read_file_content, write_file_content (重複のため削除)
-// 
-// 整理されたコード構造:
-// 1. グローバル変数定義
-// 2. アプリケーション初期化
-// 3. イベントリスナー設定
-// 4. IME処理
-// 5. テキスト入力処理
-// 6. キーボードショートカット処理
-// 7. アンドゥ・リドゥ機能
-// 8. UI更新機能
-// 9. メニュー制御
-// 10. ファイル操作
-// 11. 編集操作（コピー・切り取り・貼り付け）
-// 12. アプリケーション終了処理
-// 13. 確認ダイアログ表示
-// 
-// 共通化された機能:
-// - setupDialogNavigation関数でダイアログの重複コードを統合
-// =====================================================
