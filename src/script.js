@@ -248,6 +248,10 @@ function handleInput(e) {
  * キーボードイベントの処理
  * 各種ショートカットキーを処理する
  */
+/**
+ * キーボードイベントの処理（最小限修正版）
+ * 元のコードに preventDefault() を追加するだけの安全な修正
+ */
 async function handleKeydown(e) {
     // アプリ終了ショートカット (Ctrl/Cmd+Q, Ctrl/Cmd+W)
     if ((e.metaKey || e.ctrlKey) && (e.key === 'q' || e.key === 'w')) {
@@ -350,20 +354,24 @@ async function handleKeydown(e) {
         return;
     }
     
-    // コピー (Ctrl/Cmd+C)
+    // ===== 重要：ここが修正箇所 =====
+    // コピー (Ctrl/Cmd+C) - preventDefault() 追加
     if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
+        e.preventDefault(); // ← この行を追加
         copy();
         return;
     }
     
-    // 切り取り (Ctrl/Cmd+X)
+    // 切り取り (Ctrl/Cmd+X) - preventDefault() 追加
     if ((e.metaKey || e.ctrlKey) && e.key === 'x') {
+        e.preventDefault(); // ← この行を追加
         cut();
         return;
     }
     
-    // 貼り付け (Ctrl/Cmd+V)
+    // 貼り付け (Ctrl/Cmd+V) - preventDefault() 追加
     if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+        e.preventDefault(); // ← この行を追加
         paste();
         return;
     }
