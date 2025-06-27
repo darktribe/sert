@@ -34,23 +34,15 @@ async function initializeTauri() {
                     console.log('🚪 Window close requested via X button');
                     event.preventDefault();
                     
-                    // フラグをリセットして確実に実行
-                    if (exitApp.isRunning) {
-                        console.log('⚠️ exitApp already running, resetting flag');
-                        exitApp.isRunning = false;
+                    // 直接exitAppを呼び出し（フラグ管理や遅延を削除）
+                    try {
+                        console.log('🚪 Calling exitApp from window close event');
+                        await exitApp();
+                    } catch (error) {
+                        console.error('❌ Window close exitApp failed:', error);
+                        // エラー時は強制終了
+                        await currentWindow.close();
                     }
-                    
-                    // 少し遅延させてダイアログを確実に表示
-                    setTimeout(async () => {
-                        try {
-                            console.log('🚪 Calling exitApp from window close event');
-                            await exitApp();
-                        } catch (error) {
-                            console.error('❌ Window close exitApp failed:', error);
-                            // エラー時は強制終了
-                            await currentWindow.close();
-                        }
-                    }, 100);
                 });
                 console.log('Window close handler set up');
             }

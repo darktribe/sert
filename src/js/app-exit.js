@@ -16,30 +16,31 @@ import {
 import { showExitDialog } from './dialog-utils.js';
 import { updateWindowTitle } from './ui-updater.js';
 
+// グローバルフラグを削除し、ローカル変数で管理
+let isExitInProgress = false;
+
 /**
  * アプリケーション終了
  * 変更がある場合は保存確認ダイアログを表示
  */
 export async function exitApp() {
-    console.log('🚪 exitApp called, isRunning:', exitApp.isRunning);
+    console.log('🚪 exitApp called, isExitInProgress:', isExitInProgress);
     
-    if (exitApp.isRunning) {
-        console.log('⚠️ exitApp already running, ignoring duplicate call');
+    // 既に終了処理中の場合は無視
+    if (isExitInProgress) {
+        console.log('⚠️ Exit already in progress, ignoring call');
         return;
     }
     
-    exitApp.isRunning = true;
-    console.log('🚪 exitApp execution started');
+    isExitInProgress = true;
+    console.log('🚪 Exit process started');
     
     try {
         if (isModified) {
             console.log('📝 File is modified, showing exit dialog');
-            exitApp.isRunning = false; // ダイアログ表示前にフラグをリセット
             
             const choice = await showExitDialog();
             console.log('🚪 Exit dialog choice:', choice);
-            
-            exitApp.isRunning = true; // ダイアログ完了後に再設定
             
             if (choice === 'saveAndExit') {
                 try {
@@ -57,14 +58,14 @@ export async function exitApp() {
                             await tauriInvoke('exit_app');
                         } else {
                             console.log('❌ Save cancelled, exit cancelled');
-                            exitApp.isRunning = false;
+                            isExitInProgress = false;
                             return;
                         }
                     }
                 } catch (error) {
                     console.error('❌ Save before exit failed:', error);
                     alert('保存に失敗しました: ' + error.message + '\n終了をキャンセルします。');
-                    exitApp.isRunning = false;
+                    isExitInProgress = false;
                     return;
                 }
             } else if (choice === 'exitWithoutSaving') {
@@ -72,7 +73,7 @@ export async function exitApp() {
                 await tauriInvoke('exit_app');
             } else if (choice === 'cancel') {
                 console.log('❌ Exit cancelled by user');
-                exitApp.isRunning = false;
+                isExitInProgress = false;
                 return;
             }
         } else {
@@ -81,7 +82,7 @@ export async function exitApp() {
         }
     } catch (error) {
         console.error('❌ exitApp error:', error);
-        exitApp.isRunning = false;
+        isExitInProgress = false;
         
         // エラー時はウィンドウを強制クローズ
         try {
