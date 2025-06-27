@@ -175,6 +175,8 @@ export async function showOpenFileDialog() {
  */
 export async function showExitDialog() {
     return new Promise((resolve) => {
+        console.log('🚪 Creating exit dialog...');
+        
         const dialogOverlay = document.createElement('div');
         dialogOverlay.id = 'exit-dialog-overlay';
         dialogOverlay.style.cssText = `
@@ -246,6 +248,22 @@ export async function showExitDialog() {
         dialogOverlay.appendChild(dialog);
         document.body.appendChild(dialogOverlay);
         
+        console.log('🚪 Exit dialog added to DOM');
+        
+        // フォーカスを確実に設定
+        setTimeout(() => {
+            try {
+                console.log('🚪 Setting focus to dialog...');
+                const cancelBtn = document.getElementById('cancel-exit-btn');
+                if (cancelBtn) {
+                    cancelBtn.focus();
+                    console.log('✅ Dialog focus set to cancel button');
+                }
+            } catch (focusError) {
+                console.error('❌ Dialog focus failed:', focusError);
+            }
+        }, 100);
+        
         // ダイアログの共通処理を呼び出し
         setupDialogNavigation(dialogOverlay, ['save-and-exit-btn', 'exit-without-saving-btn', 'cancel-exit-btn'], 
             ['saveAndExit', 'exitWithoutSaving', 'cancel'], resolve);
@@ -256,36 +274,64 @@ export async function showExitDialog() {
  * ダイアログの共通キーボードナビゲーション処理
  */
 function setupDialogNavigation(dialogOverlay, buttonIds, returnValues, resolve) {
+    console.log('🚪 Setting up dialog navigation...');
+    
     const buttons = buttonIds.map(id => document.getElementById(id));
     let currentButtonIndex = 2; // デフォルトで「キャンセル」を選択
+    
+    console.log('🚪 Dialog buttons found:', buttons.length);
     
     // フォーカススタイルを適用する関数
     function updateFocus() {
         buttons.forEach((btn, index) => {
-            if (index === currentButtonIndex) {
-                btn.style.boxShadow = '0 0 0 2px #0078d4';
-                btn.style.outline = '2px solid #0078d4';
-                btn.focus();
-            } else {
-                btn.style.boxShadow = 'none';
-                btn.style.outline = 'none';
+            if (btn) {
+                if (index === currentButtonIndex) {
+                    btn.style.boxShadow = '0 0 0 2px #0078d4';
+                    btn.style.outline = '2px solid #0078d4';
+                    btn.focus();
+                    console.log(`🚪 Focus set to button ${index}: ${btn.textContent}`);
+                } else {
+                    btn.style.boxShadow = 'none';
+                    btn.style.outline = 'none';
+                }
             }
         });
     }
     
-    // 初期フォーカスを設定
-    updateFocus();
+    // 初期フォーカスを設定（少し遅延させる）
+    setTimeout(() => {
+        updateFocus();
+        console.log('🚪 Initial focus set');
+    }, 150);
     
     // ダイアログ終了処理
     function closeDialog(choice) {
-        document.body.removeChild(dialogOverlay);
-        document.removeEventListener('keydown', handleDialogKeyDown);
-        setTimeout(() => editor.focus(), 0);
-        resolve(choice);
+        console.log('🚪 Closing dialog with choice:', choice);
+        
+        try {
+            document.body.removeChild(dialogOverlay);
+            document.removeEventListener('keydown', handleDialogKeyDown);
+            
+            // エディタにフォーカスを戻す
+            setTimeout(() => {
+                if (editor && editor.focus) {
+                    editor.focus();
+                    console.log('🚪 Focus returned to editor');
+                }
+            }, 100);
+            
+            resolve(choice);
+            console.log('🚪 Dialog resolved with:', choice);
+        } catch (closeError) {
+            console.error('❌ Dialog close error:', closeError);
+            resolve('cancel'); // エラー時はキャンセル扱い
+        }
     }
     
     // キーボードイベントハンドラー
     function handleDialogKeyDown(e) {
+        console.log('🚪 Dialog key pressed:', e.key);
+        
         switch (e.key) {
             case 'ArrowLeft':
             case 'ArrowUp':
@@ -309,11 +355,13 @@ function setupDialogNavigation(dialogOverlay, buttonIds, returnValues, resolve) 
             case 'Enter':
             case ' ':
                 e.preventDefault();
+                console.log('🚪 Enter/Space pressed, choice:', returnValues[currentButtonIndex]);
                 closeDialog(returnValues[currentButtonIndex]);
                 break;
                 
             case 'Escape':
                 e.preventDefault();
+                console.log('🚪 Escape pressed, cancelling');
                 closeDialog('cancel');
                 break;
         }
@@ -321,24 +369,35 @@ function setupDialogNavigation(dialogOverlay, buttonIds, returnValues, resolve) 
     
     // ボタンクリックイベントの設定
     buttons.forEach((btn, index) => {
-        btn.addEventListener('click', () => closeDialog(returnValues[index]));
+        if (btn) {
+            btn.addEventListener('click', () => {
+                console.log('🚪 Button clicked:', btn.textContent, returnValues[index]);
+                closeDialog(returnValues[index]);
+            });
+        }
     });
     
     // マウスホバーでフォーカス更新
     buttons.forEach((btn, index) => {
-        btn.addEventListener('mouseenter', () => {
-            currentButtonIndex = index;
-            updateFocus();
-        });
+        if (btn) {
+            btn.addEventListener('mouseenter', () => {
+                currentButtonIndex = index;
+                updateFocus();
+            });
+        }
     });
     
     // キーボードイベントリスナーを追加
     document.addEventListener('keydown', handleDialogKeyDown);
+    console.log('🚪 Keyboard event listener added');
     
     // オーバーレイクリックでキャンセル
     dialogOverlay.addEventListener('click', (e) => {
         if (e.target === dialogOverlay) {
+            console.log('🚪 Overlay clicked, cancelling');
             closeDialog('cancel');
         }
     });
+    
+    console.log('🚪 Dialog navigation setup complete');
 }

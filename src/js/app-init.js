@@ -6,7 +6,7 @@
 
 import { setEditor, setCurrentContent, setTauriInvoke } from './globals.js';
 import { initializeUndoStack } from './undo-redo.js';
-import { updateLineNumbers, updateStatus } from './ui-updater.js';
+import { updateLineNumbers, updateStatus, updateWindowTitle } from './ui-updater.js';
 import { setupEventListeners } from './event-listeners.js';
 import { exitApp } from './app-exit.js';
 
@@ -31,8 +31,26 @@ async function initializeTauri() {
                 const currentWindow = getCurrentWindow();
                 
                 await currentWindow.onCloseRequested(async (event) => {
+                    console.log('🚪 Window close requested via X button');
                     event.preventDefault();
-                    await exitApp();
+                    
+                    // フラグをリセットして確実に実行
+                    if (exitApp.isRunning) {
+                        console.log('⚠️ exitApp already running, resetting flag');
+                        exitApp.isRunning = false;
+                    }
+                    
+                    // 少し遅延させてダイアログを確実に表示
+                    setTimeout(async () => {
+                        try {
+                            console.log('🚪 Calling exitApp from window close event');
+                            await exitApp();
+                        } catch (error) {
+                            console.error('❌ Window close exitApp failed:', error);
+                            // エラー時は強制終了
+                            await currentWindow.close();
+                        }
+                    }, 100);
                 });
                 console.log('Window close handler set up');
             }
@@ -41,6 +59,7 @@ async function initializeTauri() {
             console.log('Tauri.fs available:', !!window.__TAURI__.fs);
             console.log('Tauri.dialog available:', !!window.__TAURI__.dialog);
             console.log('Tauri.clipboard available:', !!window.__TAURI__.clipboard);
+            console.log('Tauri.window available:', !!window.__TAURI__.window);
             
         } else {
             console.log('Tauri core not available');
@@ -77,6 +96,10 @@ export async function initializeApp() {
     // 初期UI更新
     updateLineNumbers();
     updateStatus();
+    
+    // 初期タイトル設定を追加
+    console.log('🏷️ Setting initial window title...');
+    await updateWindowTitle();
     
     // カーソルを1行目1列目に設定
     editorElement.setSelectionRange(0, 0);

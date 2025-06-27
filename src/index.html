@@ -19,7 +19,7 @@
                 <div class="dropdown-menu" id="file-menu">
                     <div class="menu-option" onclick="newFile()">新規作成</div>
                     <div class="menu-option" onclick="openFile()">開く</div>
-                    <div class="menu-option" onclick="saveFile()">上書き保存</div>
+                    <div class="menu-option" onclick="console.log('💾 Save menu clicked'); if(typeof saveFile === 'function') { saveFile(); } else { console.error('❌ saveFile not found!', typeof saveFile); }">上書き保存</div>
                     <div class="menu-option" onclick="saveAsFile()">名前を付けて保存</div>
                     <div class="menu-separator"></div>
                     <div class="menu-option" onclick="exitApp()">終了</div>
@@ -72,28 +72,38 @@
 
     <!-- =====================================================
          JavaScript初期化
-         Tauriの読み込み確認後にメインスクリプトを実行
+         メインスクリプトを直接読み込み、グローバル関数を確実に登録
          ===================================================== -->
+    <script type="module" src="main.js"></script>
+    
+    <!-- フォールバック用のグローバル関数チェック -->
     <script>
-        console.log('HTML loaded, checking for Tauri...');
-        console.log('window.__TAURI__ at load time:', typeof window.__TAURI__);
-        
-        // Tauriが読み込まれるまで少し待つ
-        let checkCount = 0;
-        const checkTauri = () => {
-            checkCount++;
-            console.log(`Tauri check ${checkCount}: ${typeof window.__TAURI__}`);
-            if (window.__TAURI__ || checkCount >= 10) {
-                console.log('Loading main script...');
-                const script = document.createElement('script');
-                script.type = 'module';
-                script.src = 'main.js';
-                document.head.appendChild(script);
+        // メニューがクリックされた時のデバッグ関数
+        window.debugSave = function() {
+            console.log('🔍 Debug: saveFile function check');
+            console.log('typeof window.saveFile:', typeof window.saveFile);
+            if (typeof window.saveFile === 'function') {
+                console.log('✅ saveFile function found, calling it...');
+                window.saveFile();
             } else {
-                setTimeout(checkTauri, 100);
+                console.error('❌ saveFile function not found!');
+                console.log('Available window functions:', Object.keys(window).filter(key => key.includes('File')));
             }
         };
-        checkTauri();
+        
+        // DOMContentLoaded後にグローバル関数の存在確認
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                console.log('🔍 Final global function check:');
+                console.log('window.saveFile:', typeof window.saveFile);
+                console.log('window.newFile:', typeof window.newFile);
+                console.log('window.openFile:', typeof window.openFile);
+                
+                if (typeof window.saveFile !== 'function') {
+                    console.error('❌ Critical: saveFile not registered as global function!');
+                }
+            }, 2000);
+        });
     </script>
 </body>
 </html>

@@ -17,7 +17,7 @@ import {
     tauriInvoke
 } from './globals.js';
 import { initializeUndoStack } from './undo-redo.js';
-import { updateLineNumbers, updateStatus } from './ui-updater.js';
+import { updateLineNumbers, updateStatus, updateWindowTitle } from './ui-updater.js';
 import { closeAllMenus } from './menu-controller.js';
 import { showNewFileDialog, showOpenFileDialog } from './dialog-utils.js';
 
@@ -26,6 +26,8 @@ import { showNewFileDialog, showOpenFileDialog } from './dialog-utils.js';
  * 変更がある場合は保存確認ダイアログを表示
  */
 export async function newFile() {
+    console.log('📄 Starting new file creation...');
+    
     // 変更がある場合の確認
     if (isModified) {
         const choice = await showNewFileDialog();
@@ -71,11 +73,16 @@ export async function newFile() {
     updateLineNumbers();
     updateStatus();
     
+    // タイトル更新を追加
+    console.log('🏷️ Updating title for new file...');
+    await updateWindowTitle();
+    
     // カーソルを1行目1列目に設定
     editor.setSelectionRange(0, 0);
     editor.focus();
     
     closeAllMenus();
+    console.log('✅ New file creation completed');
 }
 
 /**
@@ -84,7 +91,7 @@ export async function newFile() {
  */
 export async function openFile() {
     try {
-        console.log('Opening file, isModified:', isModified);
+        console.log('📂 Opening file, isModified:', isModified);
         
         if (isModified) {
             console.log('File is modified, showing dialog');
@@ -140,6 +147,8 @@ async function showFileOpenDialog() {
         });
         
         if (filePath) {
+            console.log('📂 Opening file:', filePath);
+            
             let content;
             if (window.__TAURI__ && window.__TAURI__.fs) {
                 content = await window.__TAURI__.fs.readTextFile(filePath);
@@ -161,6 +170,12 @@ async function showFileOpenDialog() {
             initializeUndoStack();
             updateLineNumbers();
             updateStatus();
+            
+            // タイトル更新を追加
+            console.log('🏷️ Updating title for opened file...');
+            await updateWindowTitle();
+            
+            console.log('✅ File opened successfully:', filePath);
         }
     } else {
         alert('ファイルオープン機能はTauriアプリでのみ利用可能です');
@@ -171,7 +186,7 @@ async function showFileOpenDialog() {
  * ファイル保存
  */
 export async function saveFile() {
-    console.log('saveFile called');
+    console.log('💾 saveFile called');
     console.log('currentFilePath:', currentFilePath);
     console.log('isModified:', isModified);
     
@@ -218,7 +233,7 @@ export async function saveFile() {
  * 名前を付けて保存
  */
 export async function saveAsFile() {
-    console.log('saveAsFile called');
+    console.log('💾 saveAsFile called');
     
     try {
         if (window.__TAURI__ && window.__TAURI__.dialog) {
@@ -259,6 +274,11 @@ export async function saveAsFile() {
                 setCurrentFilePath(filePath);
                 setIsModified(false);
                 setCurrentContent(editor.value);
+                
+                // タイトル更新を追加
+                console.log('🏷️ Updating title for saved file...');
+                await updateWindowTitle();
+                
                 console.log('SaveAs completed, currentFilePath set to:', filePath);
             } else {
                 console.log('User cancelled save dialog');
@@ -327,6 +347,10 @@ async function saveAsFileForNew() {
                 setIsModified(false);
                 setCurrentContent(editor.value);
                 
+                // タイトル更新を追加
+                console.log('🏷️ Updating title for file saved before new...');
+                await updateWindowTitle();
+                
                 return true; // 保存成功
             } else {
                 return false; // 保存キャンセル
@@ -390,6 +414,10 @@ async function saveAsFileForOpen() {
                 setCurrentFilePath(filePath);
                 setIsModified(false);
                 setCurrentContent(editor.value);
+                
+                // タイトル更新を追加
+                console.log('🏷️ Updating title for file saved before open...');
+                await updateWindowTitle();
                 
                 return true;
             } else {
