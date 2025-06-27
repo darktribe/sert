@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sert Editor</title>
+    <title>Sert - Simple Editor</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -38,6 +38,15 @@
                     <div class="menu-option" onclick="paste()">貼り付け</div>
                     <div class="menu-separator"></div>
                     <div class="menu-option" onclick="selectAll()">すべて選択</div>
+                </div>
+            </div>
+
+            <!-- 検索メニュー -->
+            <div class="menu-item" onclick="toggleMenu('search-menu')">
+                検索
+                <div class="dropdown-menu" id="search-menu">
+                    <div class="menu-option" onclick="showSearchDialog()">検索</div>
+                    <div class="menu-option" onclick="showReplaceDialog()">置換</div>
                 </div>
             </div>
         </div>
@@ -98,6 +107,8 @@
                 console.log('window.saveFile:', typeof window.saveFile);
                 console.log('window.newFile:', typeof window.newFile);
                 console.log('window.openFile:', typeof window.openFile);
+                console.log('window.showSearchDialog:', typeof window.showSearchDialog);
+                console.log('window.showReplaceDialog:', typeof window.showReplaceDialog);
                 
                 if (typeof window.saveFile !== 'function') {
                     console.error('❌ Critical: saveFile not registered as global function!');

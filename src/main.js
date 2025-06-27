@@ -9,6 +9,7 @@ import { toggleMenu } from './js/menu-controller.js';
 import { newFile, openFile, saveFile, saveAsFile } from './js/file-operations.js';
 import { undo, redo } from './js/undo-redo.js';
 import { copy, cut, paste, selectAll } from './js/edit-operations.js';
+import { showSearchDialog, showReplaceDialog, findNext, findPrevious } from './js/search-replace.js';
 import { exitApp } from './js/app-exit.js';
 
 // グローバル関数をウィンドウオブジェクトに登録（HTMLから呼び出せるようにするため）
@@ -25,6 +26,8 @@ window.copy = copy;
 window.cut = cut;
 window.paste = paste;
 window.selectAll = selectAll;
+window.showSearchDialog = showSearchDialog;
+window.showReplaceDialog = showReplaceDialog;
 window.exitApp = exitApp;
 
 // グローバル関数の登録確認とデバッグ
@@ -40,6 +43,8 @@ console.log('window.copy:', typeof window.copy);
 console.log('window.cut:', typeof window.cut);
 console.log('window.paste:', typeof window.paste);
 console.log('window.selectAll:', typeof window.selectAll);
+console.log('window.showSearchDialog:', typeof window.showSearchDialog);
+console.log('window.showReplaceDialog:', typeof window.showReplaceDialog);
 console.log('window.exitApp:', typeof window.exitApp);
 
 // 保存機能のテスト用デバッグ関数を追加
@@ -54,6 +59,18 @@ window.testSaveFile = async function() {
     }
 };
 
+// 検索機能のテスト用デバッグ関数を追加
+window.testSearchDialog = function() {
+    console.log('🧪 Testing search dialog function...');
+    console.log('showSearchDialog function:', window.showSearchDialog);
+    try {
+        window.showSearchDialog();
+        console.log('✅ showSearchDialog test completed');
+    } catch (error) {
+        console.error('❌ showSearchDialog test failed:', error);
+    }
+};
+
 /**
  * ページ読み込み時の初期化処理
  */
@@ -62,6 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // グローバル関数が正しく登録されているかさらに確認
     console.log('🔍 Final check - window.saveFile:', typeof window.saveFile);
+    console.log('🔍 Final check - window.showSearchDialog:', typeof window.showSearchDialog);
     
     await initializeApp();
     
@@ -69,6 +87,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('- window.saveFile():', typeof window.saveFile);
     console.log('- window.newFile():', typeof window.newFile);
     console.log('- window.openFile():', typeof window.openFile);
+    console.log('- window.showSearchDialog():', typeof window.showSearchDialog);
+    console.log('- window.showReplaceDialog():', typeof window.showReplaceDialog);
 });
 
 /**
@@ -78,11 +98,13 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', async () => {
         console.log('📄 DOM loaded via readyState check...');
         console.log('🔍 Backup check - window.saveFile:', typeof window.saveFile);
+        console.log('🔍 Backup check - window.showSearchDialog:', typeof window.showSearchDialog);
         await initializeApp();
     });
 } else {
     console.log('📄 DOM already loaded, initializing immediately...');
     console.log('🔍 Immediate check - window.saveFile:', typeof window.saveFile);
+    console.log('🔍 Immediate check - window.showSearchDialog:', typeof window.showSearchDialog);
     initializeApp();
 }
 
@@ -94,6 +116,9 @@ setTimeout(() => {
     window.newFile = newFile;
     window.openFile = openFile;
     window.saveAsFile = saveAsFile;
+    window.showSearchDialog = showSearchDialog;
+    window.showReplaceDialog = showReplaceDialog;
     
     console.log('✅ Fallback registration complete - window.saveFile:', typeof window.saveFile);
+    console.log('✅ Fallback registration complete - window.showSearchDialog:', typeof window.showSearchDialog);
 }, 1000);

@@ -9,6 +9,7 @@ import { exitApp } from './app-exit.js';
 import { saveFile, newFile, openFile, saveAsFile } from './file-operations.js';
 import { undo, redo } from './undo-redo.js';
 import { selectAll, copy, cut, paste } from './edit-operations.js';
+import { showSearchDialog, showReplaceDialog, findNext, findPrevious } from './search-replace.js';
 import { updateStatus } from './ui-updater.js';
 
 /**
@@ -55,6 +56,38 @@ export async function handleKeydown(e) {
         e.preventDefault();
         console.log('Undo shortcut pressed');
         undo();
+        return;
+    }
+    
+    // 検索 (Ctrl/Cmd+F)
+    if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+        e.preventDefault();
+        console.log('Search shortcut pressed');
+        showSearchDialog();
+        return;
+    }
+    
+    // 置換 (Ctrl/Cmd+H)
+    if ((e.metaKey || e.ctrlKey) && e.key === 'h') {
+        e.preventDefault();
+        console.log('Replace shortcut pressed');
+        showReplaceDialog();
+        return;
+    }
+    
+    // 次を検索 (F3 または Ctrl/Cmd+G)
+    if (e.key === 'F3' || ((e.metaKey || e.ctrlKey) && e.key === 'g' && !e.shiftKey)) {
+        e.preventDefault();
+        console.log('Find next shortcut pressed');
+        findNext();
+        return;
+    }
+    
+    // 前を検索 (Shift+F3 または Ctrl/Cmd+Shift+G)
+    if ((e.key === 'F3' && e.shiftKey) || ((e.metaKey || e.ctrlKey) && e.key === 'g' && e.shiftKey)) {
+        e.preventDefault();
+        console.log('Find previous shortcut pressed');
+        findPrevious();
         return;
     }
     
