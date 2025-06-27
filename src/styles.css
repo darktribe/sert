@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Sert Editor - スタイルシート
+ * Sert Editor - スタイルシート（表示折り返し対応版）
  * =====================================================
  */
 
@@ -111,6 +111,9 @@ body, html {
   flex-shrink: 0;
 }
 
+/* =====================================================
+ エディタテキストエリア - 表示折り返し対応
+ ===================================================== */
 .editor-textarea {
   flex: 1;
   background-color: #1e1e1e;
@@ -122,11 +125,23 @@ body, html {
   line-height: 1.5;
   padding: 10px;
   resize: none;
+  
+  /* 🔧 修正箇所: 表示折り返しの設定 */
+  white-space: pre-wrap;        /* pre から pre-wrap に変更: 改行を保持しつつ画面端で折り返し */
+  overflow-wrap: break-word;    /* normal から break-word に変更: 長い単語も折り返し */
+  word-wrap: break-word;        /* 互換性のため追加 */
+  overflow-x: hidden;           /* auto から hidden に変更: 横スクロールバーを非表示 */
+  overflow-y: auto;             /* 縦スクロールは維持 */
+  
+  tab-size: 4;
+}
+
+/* 将来の設定用: 横スクロールモード（現在は未使用） */
+.editor-textarea.horizontal-scroll {
   white-space: pre;
   overflow-wrap: normal;
+  word-wrap: normal;
   overflow-x: auto;
-  overflow-y: auto;
-  tab-size: 4;
 }
 
 .editor-textarea::placeholder {
@@ -391,6 +406,12 @@ body, html {
 
 .editor-textarea::-webkit-scrollbar-thumb:hover {
   background: #555555;
+}
+
+/* 横スクロールバーは非表示（縦スクロールバーのみ表示） */
+.editor-textarea::-webkit-scrollbar:horizontal {
+  height: 0px;
+  background: transparent;
 }
 
 .line-numbers::-webkit-scrollbar {
