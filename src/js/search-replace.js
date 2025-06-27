@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Sert Editor - 検索・置換機能
+ * Sert Editor - 検索・置換機能（大文字小文字区別対応）
  * =====================================================
  */
 
@@ -23,6 +23,7 @@ let searchState = {
     searchText: '',
     replaceText: '',
     isRegex: false,
+    isCaseSensitive: false, // 追加：大文字小文字を区別するかのフラグ
     matches: [],
     currentMatchIndex: -1,
     lastSearchText: '',
@@ -118,6 +119,10 @@ function createSearchDialog() {
                     <input type="checkbox" id="search-regex-checkbox" ${searchState.isRegex ? 'checked' : ''}>
                     正規表現
                 </label>
+                <label class="search-checkbox-label">
+                    <input type="checkbox" id="search-case-checkbox" ${searchState.isCaseSensitive ? 'checked' : ''}>
+                    大文字小文字を区別
+                </label>
             </div>
             
             <div class="search-result-display" id="search-result-display">
@@ -178,6 +183,10 @@ function createReplaceDialog() {
                     <input type="checkbox" id="replace-regex-checkbox" ${searchState.isRegex ? 'checked' : ''}>
                     正規表現
                 </label>
+                <label class="search-checkbox-label">
+                    <input type="checkbox" id="replace-case-checkbox" ${searchState.isCaseSensitive ? 'checked' : ''}>
+                    大文字小文字を区別
+                </label>
             </div>
             
             <div class="search-result-display" id="replace-result-display">
@@ -217,6 +226,7 @@ function createReplaceDialog() {
 function setupSearchDialogEvents(dialogOverlay) {
     const searchInput = document.getElementById('search-text-input');
     const regexCheckbox = document.getElementById('search-regex-checkbox');
+    const caseCheckbox = document.getElementById('search-case-checkbox'); // 追加
     const searchBtn = document.getElementById('search-search-btn');
     const nextBtn = document.getElementById('search-next-btn');
     const prevBtn = document.getElementById('search-prev-btn');
@@ -234,6 +244,7 @@ function setupSearchDialogEvents(dialogOverlay) {
     clearBtn.addEventListener('click', () => {
         searchInput.value = '';
         regexCheckbox.checked = false;
+        caseCheckbox.checked = false; // 追加
         clearSearch();
         updateSearchResultDisplay('search-result-display', 0, -1);
         updateSearchButtons('search', false);
@@ -265,6 +276,7 @@ function setupSearchDialogEvents(dialogOverlay) {
     function performSearch() {
         const searchText = searchInput.value.trim();
         const isRegex = regexCheckbox.checked;
+        const isCaseSensitive = caseCheckbox.checked; // 追加
         
         if (!searchText) {
             showMessage('検索する文字列を入力して下さい');
@@ -273,8 +285,9 @@ function setupSearchDialogEvents(dialogOverlay) {
         
         searchState.searchText = searchText;
         searchState.isRegex = isRegex;
+        searchState.isCaseSensitive = isCaseSensitive; // 追加
         
-        const matchCount = executeSearch(searchText, isRegex);
+        const matchCount = executeSearch(searchText, isRegex, isCaseSensitive); // 引数追加
         
         if (matchCount === 0) {
             showMessage('検索結果：0件');
@@ -291,6 +304,7 @@ function setupReplaceDialogEvents(dialogOverlay) {
     const searchInput = document.getElementById('replace-search-input');
     const replaceInput = document.getElementById('replace-replace-input');
     const regexCheckbox = document.getElementById('replace-regex-checkbox');
+    const caseCheckbox = document.getElementById('replace-case-checkbox'); // 追加
     const searchBtn = document.getElementById('replace-search-btn');
     const replaceBtn = document.getElementById('replace-replace-btn');
     const nextBtn = document.getElementById('replace-next-btn');
@@ -317,6 +331,7 @@ function setupReplaceDialogEvents(dialogOverlay) {
         searchInput.value = '';
         replaceInput.value = '';
         regexCheckbox.checked = false;
+        caseCheckbox.checked = false; // 追加
         clearSearch();
         updateSearchResultDisplay('replace-result-display', 0, -1);
         updateSearchButtons('replace', false);
@@ -359,6 +374,7 @@ function setupReplaceDialogEvents(dialogOverlay) {
         const searchText = searchInput.value.trim();
         const replaceText = replaceInput.value;
         const isRegex = regexCheckbox.checked;
+        const isCaseSensitive = caseCheckbox.checked; // 追加
         
         if (!searchText || replaceText === '') {
             showMessage('置換するテキストと置換後のテキストを入力して下さい');
@@ -368,8 +384,9 @@ function setupReplaceDialogEvents(dialogOverlay) {
         searchState.searchText = searchText;
         searchState.replaceText = replaceText;
         searchState.isRegex = isRegex;
+        searchState.isCaseSensitive = isCaseSensitive; // 追加
         
-        const matchCount = executeSearch(searchText, isRegex);
+        const matchCount = executeSearch(searchText, isRegex, isCaseSensitive); // 引数追加
         
         if (matchCount === 0) {
             showMessage('検索結果：0件');
@@ -401,9 +418,9 @@ function setupReplaceDialogEvents(dialogOverlay) {
 }
 
 /**
- * 検索を実行
+ * 検索を実行（大文字小文字区別対応）
  */
-function executeSearch(searchText, isRegex) {
+function executeSearch(searchText, isRegex, isCaseSensitive) {
     try {
         clearSearch();
         
@@ -411,7 +428,9 @@ function executeSearch(searchText, isRegex) {
         searchState.matches = [];
         
         if (isRegex) {
-            const regex = new RegExp(searchText, 'gi');
+            // 正規表現検索：大文字小文字区別フラグに応じてRegExpフラグを決定
+            const flags = isCaseSensitive ? 'g' : 'gi';
+            const regex = new RegExp(searchText, flags);
             let match;
             while ((match = regex.exec(content)) !== null) {
                 searchState.matches.push({
@@ -426,11 +445,21 @@ function executeSearch(searchText, isRegex) {
                 }
             }
         } else {
-            const searchLower = searchText.toLowerCase();
-            const contentLower = content.toLowerCase();
-            let index = 0;
+            // 通常検索：大文字小文字区別フラグに応じて処理を分ける
+            let searchTarget, contentTarget;
             
-            while ((index = contentLower.indexOf(searchLower, index)) !== -1) {
+            if (isCaseSensitive) {
+                // 大文字小文字を区別する場合：そのまま検索
+                searchTarget = searchText;
+                contentTarget = content;
+            } else {
+                // 大文字小文字を区別しない場合：小文字に変換して検索
+                searchTarget = searchText.toLowerCase();
+                contentTarget = content.toLowerCase();
+            }
+            
+            let index = 0;
+            while ((index = contentTarget.indexOf(searchTarget, index)) !== -1) {
                 searchState.matches.push({
                     start: index,
                     end: index + searchText.length,
@@ -560,7 +589,7 @@ function performReplace() {
     updateStatus();
     
     // 置換後に再検索
-    const matchCount = executeSearch(searchState.searchText, searchState.isRegex);
+    const matchCount = executeSearch(searchState.searchText, searchState.isRegex, searchState.isCaseSensitive);
     updateSearchButtons('replace', matchCount > 0);
 }
 
@@ -604,7 +633,7 @@ function performReplaceAllMatches() {
     
     // 置換後に再検索
     clearSearch();
-    const matchCount = executeSearch(searchState.searchText, searchState.isRegex);
+    const matchCount = executeSearch(searchState.searchText, searchState.isRegex, searchState.isCaseSensitive);
     updateSearchButtons('replace', matchCount > 0);
     
     return replaceCount;
