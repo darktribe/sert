@@ -19,8 +19,8 @@
                 <div class="dropdown-menu" id="file-menu">
                     <div class="menu-option" onclick="newFile()" data-i18n="fileMenu.new">新規作成</div>
                     <div class="menu-option" onclick="openFile()" data-i18n="fileMenu.open">開く</div>
-                    <div class="menu-option" onclick="console.log('💾 Save menu clicked'); if(typeof saveFile === 'function') { saveFile(); } else { console.error('❌ saveFile not found!', typeof saveFile); }" data-i18n="fileMenu.save">上書き保存</div>
-                    <div class="menu-option" onclick="saveAsFile()" data-i18n="fileMenu.saveAs">名前を付けて保存</div>
+                    <div class="menu-option" onclick="saveFile()" data-i18n="fileMenu.save">上書き保存</div>
+                    <div class="menu-option" onclick="saveAsFile()" data-i18n="fileMenu.saveAs">名前をつけて保存</div>
                     <div class="menu-separator"></div>
                     <div class="menu-option" onclick="exitApp()" data-i18n="fileMenu.exit">終了</div>
                 </div>
@@ -31,7 +31,7 @@
                 <span data-i18n="menu.edit">編集</span>
                 <div class="dropdown-menu" id="edit-menu">
                     <div class="menu-option" onclick="undo()" data-i18n="editMenu.undo">元に戻す</div>
-                    <div class="menu-option" onclick="redo()" data-i18n="editMenu.redo">やり直し</div>
+                    <div class="menu-option" onclick="redo()" data-i18n="editMenu.redo">やりなおし</div>
                     <div class="menu-separator"></div>
                     <div class="menu-option" onclick="cut()" data-i18n="editMenu.cut">切り取り</div>
                     <div class="menu-option" onclick="copy()" data-i18n="editMenu.copy">コピー</div>
@@ -73,11 +73,11 @@
              ステータスバー
              カーソル位置と文字数を表示
              ===================================================== -->
-             <div class="status-bar">
-                <span id="cursor-position">行: 1, 列: 1</span>
-                <span id="file-encoding" data-i18n="statusBar.encoding">UTF-8</span>
-                <span id="char-count">総文字数: 0</span>
-            </div>
+        <div class="status-bar">
+            <span id="cursor-position">行: 1, 列: 1</span>
+            <span id="file-encoding" data-i18n="statusBar.encoding">UTF-8</span>
+            <span id="char-count">総文字数: 0</span>
+        </div>
     </div>
 
     <!-- =====================================================
@@ -85,37 +85,5 @@
          メインスクリプトを直接読み込み、グローバル関数を確実に登録
          ===================================================== -->
     <script type="module" src="main.js"></script>
-    
-    <!-- フォールバック用のグローバル関数チェック -->
-    <script>
-        // メニューがクリックされた時のデバッグ関数
-        window.debugSave = function() {
-            console.log('🔍 Debug: saveFile function check');
-            console.log('typeof window.saveFile:', typeof window.saveFile);
-            if (typeof window.saveFile === 'function') {
-                console.log('✅ saveFile function found, calling it...');
-                window.saveFile();
-            } else {
-                console.error('❌ saveFile function not found!');
-                console.log('Available window functions:', Object.keys(window).filter(key => key.includes('File')));
-            }
-        };
-        
-        // DOMContentLoaded後にグローバル関数の存在確認
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                console.log('🔍 Final global function check:');
-                console.log('window.saveFile:', typeof window.saveFile);
-                console.log('window.newFile:', typeof window.newFile);
-                console.log('window.openFile:', typeof window.openFile);
-                console.log('window.showSearchDialog:', typeof window.showSearchDialog);
-                console.log('window.showReplaceDialog:', typeof window.showReplaceDialog);
-                
-                if (typeof window.saveFile !== 'function') {
-                    console.error('❌ Critical: saveFile not registered as global function!');
-                }
-            }, 2000);
-        });
-    </script>
 </body>
 </html>
