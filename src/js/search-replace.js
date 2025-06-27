@@ -1,6 +1,7 @@
 /*
  * =====================================================
  * Sert Editor - 検索・置換機能（大文字小文字区別対応）
+ * 修正版：正規表現の行の開始・終了、キャプチャグループ、エラーハンドリングを修正
  * =====================================================
  */
 
@@ -287,13 +288,16 @@ function setupSearchDialogEvents(dialogOverlay) {
         searchState.isRegex = isRegex;
         searchState.isCaseSensitive = isCaseSensitive; // 追加
         
-        const matchCount = executeSearch(searchText, isRegex, isCaseSensitive); // 引数追加
+        const result = executeSearch(searchText, isRegex, isCaseSensitive); // 引数追加
         
-        if (matchCount === 0) {
-            showMessage('検索結果：0件');
-        } else {
-            updateSearchButtons('search', true);
+        if (result.success) {
+            if (result.matchCount === 0) {
+                showMessage('検索結果：0件');
+            } else {
+                updateSearchButtons('search', true);
+            }
         }
+        // エラーの場合は executeSearch 内で showMessage が呼ばれる
     }
 }
 
@@ -386,13 +390,16 @@ function setupReplaceDialogEvents(dialogOverlay) {
         searchState.isRegex = isRegex;
         searchState.isCaseSensitive = isCaseSensitive; // 追加
         
-        const matchCount = executeSearch(searchText, isRegex, isCaseSensitive); // 引数追加
+        const result = executeSearch(searchText, isRegex, isCaseSensitive); // 引数追加
         
-        if (matchCount === 0) {
-            showMessage('検索結果：0件');
-        } else {
-            updateSearchButtons('replace', true);
+        if (result.success) {
+            if (result.matchCount === 0) {
+                showMessage('検索結果：0件');
+            } else {
+                updateSearchButtons('replace', true);
+            }
         }
+        // エラーの場合は executeSearch 内で showMessage が呼ばれる
     }
     
     // 単一置換実行
@@ -418,7 +425,7 @@ function setupReplaceDialogEvents(dialogOverlay) {
 }
 
 /**
- * 検索を実行（大文字小文字区別対応）
+ * 検索を実行（大文字小文字区別対応、正規表現修正版）
  */
 function executeSearch(searchText, isRegex, isCaseSensitive) {
     try {
@@ -428,15 +435,16 @@ function executeSearch(searchText, isRegex, isCaseSensitive) {
         searchState.matches = [];
         
         if (isRegex) {
-            // 正規表現検索：大文字小文字区別フラグに応じてRegExpフラグを決定
-            const flags = isCaseSensitive ? 'g' : 'gi';
+            // 正規表現検索：大文字小文字区別フラグ + 複数行フラグ（^$対応）
+            const flags = isCaseSensitive ? 'gm' : 'gim';
             const regex = new RegExp(searchText, flags);
             let match;
             while ((match = regex.exec(content)) !== null) {
                 searchState.matches.push({
                     start: match.index,
                     end: match.index + match[0].length,
-                    text: match[0]
+                    text: match[0],
+                    fullMatch: match // キャプチャグループ用に完全なマッチ情報を保存
                 });
                 
                 // 無限ループ防止
@@ -463,7 +471,8 @@ function executeSearch(searchText, isRegex, isCaseSensitive) {
                 searchState.matches.push({
                     start: index,
                     end: index + searchText.length,
-                    text: content.substring(index, index + searchText.length)
+                    text: content.substring(index, index + searchText.length),
+                    fullMatch: null // 通常検索ではキャプチャグループなし
                 });
                 index++;
             }
@@ -478,12 +487,20 @@ function executeSearch(searchText, isRegex, isCaseSensitive) {
         
         updateResultDisplay();
         
-        return matchCount;
+        return { success: true, matchCount: matchCount };
         
     } catch (error) {
         console.error('Search error:', error);
-        showMessage('検索中にエラーが発生しました: ' + error.message);
-        return 0;
+        // エラーメッセージを表示する前に検索状態をクリア
+        clearSearch();
+        updateResultDisplay();
+        
+        // エラーメッセージを表示
+        setTimeout(() => {
+            showMessage('正規表現に問題があります。正規表現でなくその文字自体を検索したい場合、正規表現のチェックを外して下さい。');
+        }, 100);
+        
+        return { success: false, matchCount: 0 };
     }
 }
 
@@ -559,7 +576,7 @@ function updateSearchButtons(dialogType, hasResults) {
 }
 
 /**
- * 単一置換を実行
+ * 単一置換を実行（正規表現キャプチャグループ対応）
  */
 function performReplace() {
     if (searchState.currentMatchIndex === -1 || searchState.matches.length === 0) {
@@ -571,9 +588,33 @@ function performReplace() {
     
     const match = searchState.matches[searchState.currentMatchIndex];
     const content = editor.value;
-    const newContent = content.substring(0, match.start) + 
-                      searchState.replaceText + 
-                      content.substring(match.end);
+    let newContent;
+    
+    if (searchState.isRegex && match.fullMatch) {
+        // 正規表現の場合：キャプチャグループを展開して置換
+        const matchText = match.text;
+        let replacementText = searchState.replaceText;
+        
+        // $1, $2, ... を対応するキャプチャグループで置換
+        if (match.fullMatch.length > 1) {
+            for (let i = 1; i < match.fullMatch.length; i++) {
+                const captureGroup = match.fullMatch[i] || '';
+                replacementText = replacementText.replace(new RegExp('\\$' + i, 'g'), captureGroup);
+            }
+        }
+        
+        // $0 は全体のマッチで置換
+        replacementText = replacementText.replace(/\$0/g, matchText);
+        
+        newContent = content.substring(0, match.start) + 
+                    replacementText + 
+                    content.substring(match.end);
+    } else {
+        // 通常の置換
+        newContent = content.substring(0, match.start) + 
+                    searchState.replaceText + 
+                    content.substring(match.end);
+    }
     
     editor.value = newContent;
     setCurrentContent(newContent);
@@ -589,12 +630,12 @@ function performReplace() {
     updateStatus();
     
     // 置換後に再検索
-    const matchCount = executeSearch(searchState.searchText, searchState.isRegex, searchState.isCaseSensitive);
-    updateSearchButtons('replace', matchCount > 0);
+    const result = executeSearch(searchState.searchText, searchState.isRegex, searchState.isCaseSensitive);
+    updateSearchButtons('replace', result.success && result.matchCount > 0);
 }
 
 /**
- * 全置換を実行
+ * 全置換を実行（正規表現キャプチャグループ対応）
  */
 function performReplaceAllMatches() {
     if (searchState.matches.length === 0) {
@@ -606,16 +647,32 @@ function performReplaceAllMatches() {
     
     const content = editor.value;
     let newContent = content;
-    let offset = 0;
     let replaceCount = 0;
     
-    // 後ろから置換して位置がずれないようにする
-    for (let i = searchState.matches.length - 1; i >= 0; i--) {
-        const match = searchState.matches[i];
-        newContent = newContent.substring(0, match.start) + 
-                    searchState.replaceText + 
-                    newContent.substring(match.end);
-        replaceCount++;
+    if (searchState.isRegex) {
+        // 正規表現の場合：String.replace()でキャプチャグループを活用
+        try {
+            const flags = searchState.isCaseSensitive ? 'gm' : 'gim';
+            const regex = new RegExp(searchState.searchText, flags);
+            
+            newContent = content.replace(regex, searchState.replaceText);
+            
+            // 置換回数を計算（元のマッチ数を使用）
+            replaceCount = searchState.matches.length;
+        } catch (error) {
+            console.error('Replace all error:', error);
+            showMessage('正規表現に問題があります。正規表現でなくその文字自体を検索したい場合、正規表現のチェックを外して下さい。');
+            return 0;
+        }
+    } else {
+        // 通常検索の場合：後ろから置換して位置がずれないようにする
+        for (let i = searchState.matches.length - 1; i >= 0; i--) {
+            const match = searchState.matches[i];
+            newContent = newContent.substring(0, match.start) + 
+                        searchState.replaceText + 
+                        newContent.substring(match.end);
+            replaceCount++;
+        }
     }
     
     editor.value = newContent;
@@ -633,8 +690,8 @@ function performReplaceAllMatches() {
     
     // 置換後に再検索
     clearSearch();
-    const matchCount = executeSearch(searchState.searchText, searchState.isRegex, searchState.isCaseSensitive);
-    updateSearchButtons('replace', matchCount > 0);
+    const result = executeSearch(searchState.searchText, searchState.isRegex, searchState.isCaseSensitive);
+    updateSearchButtons('replace', result.success && result.matchCount > 0);
     
     return replaceCount;
 }
@@ -678,12 +735,18 @@ function closeReplaceDialog(dialogOverlay) {
 }
 
 /**
- * メッセージダイアログを表示
+ * メッセージダイアログを表示（修正版：重複表示防止）
  */
 function showMessage(message) {
+    // 既存のメッセージダイアログがあれば削除
+    const existingDialog = document.querySelector('.message-dialog-overlay');
+    if (existingDialog) {
+        document.body.removeChild(existingDialog);
+    }
+    
     return new Promise((resolve) => {
         const dialogOverlay = document.createElement('div');
-        dialogOverlay.className = 'search-dialog-overlay';
+        dialogOverlay.className = 'search-dialog-overlay message-dialog-overlay';
         
         const dialog = document.createElement('div');
         dialog.className = 'search-dialog message-dialog';
@@ -702,20 +765,28 @@ function showMessage(message) {
         document.body.appendChild(dialogOverlay);
         
         const okBtn = document.getElementById('message-ok-btn');
-        okBtn.addEventListener('click', () => {
-            document.body.removeChild(dialogOverlay);
+        
+        function closeMessageDialog() {
+            try {
+                document.body.removeChild(dialogOverlay);
+            } catch (e) {
+                // ダイアログが既に削除されている場合のエラーを無視
+            }
+            document.removeEventListener('keydown', handleMessageKeyDown);
             resolve();
-        });
+        }
+        
+        okBtn.addEventListener('click', closeMessageDialog);
         
         // Enterキーでも閉じる
-        document.addEventListener('keydown', function handleEnter(e) {
+        function handleMessageKeyDown(e) {
             if (e.key === 'Enter' || e.key === 'Escape') {
                 e.preventDefault();
-                document.removeEventListener('keydown', handleEnter);
-                document.body.removeChild(dialogOverlay);
-                resolve();
+                closeMessageDialog();
             }
-        });
+        }
+        
+        document.addEventListener('keydown', handleMessageKeyDown);
         
         setTimeout(() => okBtn.focus(), 100);
     });
