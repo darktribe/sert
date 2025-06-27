@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Sert Editor - アプリケーション初期化
+ * Sert Editor - アプリケーション初期化（多言語化対応版）
  * =====================================================
  */
 
@@ -9,6 +9,7 @@ import { initializeUndoStack } from './undo-redo.js';
 import { updateLineNumbers, updateStatus, updateWindowTitle } from './ui-updater.js';
 import { setupEventListeners } from './event-listeners.js';
 import { exitApp } from './app-exit.js';
+import { initializeI18n, t, updateElementText } from './locales.js';
 
 /**
  * Tauri APIの初期化
@@ -62,10 +63,77 @@ async function initializeTauri() {
 }
 
 /**
+ * UIの多言語化を適用
+ */
+function applyI18nToUI() {
+    console.log('🌐 Applying i18n to UI...');
+    
+    try {
+        // data-i18n属性を持つ要素を更新
+        const i18nElements = document.querySelectorAll('[data-i18n]');
+        i18nElements.forEach(element => {
+            const key = element.getAttribute('data-i18n');
+            if (key) {
+                element.textContent = t(key);
+            }
+        });
+        
+        // data-i18n-placeholder属性を持つ要素のplaceholderを更新
+        const placeholderElements = document.querySelectorAll('[data-i18n-placeholder]');
+        placeholderElements.forEach(element => {
+            const key = element.getAttribute('data-i18n-placeholder');
+            if (key) {
+                element.placeholder = t(key);
+            }
+        });
+        
+        // ステータスバーの初期化
+        updateStatusBarI18n();
+        
+        console.log('✅ UI i18n applied successfully');
+    } catch (error) {
+        console.error('❌ Failed to apply i18n to UI:', error);
+    }
+}
+
+/**
+ * ステータスバーの多言語化
+ */
+function updateStatusBarI18n() {
+    const cursorPosition = document.getElementById('cursor-position');
+    const charCount = document.getElementById('char-count');
+    
+    if (cursorPosition) {
+        cursorPosition.textContent = `${t('statusBar.line')}: 1, ${t('statusBar.column')}: 1`;
+    }
+    
+    if (charCount) {
+        charCount.textContent = `${t('statusBar.charCount')}: 0`;
+    }
+}
+
+/**
+ * 言語変更イベントのリスナーを設定
+ */
+function setupLanguageChangeListener() {
+    window.addEventListener('languageChanged', (event) => {
+        console.log('🌐 Language changed, updating UI...');
+        applyI18nToUI();
+    });
+}
+
+/**
  * アプリケーション初期化
  */
 export async function initializeApp() {
     console.log('Starting app initialization...');
+    
+    // 多言語化システムの初期化
+    console.log('🌐 Initializing i18n system...');
+    const i18nSuccess = await initializeI18n();
+    if (!i18nSuccess) {
+        console.error('❌ Failed to initialize i18n system');
+    }
     
     await initializeTauri();
     
@@ -85,6 +153,12 @@ export async function initializeApp() {
     // イベントリスナーを設定
     setupEventListeners();
     
+    // 言語変更イベントリスナーを設定
+    setupLanguageChangeListener();
+    
+    // UIに多言語化を適用
+    applyI18nToUI();
+    
     // 初期UI更新
     updateLineNumbers();
     updateStatus();
@@ -98,4 +172,20 @@ export async function initializeApp() {
     editorElement.focus();
     
     console.log('App initialization completed');
+}
+
+/**
+ * ステータス更新時の多言語化対応（他のモジュールから呼び出される）
+ */
+export function updateStatusI18n(line, column, charCount) {
+    const cursorPosition = document.getElementById('cursor-position');
+    const charCountElement = document.getElementById('char-count');
+    
+    if (cursorPosition) {
+        cursorPosition.textContent = `${t('statusBar.line')}: ${line}, ${t('statusBar.column')}: ${column}`;
+    }
+    
+    if (charCountElement) {
+        charCountElement.textContent = `${t('statusBar.charCount')}: ${charCount}`;
+    }
 }

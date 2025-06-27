@@ -1,7 +1,6 @@
 /*
  * =====================================================
- * Sert Editor - 検索・置換機能（大文字小文字区別対応）
- * 修正版：正規表現の行の開始・終了、キャプチャグループ、エラーハンドリングを修正
+ * Sert Editor - 検索・置換機能（多言語化対応版）
  * =====================================================
  */
 
@@ -18,13 +17,14 @@ import {
 import { saveToUndoStack } from './undo-redo.js';
 import { closeAllMenus } from './menu-controller.js';
 import { updateLineNumbers, updateStatus } from './ui-updater.js';
+import { t } from './locales.js';
 
 // 検索状態管理
 let searchState = {
     searchText: '',
     replaceText: '',
     isRegex: false,
-    isCaseSensitive: false, // 追加：大文字小文字を区別するかのフラグ
+    isCaseSensitive: false,
     matches: [],
     currentMatchIndex: -1,
     lastSearchText: '',
@@ -108,34 +108,34 @@ function createSearchDialog() {
     dialog.className = 'search-dialog';
     
     dialog.innerHTML = `
-        <div class="search-dialog-header">検索</div>
+        <div class="search-dialog-header">${t('search.searchTitle')}</div>
         <div class="search-dialog-content">
             <div class="search-input-group">
-                <label for="search-text-input">検索文字:</label>
-                <input type="text" id="search-text-input" class="search-input" placeholder="検索する文字列を入力" value="${searchState.searchText}">
+                <label for="search-text-input">${t('search.searchLabel')}</label>
+                <input type="text" id="search-text-input" class="search-input" placeholder="${t('search.searchPlaceholder')}" value="${searchState.searchText}">
             </div>
             
             <div class="search-checkbox-group">
                 <label class="search-checkbox-label">
                     <input type="checkbox" id="search-regex-checkbox" ${searchState.isRegex ? 'checked' : ''}>
-                    正規表現
+                    ${t('search.useRegex')}
                 </label>
                 <label class="search-checkbox-label">
                     <input type="checkbox" id="search-case-checkbox" ${searchState.isCaseSensitive ? 'checked' : ''}>
-                    大文字小文字を区別
+                    ${t('search.caseSensitive')}
                 </label>
             </div>
             
             <div class="search-result-display" id="search-result-display">
-                結果: 0件
+                ${t('search.resultCount', { count: 0 })}
             </div>
             
             <div class="search-button-group">
-                <button id="search-search-btn" class="search-button search-button-primary">検索</button>
-                <button id="search-next-btn" class="search-button" disabled>次へ</button>
-                <button id="search-prev-btn" class="search-button" disabled>前へ</button>
-                <button id="search-clear-btn" class="search-button">クリア</button>
-                <button id="search-close-btn" class="search-button search-button-cancel">閉じる</button>
+                <button id="search-search-btn" class="search-button search-button-primary">${t('search.buttons.search')}</button>
+                <button id="search-next-btn" class="search-button" disabled>${t('search.buttons.next')}</button>
+                <button id="search-prev-btn" class="search-button" disabled>${t('search.buttons.previous')}</button>
+                <button id="search-clear-btn" class="search-button">${t('search.buttons.clear')}</button>
+                <button id="search-close-btn" class="search-button search-button-cancel">${t('search.buttons.close')}</button>
             </div>
         </div>
     `;
@@ -167,41 +167,41 @@ function createReplaceDialog() {
     dialog.className = 'search-dialog replace-dialog';
     
     dialog.innerHTML = `
-        <div class="search-dialog-header">置換</div>
+        <div class="search-dialog-header">${t('search.replaceTitle')}</div>
         <div class="search-dialog-content">
             <div class="search-input-group">
-                <label for="replace-search-input">置換するテキスト:</label>
-                <input type="text" id="replace-search-input" class="search-input" placeholder="置換するテキストを入力" value="${searchState.searchText}">
+                <label for="replace-search-input">${t('search.replaceSearchLabel')}</label>
+                <input type="text" id="replace-search-input" class="search-input" placeholder="${t('search.replaceSearchPlaceholder')}" value="${searchState.searchText}">
             </div>
             
             <div class="search-input-group">
-                <label for="replace-replace-input">置換後のテキスト:</label>
-                <input type="text" id="replace-replace-input" class="search-input" placeholder="置換後のテキストを入力" value="${searchState.replaceText}">
+                <label for="replace-replace-input">${t('search.replaceLabel')}</label>
+                <input type="text" id="replace-replace-input" class="search-input" placeholder="${t('search.replacePlaceholder')}" value="${searchState.replaceText}">
             </div>
             
             <div class="search-checkbox-group">
                 <label class="search-checkbox-label">
                     <input type="checkbox" id="replace-regex-checkbox" ${searchState.isRegex ? 'checked' : ''}>
-                    正規表現
+                    ${t('search.useRegex')}
                 </label>
                 <label class="search-checkbox-label">
                     <input type="checkbox" id="replace-case-checkbox" ${searchState.isCaseSensitive ? 'checked' : ''}>
-                    大文字小文字を区別
+                    ${t('search.caseSensitive')}
                 </label>
             </div>
             
             <div class="search-result-display" id="replace-result-display">
-                結果: 0件
+                ${t('search.resultCount', { count: 0 })}
             </div>
             
             <div class="search-button-group">
-                <button id="replace-search-btn" class="search-button search-button-primary">検索</button>
-                <button id="replace-replace-btn" class="search-button search-button-warning" disabled>置換</button>
-                <button id="replace-next-btn" class="search-button" disabled>次へ</button>
-                <button id="replace-prev-btn" class="search-button" disabled>前へ</button>
-                <button id="replace-all-btn" class="search-button search-button-danger" disabled>すべて置換</button>
-                <button id="replace-clear-btn" class="search-button">クリア</button>
-                <button id="replace-close-btn" class="search-button search-button-cancel">閉じる</button>
+                <button id="replace-search-btn" class="search-button search-button-primary">${t('search.buttons.search')}</button>
+                <button id="replace-replace-btn" class="search-button search-button-warning" disabled>${t('search.buttons.replace')}</button>
+                <button id="replace-next-btn" class="search-button" disabled>${t('search.buttons.next')}</button>
+                <button id="replace-prev-btn" class="search-button" disabled>${t('search.buttons.previous')}</button>
+                <button id="replace-all-btn" class="search-button search-button-danger" disabled>${t('search.buttons.replaceAll')}</button>
+                <button id="replace-clear-btn" class="search-button">${t('search.buttons.clear')}</button>
+                <button id="replace-close-btn" class="search-button search-button-cancel">${t('search.buttons.close')}</button>
             </div>
         </div>
     `;
@@ -227,7 +227,7 @@ function createReplaceDialog() {
 function setupSearchDialogEvents(dialogOverlay) {
     const searchInput = document.getElementById('search-text-input');
     const regexCheckbox = document.getElementById('search-regex-checkbox');
-    const caseCheckbox = document.getElementById('search-case-checkbox'); // 追加
+    const caseCheckbox = document.getElementById('search-case-checkbox');
     const searchBtn = document.getElementById('search-search-btn');
     const nextBtn = document.getElementById('search-next-btn');
     const prevBtn = document.getElementById('search-prev-btn');
@@ -245,7 +245,7 @@ function setupSearchDialogEvents(dialogOverlay) {
     clearBtn.addEventListener('click', () => {
         searchInput.value = '';
         regexCheckbox.checked = false;
-        caseCheckbox.checked = false; // 追加
+        caseCheckbox.checked = false;
         clearSearch();
         updateSearchResultDisplay('search-result-display', 0, -1);
         updateSearchButtons('search', false);
@@ -277,27 +277,26 @@ function setupSearchDialogEvents(dialogOverlay) {
     function performSearch() {
         const searchText = searchInput.value.trim();
         const isRegex = regexCheckbox.checked;
-        const isCaseSensitive = caseCheckbox.checked; // 追加
+        const isCaseSensitive = caseCheckbox.checked;
         
         if (!searchText) {
-            showMessage('検索する文字列を入力して下さい');
+            showMessage(t('search.messages.noSearchText'));
             return;
         }
         
         searchState.searchText = searchText;
         searchState.isRegex = isRegex;
-        searchState.isCaseSensitive = isCaseSensitive; // 追加
+        searchState.isCaseSensitive = isCaseSensitive;
         
-        const result = executeSearch(searchText, isRegex, isCaseSensitive); // 引数追加
+        const result = executeSearch(searchText, isRegex, isCaseSensitive);
         
         if (result.success) {
             if (result.matchCount === 0) {
-                showMessage('検索結果：0件');
+                showMessage(t('search.messages.noResults'));
             } else {
                 updateSearchButtons('search', true);
             }
         }
-        // エラーの場合は executeSearch 内で showMessage が呼ばれる
     }
 }
 
@@ -308,7 +307,7 @@ function setupReplaceDialogEvents(dialogOverlay) {
     const searchInput = document.getElementById('replace-search-input');
     const replaceInput = document.getElementById('replace-replace-input');
     const regexCheckbox = document.getElementById('replace-regex-checkbox');
-    const caseCheckbox = document.getElementById('replace-case-checkbox'); // 追加
+    const caseCheckbox = document.getElementById('replace-case-checkbox');
     const searchBtn = document.getElementById('replace-search-btn');
     const replaceBtn = document.getElementById('replace-replace-btn');
     const nextBtn = document.getElementById('replace-next-btn');
@@ -335,7 +334,7 @@ function setupReplaceDialogEvents(dialogOverlay) {
         searchInput.value = '';
         replaceInput.value = '';
         regexCheckbox.checked = false;
-        caseCheckbox.checked = false; // 追加
+        caseCheckbox.checked = false;
         clearSearch();
         updateSearchResultDisplay('replace-result-display', 0, -1);
         updateSearchButtons('replace', false);
@@ -378,34 +377,33 @@ function setupReplaceDialogEvents(dialogOverlay) {
         const searchText = searchInput.value.trim();
         const replaceText = replaceInput.value;
         const isRegex = regexCheckbox.checked;
-        const isCaseSensitive = caseCheckbox.checked; // 追加
+        const isCaseSensitive = caseCheckbox.checked;
         
         if (!searchText || replaceText === '') {
-            showMessage('置換するテキストと置換後のテキストを入力して下さい');
+            showMessage(t('search.messages.noReplaceText'));
             return;
         }
         
         searchState.searchText = searchText;
         searchState.replaceText = replaceText;
         searchState.isRegex = isRegex;
-        searchState.isCaseSensitive = isCaseSensitive; // 追加
+        searchState.isCaseSensitive = isCaseSensitive;
         
-        const result = executeSearch(searchText, isRegex, isCaseSensitive); // 引数追加
+        const result = executeSearch(searchText, isRegex, isCaseSensitive);
         
         if (result.success) {
             if (result.matchCount === 0) {
-                showMessage('検索結果：0件');
+                showMessage(t('search.messages.noResults'));
             } else {
                 updateSearchButtons('replace', true);
             }
         }
-        // エラーの場合は executeSearch 内で showMessage が呼ばれる
     }
     
     // 単一置換実行
     function performSingleReplace() {
         if (searchState.currentMatchIndex === -1 || searchState.matches.length === 0) {
-            showMessage('置換する対象が選択されていません。次へ・前へで選択して下さい');
+            showMessage(t('search.messages.noTarget'));
             return;
         }
         
@@ -415,12 +413,12 @@ function setupReplaceDialogEvents(dialogOverlay) {
     // 全置換実行
     function performReplaceAll() {
         if (searchState.matches.length === 0) {
-            showMessage('置換する対象がありません');
+            showMessage(t('search.messages.noMatches'));
             return;
         }
         
         const replaceCount = performReplaceAllMatches();
-        showMessage(`全${replaceCount}件を置換しました`);
+        showMessage(t('search.messages.replaceAllComplete', { count: replaceCount }));
     }
 }
 
@@ -497,7 +495,7 @@ function executeSearch(searchText, isRegex, isCaseSensitive) {
         
         // エラーメッセージを表示
         setTimeout(() => {
-            showMessage('正規表現に問題があります。正規表現でなくその文字自体を検索したい場合、正規表現のチェックを外して下さい。');
+            showMessage(t('search.messages.regexError'));
         }, 100);
         
         return { success: false, matchCount: 0 };
@@ -548,9 +546,12 @@ function updateSearchResultDisplay(elementId, matchCount, currentIndex) {
     if (!resultDisplay) return;
     
     if (matchCount === 0) {
-        resultDisplay.textContent = '結果: 0件';
+        resultDisplay.textContent = t('search.resultCount', { count: 0 });
     } else {
-        resultDisplay.textContent = `結果: ${matchCount}件 ${currentIndex + 1}/${matchCount}`;
+        resultDisplay.textContent = t('search.resultPosition', { 
+            total: matchCount, 
+            current: currentIndex + 1 
+        });
     }
 }
 
@@ -661,7 +662,7 @@ function performReplaceAllMatches() {
             replaceCount = searchState.matches.length;
         } catch (error) {
             console.error('Replace all error:', error);
-            showMessage('正規表現に問題があります。正規表現でなくその文字自体を検索したい場合、正規表現のチェックを外して下さい。');
+            showMessage(t('search.messages.regexError'));
             return 0;
         }
     } else {
@@ -752,11 +753,11 @@ function showMessage(message) {
         dialog.className = 'search-dialog message-dialog';
         
         dialog.innerHTML = `
-            <div class="search-dialog-header">メッセージ</div>
+            <div class="search-dialog-header">${t('messages.messageTitle')}</div>
             <div class="search-dialog-content">
                 <div class="message-text">${message}</div>
                 <div class="search-button-group">
-                    <button id="message-ok-btn" class="search-button search-button-primary">OK</button>
+                    <button id="message-ok-btn" class="search-button search-button-primary">${t('messages.ok')}</button>
                 </div>
             </div>
         `;

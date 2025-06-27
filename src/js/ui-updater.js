@@ -1,10 +1,11 @@
 /*
  * =====================================================
- * Sert Editor - UI更新機能
+ * Sert Editor - UI更新機能（多言語化対応版）
  * =====================================================
  */
 
 import { editor, currentFilePath, tauriInvoke } from './globals.js';
+import { t } from './locales.js';
 
 /**
  * 行番号の更新
@@ -35,7 +36,7 @@ export function syncScroll() {
 }
 
 /**
- * ステータスバーの更新
+ * ステータスバーの更新（多言語化対応）
  */
 export function updateStatus() {
     const cursorPosition = document.getElementById('cursor-position');
@@ -49,15 +50,15 @@ export function updateStatus() {
         const line = lines.length;
         const column = lines[lines.length - 1].length + 1;
         
-        cursorPosition.textContent = `行: ${line}, 列: ${column}`;
+        cursorPosition.textContent = `${t('statusBar.line')}: ${line}, ${t('statusBar.column')}: ${column}`;
     }
     
     if (fileEncoding) {
-        fileEncoding.textContent = 'UTF-8';
+        fileEncoding.textContent = t('statusBar.encoding');
     }
     
     if (charCount) {
-        charCount.textContent = `総文字数: ${editor.value.length}`;
+        charCount.textContent = `${t('statusBar.charCount')}: ${editor.value.length}`;
     }
 }
 
@@ -86,23 +87,26 @@ function getFileNameFromPath(filePath) {
 }
 
 /**
- * ウィンドウタイトルの更新
+ * ウィンドウタイトルの更新（多言語化対応）
  */
 export async function updateWindowTitle() {
     try {
         console.log('🏷️ Updating window title...');
         console.log('Current file path:', currentFilePath);
         
-        let fileName = '名前なし';
+        let newTitle;
         
         if (currentFilePath) {
-            const extractedName = getFileNameFromPath(currentFilePath);
-            if (extractedName) {
-                fileName = extractedName;
+            const fileName = getFileNameFromPath(currentFilePath);
+            if (fileName) {
+                newTitle = t('window.titleFormat', { filename: fileName });
+            } else {
+                newTitle = t('window.defaultTitle');
             }
+        } else {
+            newTitle = t('window.defaultTitle');
         }
         
-        const newTitle = `Sert - ${fileName}`;
         console.log('🏷️ New title:', newTitle);
         
         // Tauri 2.5のウィンドウタイトル更新API
@@ -132,8 +136,8 @@ export async function updateWindowTitle() {
         // エラー時のフォールバック
         try {
             const fallbackTitle = currentFilePath ? 
-                `Sert - ${getFileNameFromPath(currentFilePath) || '名前なし'}` : 
-                'Sert - 名前なし';
+                t('window.titleFormat', { filename: getFileNameFromPath(currentFilePath) || t('window.defaultTitle').replace('Sert - ', '') }) : 
+                t('window.defaultTitle');
             document.title = fallbackTitle;
             console.log('✅ Fallback title set:', fallbackTitle);
         } catch (fallbackError) {

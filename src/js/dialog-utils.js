@@ -1,10 +1,11 @@
 /*
  * =====================================================
- * Sert Editor - 確認ダイアログ表示
+ * Sert Editor - 確認ダイアログ表示（多言語化対応版）
  * =====================================================
  */
 
 import { editor } from './globals.js';
+import { t } from './locales.js';
 
 /**
  * 新規作成確認ダイアログを表示（キーボードナビゲーション対応）
@@ -40,10 +41,10 @@ export async function showNewFileDialog() {
         
         dialog.innerHTML = `
             <div style="margin-bottom: 16px; font-size: 16px; font-weight: bold;">
-                内容に変更があります
+                ${t('dialogs.newFile.title')}
             </div>
             <div style="margin-bottom: 20px; color: #cccccc;">
-                保存せずに新規作成すると、変更内容は失われます。
+                ${t('dialogs.newFile.message')}
             </div>
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
                 <button id="save-and-new-btn" tabindex="1" style="
@@ -55,7 +56,7 @@ export async function showNewFileDialog() {
                     cursor: pointer;
                     font-size: 14px;
                     transition: background-color 0.2s, box-shadow 0.2s;
-                ">保存して新規作成</button>
+                ">${t('dialogs.newFile.saveAndNew')}</button>
                 <button id="new-without-saving-btn" tabindex="2" style="
                     background-color: #d14949;
                     color: white;
@@ -65,7 +66,7 @@ export async function showNewFileDialog() {
                     cursor: pointer;
                     font-size: 14px;
                     transition: background-color 0.2s, box-shadow 0.2s;
-                ">保存せずに新規作成</button>
+                ">${t('dialogs.newFile.newWithoutSaving')}</button>
                 <button id="cancel-new-btn" tabindex="3" style="
                     background-color: #5a5a5a;
                     color: white;
@@ -75,7 +76,7 @@ export async function showNewFileDialog() {
                     cursor: pointer;
                     font-size: 14px;
                     transition: background-color 0.2s, box-shadow 0.2s;
-                ">キャンセル</button>
+                ">${t('dialogs.newFile.cancel')}</button>
             </div>
         `;
         
@@ -122,10 +123,10 @@ export async function showOpenFileDialog() {
         
         dialog.innerHTML = `
             <div style="margin-bottom: 16px; font-size: 16px; font-weight: bold;">
-                内容に変更があります
+                ${t('dialogs.openFile.title')}
             </div>
             <div style="margin-bottom: 20px; color: #cccccc;">
-                保存せずにファイルを開くと、変更内容は失われます。
+                ${t('dialogs.openFile.message')}
             </div>
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
                 <button id="save-and-open-btn" tabindex="1" style="
@@ -137,7 +138,7 @@ export async function showOpenFileDialog() {
                     cursor: pointer;
                     font-size: 14px;
                     transition: background-color 0.2s, box-shadow 0.2s;
-                ">保存してから開く</button>
+                ">${t('dialogs.openFile.saveAndOpen')}</button>
                 <button id="open-without-saving-btn" tabindex="2" style="
                     background-color: #d14949;
                     color: white;
@@ -147,7 +148,7 @@ export async function showOpenFileDialog() {
                     cursor: pointer;
                     font-size: 14px;
                     transition: background-color 0.2s, box-shadow 0.2s;
-                ">保存せずに開く</button>
+                ">${t('dialogs.openFile.openWithoutSaving')}</button>
                 <button id="cancel-open-btn" tabindex="3" style="
                     background-color: #5a5a5a;
                     color: white;
@@ -157,7 +158,7 @@ export async function showOpenFileDialog() {
                     cursor: pointer;
                     font-size: 14px;
                     transition: background-color 0.2s, box-shadow 0.2s;
-                ">キャンセル</button>
+                ">${t('dialogs.openFile.cancel')}</button>
             </div>
         `;
         
@@ -206,10 +207,10 @@ export async function showExitDialog() {
         
         dialog.innerHTML = `
             <div style="margin-bottom: 16px; font-size: 16px; font-weight: bold;">
-                内容に変更があります
+                ${t('dialogs.exit.title')}
             </div>
             <div style="margin-bottom: 20px; color: #cccccc;">
-                保存せずに終了すると、変更内容は失われます。
+                ${t('dialogs.exit.message')}
             </div>
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
                 <button id="save-and-exit-btn" tabindex="1" style="
@@ -221,7 +222,7 @@ export async function showExitDialog() {
                     cursor: pointer;
                     font-size: 14px;
                     transition: background-color 0.2s, box-shadow 0.2s;
-                ">保存して終了</button>
+                ">${t('dialogs.exit.saveAndExit')}</button>
                 <button id="exit-without-saving-btn" tabindex="2" style="
                     background-color: #d14949;
                     color: white;
@@ -231,7 +232,7 @@ export async function showExitDialog() {
                     cursor: pointer;
                     font-size: 14px;
                     transition: background-color 0.2s, box-shadow 0.2s;
-                ">保存せずに終了</button>
+                ">${t('dialogs.exit.exitWithoutSaving')}</button>
                 <button id="cancel-exit-btn" tabindex="3" style="
                     background-color: #5a5a5a;
                     color: white;
@@ -241,7 +242,7 @@ export async function showExitDialog() {
                     cursor: pointer;
                     font-size: 14px;
                     transition: background-color 0.2s, box-shadow 0.2s;
-                ">キャンセル</button>
+                ">${t('dialogs.exit.cancel')}</button>
             </div>
         `;
         

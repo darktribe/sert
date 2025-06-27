@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Sert Editor - アプリケーション終了処理
+ * Sert Editor - アプリケーション終了処理（多言語化対応版）
  * =====================================================
  */
 
@@ -15,6 +15,7 @@ import {
 } from './globals.js';
 import { showExitDialog } from './dialog-utils.js';
 import { updateWindowTitle } from './ui-updater.js';
+import { t } from './locales.js';
 
 // グローバルフラグを削除し、ローカル変数で管理
 let isExitInProgress = false;
@@ -64,7 +65,7 @@ export async function exitApp() {
                     }
                 } catch (error) {
                     console.error('❌ Save before exit failed:', error);
-                    alert('保存に失敗しました: ' + error.message + '\n終了をキャンセルします。');
+                    alert(t('messages.saveError', { error: error.message }) + '\n' + t('messages.saveCancelExit'));
                     isExitInProgress = false;
                     return;
                 }
@@ -110,13 +111,13 @@ async function saveFileBeforeExit() {
                 content: editor.value 
             });
         } else {
-            throw new Error('Tauriアプリでのみ利用可能です');
+            throw new Error(t('messages.tauriOnly'));
         }
         
         setIsModified(false);
         setCurrentContent(editor.value);
     } else {
-        throw new Error('新規ファイルのため保存できません。先に「名前を付けて保存」を実行してください。');
+        throw new Error(t('messages.newFileError'));
     }
 }
 
@@ -127,11 +128,20 @@ async function saveAsFileForExit() {
     try {
         if (window.__TAURI__ && window.__TAURI__.dialog) {
             const filePath = await window.__TAURI__.dialog.save({
-                title: "ファイルを保存",
+                title: t('dialogs.fileDialog.saveBeforeExitTitle'),
                 filters: [
-                    { name: 'テキストファイル', extensions: ['txt'] },
-                    { name: 'Markdownファイル', extensions: ['md'] },
-                    { name: 'すべてのファイル', extensions: ['*'] }
+                    { 
+                        name: t('dialogs.fileFilters.textFiles'), 
+                        extensions: ['txt'] 
+                    },
+                    { 
+                        name: t('dialogs.fileFilters.markdownFiles'), 
+                        extensions: ['md'] 
+                    },
+                    { 
+                        name: t('dialogs.fileFilters.allFiles'), 
+                        extensions: ['*'] 
+                    }
                 ]
             });
             
@@ -158,7 +168,7 @@ async function saveAsFileForExit() {
                 return false;
             }
         } else {
-            throw new Error('ファイル保存機能はTauriアプリでのみ利用可能です');
+            throw new Error(t('messages.tauriOnly'));
         }
     } catch (error) {
         throw error;
