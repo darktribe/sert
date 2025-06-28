@@ -11,7 +11,7 @@
 
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
-use tauri::{Manager, Emitter, AppHandle, WebviewWindow};
+use tauri::{Manager, Emitter, AppHandle};
 
 // =====================================================
 // アプリケーション初期化とファイル関連付け
@@ -445,13 +445,20 @@ async fn write_file(path: String, content: String) -> Result<(), String> {
 /**
  * ファイルドロップイベントを処理するためのヘルパー関数
  */
+#[allow(dead_code)]
 fn handle_file_drop_event(app_handle: &AppHandle, file_path: &str) {
     println!("📂 File drop event: {}", file_path);
     
     // 新しいウィンドウを作成してファイルを開く
+    // 一意のウィンドウIDを生成（std::time::SystemTimeを使用）
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+    
     match tauri::WebviewWindowBuilder::new(
         app_handle,
-        format!("editor_{}", chrono::Utc::now().timestamp_millis()),
+        format!("editor_{}", timestamp),
         tauri::WebviewUrl::App("index.html".into())
     )
     .title(format!("Sert - {}", std::path::Path::new(file_path).file_name().unwrap_or_default().to_string_lossy()))
@@ -527,7 +534,7 @@ fn main() {
             
             // ウィンドウの取得と設定
             let windows = app.webview_windows();
-            if let Some(window) = windows.get("main") {
+            if let Some(_window) = windows.get("main") {
                 println!("✅ Main window found and configured for multi-display support");
                 
                 #[cfg(target_os = "macos")]
