@@ -11,7 +11,7 @@
 
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
-use tauri::{Manager, Emitter, AppHandle, WebviewWindow};
+use tauri::{Manager, Emitter, AppHandle};
 use std::path::Path;
 
 // =====================================================
@@ -224,10 +224,10 @@ fn create_new_window_with_file(app_handle: AppHandle, file_path: String) -> Resu
     let window_title = format!("Sert - {}", file_name);
     
     // Tauri 2.5対応のウィンドウ作成
-    match tauri::WindowBuilder::new(
+    match tauri::WebviewWindowBuilder::new(
         &app_handle,
         window_label.clone(),
-        tauri::WindowUrl::App("index.html".into())
+        tauri::WebviewUrl::App("index.html".into())
     )
     .title(window_title)
     .inner_size(1200.0, 800.0)
@@ -548,7 +548,7 @@ fn main() {
         // Tauri 2.5対応のファイルドロップイベント設定
         .on_window_event(|window, event| {
             match event {
-                tauri::WindowEvent::FileDrop(paths) => {
+                tauri::WindowEvent::DragDrop(tauri::DragDropEvent::Drop { paths, .. }) => {
                     println!("📁 File drop event detected: {:?}", paths);
                     
                     // 最初のファイルのみ処理
@@ -558,7 +558,7 @@ fn main() {
                         
                         // ファイルパスの妥当性確認
                         if first_path.exists() && first_path.is_file() {
-                            let app_handle = window.app_handle();
+                            let app_handle = window.app_handle().clone();
                             
                             // 新しいウィンドウを作成してファイルを開く
                             match create_new_window_with_file(app_handle, file_path.clone()) {
@@ -588,7 +588,7 @@ fn main() {
             println!("🚀 Sert Editor starting up...");
             
             // ウィンドウの取得と設定
-            if let Some(_window) = app.get_window("main") {
+            if let Some(_window) = app.get_webview_window("main") {
                 println!("✅ Main window found and configured for multi-display support");
                 
                 #[cfg(target_os = "macos")]
