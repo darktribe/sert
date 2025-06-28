@@ -153,8 +153,6 @@ if (document.readyState === 'loading') {
     initializeApp();
 }
 
-//　コミットできない
-
 // さらなるフォールバック: 少し遅延させてグローバル関数を再登録
 setTimeout(() => {
     console.log('🔄 Fallback: Re-registering global functions...');

@@ -13,11 +13,24 @@
     "withGlobalTauri": true,
     "windows": [
       {
+        "label": "main",
         "title": "Sert Editor",
         "width": 1200,
         "height": 800,
         "resizable": true,
-        "fullscreen": false
+        "maximizable": true,
+        "minimizable": true,
+        "closable": true,
+        "decorations": true,
+        "alwaysOnTop": false,
+        "fullscreen": false,
+        "skipTaskbar": false,
+        "transparent": false,
+        "visibleOnAllWorkspaces": false,
+        "contentProtected": false,
+        "shadow": true,
+        "focus": true,
+        "center": true
       }
     ],
     "security": {
@@ -34,26 +47,7 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ],
-    "resources": [],
-    "externalBin": [],
-    "copyright": "",
-    "category": "DeveloperTool",
-    "shortDescription": "Simple text editor built with Rust and Tauri",
-    "longDescription": "Sert is a lightweight, cross-platform text editor built with Rust and Tauri. It supports multiple languages and provides essential text editing features.",
-    "macOS": {
-      "frameworks": [],
-      "minimumSystemVersion": "10.13",
-      "exceptionDomain": "",
-      "signingIdentity": null,
-      "providerShortName": null,
-      "entitlements": null
-    },
-    "windows": {
-      "certificateThumbprint": null,
-      "digestAlgorithm": "sha256",
-      "timestampUrl": ""
-    }
+    ]
   },
   "plugins": {
     "fs": {
