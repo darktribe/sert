@@ -13,6 +13,7 @@ use pyo3::prelude::*;
 use pyo3::types::PyDict;
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 use tauri::{Manager, Emitter, AppHandle, WebviewWindow, Window, WindowEvent};
 use std::path::Path;
 
@@ -200,6 +201,7 @@ async fn handle_file_drop_with_modification_check(
 >>>>>>> parent of e00ea71 (Macのマルチディスプレイ間移動をサポート)
 =======
 >>>>>>> parent of e00ea71 (Macのマルチディスプレイ間移動をサポート)
+=======
 
 // =====================================================
 // Python統合機能（PyO3）
@@ -509,6 +511,7 @@ fn main() {
             
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
             if let Some(_window) = app.get_webview_window("main") {
                 println!("✅ Main window found and configured");
                 
@@ -524,6 +527,8 @@ fn main() {
                 println!("⚠️ Main window not found");
             }
             
+=======
+>>>>>>> parent of e00ea71 (Macのマルチディスプレイ間移動をサポート)
 =======
 >>>>>>> parent of e00ea71 (Macのマルチディスプレイ間移動をサポート)
 =======
