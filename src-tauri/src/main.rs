@@ -202,6 +202,7 @@ async fn handle_file_drop_with_modification_check(
 =======
 >>>>>>> parent of e00ea71 (Macのマルチディスプレイ間移動をサポート)
 =======
+>>>>>>> parent of e00ea71 (Macのマルチディスプレイ間移動をサポート)
 
 // =====================================================
 // Python統合機能（PyO3）
