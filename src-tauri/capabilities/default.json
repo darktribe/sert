@@ -19,7 +19,7 @@
     "fs:allow-write-file",
     "fs:allow-read-dir",
     "fs:allow-exists",
-    "fs:allow-metadata",
+    "fs:allow-stat",
     "fs:default"
   ]
 }
