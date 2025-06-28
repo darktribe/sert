@@ -11,10 +11,13 @@ import { undo, redo } from './js/undo-redo.js';
 import { copy, cut, paste, selectAll } from './js/edit-operations.js';
 import { showSearchDialog, showReplaceDialog, findNext, findPrevious } from './js/search-replace.js';
 import { exitApp } from './js/app-exit.js';
+import { createLanguageSwitcher, removeLanguageSwitcher, reinitializeLanguageSwitcher } from './js/language-switcher.js';
+import { changeLanguage, getCurrentLanguage, getAvailableLanguages } from './js/locales.js';
 
 // グローバル関数をウィンドウオブジェクトに登録（HTMLから呼び出せるようにするため）
 console.log('🔧 Registering global functions...');
 
+// 基本機能
 window.toggleMenu = toggleMenu;
 window.newFile = newFile;
 window.openFile = openFile;
@@ -29,6 +32,14 @@ window.selectAll = selectAll;
 window.showSearchDialog = showSearchDialog;
 window.showReplaceDialog = showReplaceDialog;
 window.exitApp = exitApp;
+
+// 言語切り替え機能
+window.createLanguageSwitcher = createLanguageSwitcher;
+window.removeLanguageSwitcher = removeLanguageSwitcher;
+window.reinitializeLanguageSwitcher = reinitializeLanguageSwitcher;
+window.changeLanguage = changeLanguage;
+window.getCurrentLanguage = getCurrentLanguage;
+window.getAvailableLanguages = getAvailableLanguages;
 
 // グローバル関数の登録確認とデバッグ
 console.log('📋 Global functions registered:');
@@ -46,6 +57,13 @@ console.log('window.selectAll:', typeof window.selectAll);
 console.log('window.showSearchDialog:', typeof window.showSearchDialog);
 console.log('window.showReplaceDialog:', typeof window.showReplaceDialog);
 console.log('window.exitApp:', typeof window.exitApp);
+
+// 言語切り替え関数
+console.log('🌐 Language functions:');
+console.log('window.createLanguageSwitcher:', typeof window.createLanguageSwitcher);
+console.log('window.changeLanguage:', typeof window.changeLanguage);
+console.log('window.getCurrentLanguage:', typeof window.getCurrentLanguage);
+console.log('window.getAvailableLanguages:', typeof window.getAvailableLanguages);
 
 // 保存機能のテスト用デバッグ関数を追加
 window.testSaveFile = async function() {
@@ -71,6 +89,28 @@ window.testSearchDialog = function() {
     }
 };
 
+// 言語切り替えテスト用デバッグ関数を追加
+window.testLanguageSwitching = async function() {
+    console.log('🧪 Testing language switching...');
+    const languages = window.getAvailableLanguages();
+    console.log('Available languages:', languages);
+    
+    for (const lang of languages) {
+        console.log(`🌐 Testing switch to ${lang.name} (${lang.code})`);
+        try {
+            const success = await window.changeLanguage(lang.code);
+            console.log(`✅ Switch to ${lang.code}:`, success);
+            
+            // 少し待機して次の言語へ
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error) {
+            console.error(`❌ Failed to switch to ${lang.code}:`, error);
+        }
+    }
+    
+    console.log('🧪 Language switching test completed');
+};
+
 /**
  * ページ読み込み時の初期化処理
  */
@@ -80,6 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // グローバル関数が正しく登録されているかさらに確認
     console.log('🔍 Final check - window.saveFile:', typeof window.saveFile);
     console.log('🔍 Final check - window.showSearchDialog:', typeof window.showSearchDialog);
+    console.log('🔍 Final check - window.changeLanguage:', typeof window.changeLanguage);
     
     await initializeApp();
     
@@ -89,6 +130,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('- window.openFile():', typeof window.openFile);
     console.log('- window.showSearchDialog():', typeof window.showSearchDialog);
     console.log('- window.showReplaceDialog():', typeof window.showReplaceDialog);
+    console.log('- window.changeLanguage():', typeof window.changeLanguage);
+    console.log('- window.testLanguageSwitching():', typeof window.testLanguageSwitching);
 });
 
 /**
@@ -99,12 +142,14 @@ if (document.readyState === 'loading') {
         console.log('📄 DOM loaded via readyState check...');
         console.log('🔍 Backup check - window.saveFile:', typeof window.saveFile);
         console.log('🔍 Backup check - window.showSearchDialog:', typeof window.showSearchDialog);
+        console.log('🔍 Backup check - window.changeLanguage:', typeof window.changeLanguage);
         await initializeApp();
     });
 } else {
     console.log('📄 DOM already loaded, initializing immediately...');
     console.log('🔍 Immediate check - window.saveFile:', typeof window.saveFile);
     console.log('🔍 Immediate check - window.showSearchDialog:', typeof window.showSearchDialog);
+    console.log('🔍 Immediate check - window.changeLanguage:', typeof window.changeLanguage);
     initializeApp();
 }
 
@@ -118,7 +163,10 @@ setTimeout(() => {
     window.saveAsFile = saveAsFile;
     window.showSearchDialog = showSearchDialog;
     window.showReplaceDialog = showReplaceDialog;
+    window.changeLanguage = changeLanguage;
+    window.createLanguageSwitcher = createLanguageSwitcher;
     
     console.log('✅ Fallback registration complete - window.saveFile:', typeof window.saveFile);
     console.log('✅ Fallback registration complete - window.showSearchDialog:', typeof window.showSearchDialog);
+    console.log('✅ Fallback registration complete - window.changeLanguage:', typeof window.changeLanguage);
 }, 1000);

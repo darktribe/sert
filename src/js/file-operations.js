@@ -46,7 +46,7 @@ export async function newFile() {
                     }
                 }
             } catch (error) {
-                console.error('保存に失敗しました:', error);
+                console.error('Save failed:', error);
                 alert(t('messages.saveError', { error: error.message }) + '\n' + t('messages.saveCancelNew'));
                 closeAllMenus();
                 return;
@@ -111,6 +111,7 @@ export async function openFile() {
                         }
                     }
                 } catch (error) {
+                    console.error('Save failed:', error);
                     alert(t('messages.saveError', { error: error.message }) + '\n' + t('messages.saveCancelOpen'));
                     closeAllMenus();
                     return;
@@ -304,7 +305,7 @@ export async function saveAsFile() {
             alert(t('messages.tauriOnly'));
         }
     } catch (error) {
-        console.error('SaveAs error:', error);
+        console.error('Save As error:', error);
         alert(t('messages.saveError', { error: error.message }));
     }
     

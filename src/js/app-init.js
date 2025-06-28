@@ -10,6 +10,7 @@ import { updateLineNumbers, updateStatus, updateWindowTitle } from './ui-updater
 import { setupEventListeners } from './event-listeners.js';
 import { exitApp } from './app-exit.js';
 import { initializeI18n, t, updateElementText } from './locales.js';
+import { createLanguageSwitcher } from './language-switcher.js';
 
 /**
  * Tauri APIの初期化
@@ -58,7 +59,7 @@ async function initializeTauri() {
             console.log('Tauri core not available');
         }
     } catch (error) {
-        console.error('Tauri API初期化失敗:', error);
+        console.error('Tauri API initialization failed:', error);
     }
 }
 
@@ -119,6 +120,11 @@ function setupLanguageChangeListener() {
     window.addEventListener('languageChanged', (event) => {
         console.log('🌐 Language changed, updating UI...');
         applyI18nToUI();
+        
+        // 言語切り替えUIの状態も更新
+        import('./language-switcher.js').then(module => {
+            module.updateLanguageSwitcherState();
+        });
     });
 }
 
@@ -139,7 +145,7 @@ export async function initializeApp() {
     
     const editorElement = document.getElementById('editor');
     if (!editorElement) {
-        console.error('エディタ要素が見つかりません');
+        console.error('Editor element not found');
         return;
     }
     
@@ -158,6 +164,10 @@ export async function initializeApp() {
     
     // UIに多言語化を適用
     applyI18nToUI();
+    
+    // 言語切り替えUIを作成
+    console.log('🌐 Creating language switcher...');
+    createLanguageSwitcher();
     
     // 初期UI更新
     updateLineNumbers();

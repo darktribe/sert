@@ -11,34 +11,34 @@
         <!-- メニューバー -->
         <div class="menu-bar">
             <div class="menu-item" onclick="toggleMenu('file-menu')">
-                <span data-i18n="menu.file">ファイル</span>
+                <span data-i18n="menu.file">File</span>
                 <div id="file-menu" class="dropdown-menu">
-                    <div class="menu-option" onclick="newFile()" data-i18n="fileMenu.new">新規作成</div>
-                    <div class="menu-option" onclick="openFile()" data-i18n="fileMenu.open">開く</div>
-                    <div class="menu-option" onclick="saveFile()" data-i18n="fileMenu.save">上書き保存</div>
-                    <div class="menu-option" onclick="saveAsFile()" data-i18n="fileMenu.saveAs">名前をつけて保存</div>
+                    <div class="menu-option" onclick="newFile()" data-i18n="fileMenu.new">New</div>
+                    <div class="menu-option" onclick="openFile()" data-i18n="fileMenu.open">Open</div>
+                    <div class="menu-option" onclick="saveFile()" data-i18n="fileMenu.save">Save</div>
+                    <div class="menu-option" onclick="saveAsFile()" data-i18n="fileMenu.saveAs">Save As</div>
                     <div class="menu-separator"></div>
-                    <div class="menu-option" onclick="exitApp()" data-i18n="fileMenu.exit">終了</div>
+                    <div class="menu-option" onclick="exitApp()" data-i18n="fileMenu.exit">Exit</div>
                 </div>
             </div>
             <div class="menu-item" onclick="toggleMenu('edit-menu')">
-                <span data-i18n="menu.edit">編集</span>
+                <span data-i18n="menu.edit">Edit</span>
                 <div id="edit-menu" class="dropdown-menu">
-                    <div class="menu-option" onclick="undo()" data-i18n="editMenu.undo">もとに戻す</div>
-                    <div class="menu-option" onclick="redo()" data-i18n="editMenu.redo">やりなおし</div>
+                    <div class="menu-option" onclick="undo()" data-i18n="editMenu.undo">Undo</div>
+                    <div class="menu-option" onclick="redo()" data-i18n="editMenu.redo">Redo</div>
                     <div class="menu-separator"></div>
-                    <div class="menu-option" onclick="cut()" data-i18n="editMenu.cut">切り取り</div>
-                    <div class="menu-option" onclick="copy()" data-i18n="editMenu.copy">コピー</div>
-                    <div class="menu-option" onclick="paste()" data-i18n="editMenu.paste">貼り付け</div>
+                    <div class="menu-option" onclick="cut()" data-i18n="editMenu.cut">Cut</div>
+                    <div class="menu-option" onclick="copy()" data-i18n="editMenu.copy">Copy</div>
+                    <div class="menu-option" onclick="paste()" data-i18n="editMenu.paste">Paste</div>
                     <div class="menu-separator"></div>
-                    <div class="menu-option" onclick="selectAll()" data-i18n="editMenu.selectAll">すべて選択</div>
+                    <div class="menu-option" onclick="selectAll()" data-i18n="editMenu.selectAll">Select All</div>
                 </div>
             </div>
             <div class="menu-item" onclick="toggleMenu('search-menu')">
-                <span data-i18n="menu.search">検索</span>
+                <span data-i18n="menu.search">Search</span>
                 <div id="search-menu" class="dropdown-menu">
-                    <div class="menu-option" onclick="showSearchDialog()" data-i18n="searchMenu.find">検索</div>
-                    <div class="menu-option" onclick="showReplaceDialog()" data-i18n="searchMenu.replace">置換</div>
+                    <div class="menu-option" onclick="showSearchDialog()" data-i18n="searchMenu.find">Find</div>
+                    <div class="menu-option" onclick="showReplaceDialog()" data-i18n="searchMenu.replace">Replace</div>
                 </div>
             </div>
         </div>
@@ -50,7 +50,7 @@
                 id="editor"
                 class="editor-textarea"
                 data-i18n-placeholder="editor.placeholder"
-                placeholder="テキストを入力してください..."
+                placeholder="Please enter text here..."
                 spellcheck="false"
                 wrap="off"
             ></textarea>
@@ -58,9 +58,9 @@
 
         <!-- ステータスバー -->
         <div class="status-bar">
-            <span id="cursor-position">行: 1, 列: 1</span>
+            <span id="cursor-position">Line: 1, Column: 1</span>
             <span id="encoding" data-i18n="statusBar.encoding">UTF-8</span>
-            <span id="char-count">総文字数: 0</span>
+            <span id="char-count">Character count: 0</span>
         </div>
     </div>
     <script src="/src/script.js"></script>

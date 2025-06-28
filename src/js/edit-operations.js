@@ -49,7 +49,7 @@ export async function copy() {
             setLastOperationType(null);
         }
     } catch (error) {
-        console.error('コピーに失敗:', error);
+        console.error('Copy failed:', error);
         // エラーが発生した場合、ブラウザのデフォルト動作にフォールバック
         document.execCommand('copy');
         setLastOperationType('copy');
@@ -149,7 +149,7 @@ export async function cut() {
             setLastOperationType(null);
         }
     } catch (error) {
-        console.error('切り取りに失敗:', error);
+        console.error('Cut failed:', error);
         // エラーが発生した場合、ブラウザのデフォルト動作にフォールバック
         document.execCommand('cut');
         setLastOperationType('cut');
@@ -276,7 +276,7 @@ export async function paste() {
         }
         
     } catch (error) {
-        console.error('貼り付けに失敗:', error);
+        console.error('Paste failed:', error);
         // フォールバック: ブラウザのデフォルト動作
         document.execCommand('paste');
         
