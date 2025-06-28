@@ -3,7 +3,7 @@
 
 /*
  * =====================================================
- * Sert Editor - Rustバックエンド
+ * Sert Editor - Rustバックエンド（Tauri 2.6対応版）
  * Python拡張機能対応のシンプルなテキストエディタ
  * ドラッグアンドドロップ・ファイル関連付け対応
  * =====================================================
@@ -11,7 +11,7 @@
 
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
-use tauri::Manager;
+use tauri::{Manager, Emitter, AppHandle, WebviewWindow};
 
 // =====================================================
 // アプリケーション初期化とファイル関連付け
@@ -439,6 +439,45 @@ async fn write_file(path: String, content: String) -> Result<(), String> {
 }
 
 // =====================================================
+// ファイルドロップハンドリング（Tauri 2.6対応）
+// =====================================================
+
+/**
+ * ファイルドロップイベントを処理するためのヘルパー関数
+ */
+fn handle_file_drop_event(app_handle: &AppHandle, file_path: &str) {
+    println!("📂 File drop event: {}", file_path);
+    
+    // 新しいウィンドウを作成してファイルを開く
+    match tauri::WebviewWindowBuilder::new(
+        app_handle,
+        format!("editor_{}", chrono::Utc::now().timestamp_millis()),
+        tauri::WebviewUrl::App("index.html".into())
+    )
+    .title(format!("Sert - {}", std::path::Path::new(file_path).file_name().unwrap_or_default().to_string_lossy()))
+    .build() {
+        Ok(window) => {
+            println!("✅ New window created for dropped file");
+            
+            // 新しいウィンドウにファイルパスを送信
+            if let Err(e) = window.emit("file-dropped", file_path) {
+                println!("❌ Failed to emit file-dropped event to new window: {}", e);
+            }
+        },
+        Err(e) => {
+            println!("❌ Failed to create new window: {}", e);
+            
+            // 新しいウィンドウ作成に失敗した場合、既存のウィンドウに送信
+            if let Some(window) = app_handle.get_webview_window("main") {
+                if let Err(e) = window.emit("file-dropped", file_path) {
+                    println!("❌ Failed to emit file-dropped event to main window: {}", e);
+                }
+            }
+        }
+    }
+}
+
+// =====================================================
 // メイン関数とアプリケーション設定
 // =====================================================
 
@@ -490,35 +529,6 @@ fn main() {
             let windows = app.webview_windows();
             if let Some(window) = windows.get("main") {
                 println!("✅ Main window found and configured for multi-display support");
-                
-                // ドラッグアンドドロップイベントの設定
-                let window_clone = window.clone();
-                window.on_file_drop(move |event| {
-                    println!("📂 File drop event: {:?}", event);
-                    
-                    match event.payload {
-                        tauri::DragDropEvent::Drop { paths, position: _ } => {
-                            if !paths.is_empty() {
-                                let first_file = &paths[0];
-                                println!("📁 Dropped file: {}", first_file.display());
-                                
-                                // フロントエンドにファイルドロップイベントを送信
-                                if let Err(e) = window_clone.emit("file-dropped", first_file.to_string_lossy().to_string()) {
-                                    println!("❌ Failed to emit file-dropped event: {}", e);
-                                }
-                            }
-                        }
-                        tauri::DragDropEvent::Enter { paths, position: _ } => {
-                            println!("📂 Drag enter: {} files", paths.len());
-                        }
-                        tauri::DragDropEvent::Over { position: _ } => {
-                            // ドラッグオーバー時の処理（必要に応じて）
-                        }
-                        tauri::DragDropEvent::Leave => {
-                            println!("📂 Drag leave");
-                        }
-                    }
-                });
                 
                 #[cfg(target_os = "macos")]
                 {

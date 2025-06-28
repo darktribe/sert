@@ -30,8 +30,7 @@
         "contentProtected": false,
         "shadow": true,
         "focus": true,
-        "center": true,
-        "fileDropEnabled": true
+        "center": true
       }
     ],
     "security": {
@@ -55,18 +54,13 @@
     "category": "DeveloperTool",
     "shortDescription": "Simple text editor built with Rust and Tauri",
     "longDescription": "Sert is a lightweight, cross-platform text editor built with Rust and Tauri. It supports multiple languages and provides essential text editing features.",
-    "deb": {
-      "depends": []
-    },
     "macOS": {
       "frameworks": [],
       "minimumSystemVersion": "",
       "exceptionDomain": "",
       "signingIdentity": null,
       "providerShortName": null,
-      "entitlements": null,
-      "providerDisplayName": null,
-      "license": null
+      "entitlements": null
     },
     "windows": {
       "certificateThumbprint": null,
