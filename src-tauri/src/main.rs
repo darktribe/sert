@@ -3,7 +3,7 @@
 
 /*
  * =====================================================
- * Sert Editor - Rustバックエンド（Tauri 2.6対応版）
+ * Sert Editor - Rustバックエンド（Tauri 2.5対応版）
  * Python拡張機能対応のシンプルなテキストエディタ
  * ドラッグアンドドロップ・ファイル関連付け対応
  * =====================================================
@@ -11,7 +11,8 @@
 
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
-use tauri::{Manager, Emitter, AppHandle};
+use tauri::{Manager, Emitter, AppHandle, WebviewWindow};
+use std::path::Path;
 
 // =====================================================
 // アプリケーション初期化とファイル関連付け
@@ -189,6 +190,67 @@ fn get_python_info() -> Result<String, String> {
             Err(e) => Err(format!("Failed to get Python info: {}", e)),
         }
     })
+}
+
+// =====================================================
+// ファイルドロップ処理 - Tauri 2.5対応
+// =====================================================
+
+/**
+ * 新しいウィンドウを作成してファイルを開く - Tauri 2.5対応版
+ */
+#[tauri::command]
+fn create_new_window_with_file(app_handle: AppHandle, file_path: String) -> Result<String, String> {
+    println!("📂 Creating new window for file: {}", file_path);
+    
+    // ファイルパスの妥当性チェック
+    let path = Path::new(&file_path);
+    if !path.exists() || !path.is_file() {
+        return Err(format!("Invalid file path: {}", file_path));
+    }
+    
+    // 一意のウィンドウIDを生成
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+    
+    let window_label = format!("editor_{}", timestamp);
+    
+    // ファイル名を取得してタイトルに使用
+    let file_name = path.file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("Unknown File");
+    let window_title = format!("Sert - {}", file_name);
+    
+    // Tauri 2.5対応のウィンドウ作成
+    match tauri::WindowBuilder::new(
+        &app_handle,
+        window_label.clone(),
+        tauri::WindowUrl::App("index.html".into())
+    )
+    .title(window_title)
+    .inner_size(1200.0, 800.0)
+    .center()
+    .resizable(true)
+    .build() {
+        Ok(window) => {
+            println!("✅ New window created: {}", window_label);
+            
+            // 新しいウィンドウにファイルパスを送信
+            if let Err(e) = window.emit("open-file-on-start", &file_path) {
+                println!("❌ Failed to emit open-file-on-start event: {}", e);
+                return Err(format!("Failed to send file path to new window: {}", e));
+            }
+            
+            println!("✅ File path sent to new window: {}", file_path);
+            Ok(window_label)
+        },
+        Err(e) => {
+            println!("❌ Failed to create new window: {}", e);
+            Err(format!("Failed to create new window: {}", e))
+        }
+    }
 }
 
 // =====================================================
@@ -439,53 +501,7 @@ async fn write_file(path: String, content: String) -> Result<(), String> {
 }
 
 // =====================================================
-// ファイルドロップハンドリング（Tauri 2.6対応）
-// =====================================================
-
-/**
- * ファイルドロップイベントを処理するためのヘルパー関数
- */
-#[allow(dead_code)]
-fn handle_file_drop_event(app_handle: &AppHandle, file_path: &str) {
-    println!("📂 File drop event: {}", file_path);
-    
-    // 新しいウィンドウを作成してファイルを開く
-    // 一意のウィンドウIDを生成（std::time::SystemTimeを使用）
-    let timestamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis();
-    
-    match tauri::WebviewWindowBuilder::new(
-        app_handle,
-        format!("editor_{}", timestamp),
-        tauri::WebviewUrl::App("index.html".into())
-    )
-    .title(format!("Sert - {}", std::path::Path::new(file_path).file_name().unwrap_or_default().to_string_lossy()))
-    .build() {
-        Ok(window) => {
-            println!("✅ New window created for dropped file");
-            
-            // 新しいウィンドウにファイルパスを送信
-            if let Err(e) = window.emit("file-dropped", file_path) {
-                println!("❌ Failed to emit file-dropped event to new window: {}", e);
-            }
-        },
-        Err(e) => {
-            println!("❌ Failed to create new window: {}", e);
-            
-            // 新しいウィンドウ作成に失敗した場合、既存のウィンドウに送信
-            if let Some(window) = app_handle.get_webview_window("main") {
-                if let Err(e) = window.emit("file-dropped", file_path) {
-                    println!("❌ Failed to emit file-dropped event to main window: {}", e);
-                }
-            }
-        }
-    }
-}
-
-// =====================================================
-// メイン関数とアプリケーション設定
+// メイン関数とアプリケーション設定 - Tauri 2.5対応
 // =====================================================
 
 fn main() {
@@ -508,6 +524,7 @@ fn main() {
             get_startup_file_path,
             validate_file_path,
             get_file_info,
+            create_new_window_with_file,
             
             // Python関連
             test_python,
@@ -528,13 +545,50 @@ fn main() {
             write_file
         ])
         
+        // Tauri 2.5対応のファイルドロップイベント設定
+        .on_window_event(|window, event| {
+            match event {
+                tauri::WindowEvent::FileDrop(paths) => {
+                    println!("📁 File drop event detected: {:?}", paths);
+                    
+                    // 最初のファイルのみ処理
+                    if let Some(first_path) = paths.first() {
+                        let file_path = first_path.to_string_lossy().to_string();
+                        println!("📂 Processing dropped file: {}", file_path);
+                        
+                        // ファイルパスの妥当性確認
+                        if first_path.exists() && first_path.is_file() {
+                            let app_handle = window.app_handle();
+                            
+                            // 新しいウィンドウを作成してファイルを開く
+                            match create_new_window_with_file(app_handle, file_path.clone()) {
+                                Ok(window_label) => {
+                                    println!("✅ File drop handled successfully: {}", window_label);
+                                },
+                                Err(e) => {
+                                    println!("❌ Failed to handle file drop: {}", e);
+                                    
+                                    // 新しいウィンドウ作成に失敗した場合は現在のウィンドウで開く
+                                    if let Err(emit_error) = window.emit("open-file-on-start", &file_path) {
+                                        println!("❌ Failed to emit to current window: {}", emit_error);
+                                    }
+                                }
+                            }
+                        } else {
+                            println!("❌ Invalid file dropped: {}", file_path);
+                        }
+                    }
+                },
+                _ => {}
+            }
+        })
+        
         // アプリケーション初期化処理
         .setup(|app| {
             println!("🚀 Sert Editor starting up...");
             
             // ウィンドウの取得と設定
-            let windows = app.webview_windows();
-            if let Some(_window) = windows.get("main") {
+            if let Some(_window) = app.get_window("main") {
                 println!("✅ Main window found and configured for multi-display support");
                 
                 #[cfg(target_os = "macos")]

@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Sert Editor - アプリケーション初期化（多言語化対応版）
+ * Sert Editor - アプリケーション初期化（Tauri 2.5対応版）
  * ドラッグアンドドロップ・ファイル関連付け対応
  * =====================================================
  */
@@ -14,8 +14,8 @@ import { initializeI18n, t, updateElementText } from './locales.js';
 import { createLanguageSwitcher } from './language-switcher.js';
 
 /**
- * Tauri APIの初期化
- * ウィンドウクローズイベントの設定も行う
+ * Tauri APIの初期化 - Tauri 2.5対応版
+ * ウィンドウクローズイベントとファイルドロップイベントの設定も行う
  */
 async function initializeTauri() {
     try {
@@ -30,8 +30,8 @@ async function initializeTauri() {
             // ウィンドウクローズイベントの設定
             if (window.__TAURI__.window) {
                 console.log('Setting up window close handler');
-                const { getCurrentWindow } = window.__TAURI__.window;
-                const currentWindow = getCurrentWindow();
+                const { getCurrent } = window.__TAURI__.window;
+                const currentWindow = getCurrent();
                 
                 await currentWindow.onCloseRequested(async (event) => {
                     console.log('🚪 Window close requested via X button');
@@ -50,14 +50,17 @@ async function initializeTauri() {
                 console.log('Window close handler set up');
             }
             
-            // ドラッグアンドドロップイベントの設定
+            // Tauri 2.5対応のファイルドロップイベント設定
             if (window.__TAURI__.event) {
-                console.log('🗂️ Setting up file drop event listener');
-                await window.__TAURI__.event.listen('file-dropped', (event) => {
-                    console.log('📂 File dropped:', event.payload);
-                    handleDroppedFile(event.payload);
+                console.log('🗂️ Setting up file open event listener (Tauri 2.5)');
+                
+                // 新しいウィンドウでファイルを開くイベント
+                await window.__TAURI__.event.listen('open-file-on-start', (event) => {
+                    console.log('📂 Open file on start event received:', event.payload);
+                    handleOpenFileEvent(event.payload);
                 });
-                console.log('✅ File drop event listener set up');
+                
+                console.log('✅ File open event listener set up');
             }
             
             // Tauri APIs の確認
@@ -98,18 +101,18 @@ async function handleStartupFile() {
 }
 
 /**
- * ドロップされたファイルを処理
+ * ファイルを開くイベントを処理（新しいウィンドウで開かれたファイル用）
  */
-async function handleDroppedFile(filePath) {
+async function handleOpenFileEvent(filePath) {
     try {
-        console.log('📁 Processing dropped file:', filePath);
+        console.log('📁 Processing file open event:', filePath);
         
         // ファイルパスの妥当性をチェック
         if (window.__TAURI__ && window.__TAURI__.core) {
             const isValid = await window.__TAURI__.core.invoke('validate_file_path', { path: filePath });
             
             if (isValid) {
-                console.log('✅ Valid file path, opening file');
+                console.log('✅ Valid file path, opening file in current window');
                 await openFileFromPath(filePath);
                 
                 // ファイル情報をログ出力
@@ -125,7 +128,7 @@ async function handleDroppedFile(filePath) {
             }
         }
     } catch (error) {
-        console.error('❌ Failed to handle dropped file:', error);
+        console.error('❌ Failed to handle file open event:', error);
         showFileErrorMessage(t('messages.openError', { error: error.message }));
     }
 }
@@ -259,7 +262,7 @@ function setupLanguageChangeListener() {
 }
 
 /**
- * ドロップゾーンの視覚的フィードバックを設定
+ * ドロップゾーンの視覚的フィードバックを設定（Tauri 2.5対応版）
  */
 function setupDropZoneVisualFeedback() {
     const container = document.querySelector('.container');
@@ -288,10 +291,13 @@ function setupDropZoneVisualFeedback() {
     container.addEventListener('drop', (e) => {
         e.preventDefault();
         container.classList.remove('drag-over');
-        console.log('📂 Drop on container - Tauri will handle file processing');
+        console.log('📂 Drop on container - Files will be processed by Tauri 2.5 file drop handler');
+        
+        // Tauri 2.5では、ファイルドロップはon_window_eventで処理されるため
+        // ここでは視覚的フィードバックのみ処理
     });
     
-    console.log('✅ Drop zone visual feedback set up');
+    console.log('✅ Drop zone visual feedback set up (Tauri 2.5)');
 }
 
 /**
@@ -354,7 +360,7 @@ export async function initializeApp() {
     editorElement.focus();
     
     console.log('🎯 App initialization completed');
-    console.log('🗂️ Drag and drop functionality ready');
+    console.log('🗂️ Drag and drop functionality ready (Tauri 2.5)');
     console.log('🔗 File association support ready');
 }
 
