@@ -1,7 +1,7 @@
 /*
  * =====================================================
  * Sert Editor - アプリケーション初期化（Tauri 2.5対応版）
- * ドラッグアンドドロップ・ファイル関連付け対応（期待する動作に修正）
+ * ドラッグアンドドロップ・ファイル関連付け対応（期待する動作実装版）
  * =====================================================
  */
 
@@ -60,20 +60,14 @@ async function initializeTauri() {
                     handleOpenFileEvent(event.payload);
                 });
                 
-                // ファイルドロップ時の変更チェックイベント（期待する動作に対応）
-                await window.__TAURI__.event.listen('check-modification-and-open', (event) => {
-                    console.log('📂 Check modification and open event received:', event.payload);
-                    handleCheckModificationAndOpen(event.payload);
+                // 変更状態チェック要求イベント（新しい期待動作対応）
+                await window.__TAURI__.event.listen('request-modification-status', (event) => {
+                    console.log('📂 Modification status request received:', event.payload);
+                    handleModificationStatusRequest(event.payload);
                 });
                 
                 console.log('✅ File open event listeners set up');
             }
-            
-            // 現在のウィンドウでファイルを開くイベント（カスタムイベント）
-            window.addEventListener('open-file-in-current', (event) => {
-                console.log('📂 Open file in current window event received:', event.detail);
-                handleOpenFileInCurrent(event.detail);
-            });
             
             // Tauri APIs の確認
             console.log('Tauri.fs available:', !!window.__TAURI__.fs);
@@ -113,32 +107,36 @@ async function handleStartupFile() {
 }
 
 /**
- * ファイルドロップ時の変更チェックと開く処理（期待する動作）
+ * 変更状態チェック要求を処理する（期待する動作対応）
  */
-async function handleCheckModificationAndOpen(filePath) {
+async function handleModificationStatusRequest(filePath) {
     try {
-        console.log('📁 Checking modification status for file drop:', filePath);
+        console.log('📁 Processing modification status request for:', filePath);
         
-        // グローバルのisModifiedをチェック
+        // グローバルのisModifiedを取得
         const isCurrentlyModified = window.isModified || false;
         console.log('📝 Current modification status:', isCurrentlyModified);
         
-        if (!isCurrentlyModified) {
-            // 変更がない場合：現在のウィンドウでファイルを開く
-            console.log('📂 No modifications, opening file in current window');
-            await openFileFromPath(filePath);
-        } else {
-            // 変更がある場合：新しいウィンドウを作成
-            console.log('📂 Has modifications, creating new window');
+        if (window.__TAURI__ && window.__TAURI__.core) {
+            // Rustコマンドを呼び出して適切な動作を実行
+            const result = await window.__TAURI__.core.invoke('handle_file_drop_with_modification_check', {
+                file_path: filePath,
+                is_modified: isCurrentlyModified
+            });
             
-            if (window.__TAURI__ && window.__TAURI__.core) {
-                await window.__TAURI__.core.invoke('create_new_window_with_file', {
-                    file_path: filePath
-                });
+            console.log('✅ File drop handled:', result);
+            
+            // current_windowで開かれた場合の追加処理
+            if (result.startsWith('current_window:')) {
+                // 現在のウィンドウでファイルが開かれるため、追加の処理は不要
+                console.log('📂 File will be opened in current window');
+            } else if (result.startsWith('new_window:')) {
+                // 新しいウィンドウが作成された
+                console.log('📂 File opened in new window:', result);
             }
         }
     } catch (error) {
-        console.error('❌ Failed to handle check modification and open:', error);
+        console.error('❌ Failed to handle modification status request:', error);
         
         // エラー時のフォールバック：新しいウィンドウを作成
         try {
@@ -187,39 +185,6 @@ async function handleOpenFileEvent(filePath) {
 }
 
 /**
- * 現在のウィンドウでファイルを開く処理（期待する動作）
- */
-async function handleOpenFileInCurrent(filePath) {
-    try {
-        console.log('📁 Opening file in current window:', filePath);
-        
-        // ファイルパスの妥当性をチェック
-        if (window.__TAURI__ && window.__TAURI__.core) {
-            const isValid = await window.__TAURI__.core.invoke('validate_file_path', { path: filePath });
-            
-            if (isValid) {
-                console.log('✅ Valid file path, opening in current window');
-                await openFileFromPath(filePath);
-                
-                // ファイル情報をログ出力
-                try {
-                    const fileInfo = await window.__TAURI__.core.invoke('get_file_info', { path: filePath });
-                    console.log('📋 File info:', fileInfo);
-                } catch (infoError) {
-                    console.warn('⚠️ Failed to get file info:', infoError);
-                }
-            } else {
-                console.error('❌ Invalid file path:', filePath);
-                showFileErrorMessage(t('messages.openError', { error: 'Invalid file path' }));
-            }
-        }
-    } catch (error) {
-        console.error('❌ Failed to open file in current window:', error);
-        showFileErrorMessage(t('messages.openError', { error: error.message }));
-    }
-}
-
-/**
  * パスからファイルを開く共通処理（改良版 - ファイル内容表示を確実に）
  */
 async function openFileFromPath(filePath) {
@@ -249,6 +214,9 @@ async function openFileFromPath(filePath) {
             // 段階的にエディタの状態を更新
             console.log('📝 Step 1: Setting editor value');
             editorElement.value = content;
+            
+            // DOMを強制的に更新
+            editorElement.dispatchEvent(new Event('input', { bubbles: true }));
             
             console.log('📝 Step 2: Updating global state');
             setCurrentFilePath(filePath);
@@ -287,6 +255,17 @@ async function openFileFromPath(filePath) {
                 editorElement.focus();
                 editorElement.setSelectionRange(0, 0);
             }, 100);
+            
+            // さらに確実にファイル内容を表示するため、追加のチェック
+            setTimeout(() => {
+                if (editorElement.value.length === 0 && content.length > 0) {
+                    console.log('⚠️ Editor content is empty, retrying...');
+                    editorElement.value = content;
+                    editorElement.dispatchEvent(new Event('input', { bubbles: true }));
+                    updateLineNumbers();
+                    updateStatus();
+                }
+            }, 500);
             
         } else {
             console.error('❌ Editor element not found');
@@ -493,6 +472,9 @@ export async function initializeApp() {
     console.log('🍎 Dock icon file drop support ready (macOS)');
 }
 
+/**
+ * ステータス更新時の多言語化対応（他のモジュールから呼び出される）
+ */
 /**
  * ステータス更新時の多言語化対応（他のモジュールから呼び出される）
  */

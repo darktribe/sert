@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Sert Editor - グローバル変数定義
+ * Sert Editor - グローバル変数定義（修正版）
  * =====================================================
  */
 
@@ -21,6 +21,11 @@ export function setCurrentFilePath(path) {
 
 export function setIsModified(modified) {
     isModified = modified;
+    // グローバルwindowオブジェクトも同期
+    if (typeof window !== 'undefined') {
+        window.isModified = modified;
+        console.log('📝 Global isModified synchronized:', modified);
+    }
 }
 
 export function setCurrentContent(content) {

@@ -5,7 +5,7 @@
  * =====================================================
  * Sert Editor - Rustバックエンド（Tauri 2.5対応版）
  * Python拡張機能対応のシンプルなテキストエディタ
- * ドラッグアンドドロップ・ファイル関連付け対応
+ * ドラッグアンドドロップ・ファイル関連付け対応（修正版）
  * =====================================================
  */
 
@@ -216,7 +216,7 @@ fn get_python_info() -> Result<String, String> {
 }
 
 // =====================================================
-// ファイルドロップ処理 - Tauri 2.5対応（期待する動作に修正）
+// ファイルドロップ処理 - Tauri 2.5対応（修正版）
 // =====================================================
 
 /**
@@ -266,7 +266,7 @@ fn create_new_window_with_file(app_handle: AppHandle, file_path: String) -> Resu
             
             // ウィンドウが完全に読み込まれるまで少し待機
             std::thread::spawn(move || {
-                std::thread::sleep(std::time::Duration::from_millis(1000)); // 1秒に増加
+                std::thread::sleep(std::time::Duration::from_millis(1500)); // 1.5秒に増加
                 
                 if let Err(e) = window_clone.emit("open-file-on-start", &file_path_clone) {
                     println!("❌ Failed to emit open-file-on-start event: {}", e);
@@ -280,6 +280,43 @@ fn create_new_window_with_file(app_handle: AppHandle, file_path: String) -> Resu
         Err(e) => {
             println!("❌ Failed to create new window: {}", e);
             Err(format!("Failed to create new window: {}", e))
+        }
+    }
+}
+
+/**
+ * 変更状態をチェックして適切な動作を決定するコマンド
+ */
+#[tauri::command]
+async fn handle_file_drop_with_modification_check(
+    window: WebviewWindow, 
+    app_handle: AppHandle, 
+    file_path: String, 
+    is_modified: bool
+) -> Result<String, String> {
+    println!("📁 Handling file drop with modification check:");
+    println!("  File: {}", file_path);
+    println!("  Is Modified: {}", is_modified);
+    
+    // ファイルパスの妥当性チェック
+    let path = Path::new(&file_path);
+    if !path.exists() || !path.is_file() {
+        return Err(format!("Invalid file path: {}", file_path));
+    }
+    
+    if is_modified {
+        // 変更がある場合：新しいウィンドウを作成
+        println!("📂 File is modified, creating new window");
+        match create_new_window_with_file(app_handle, file_path) {
+            Ok(window_label) => Ok(format!("new_window:{}", window_label)),
+            Err(e) => Err(e)
+        }
+    } else {
+        // 変更がない場合：現在のウィンドウでファイルを開く
+        println!("📂 No modifications, opening in current window");
+        match open_file_in_current_window(window, file_path.clone()).await {
+            Ok(_) => Ok(format!("current_window:{}", file_path)),
+            Err(e) => Err(e)
         }
     }
 }
@@ -532,7 +569,7 @@ async fn write_file(path: String, content: String) -> Result<(), String> {
 }
 
 // =====================================================
-// メイン関数とアプリケーション設定 - Tauri 2.5対応（期待する動作に修正）
+// メイン関数とアプリケーション設定 - Tauri 2.5対応（修正版）
 // =====================================================
 
 fn main() {
@@ -557,6 +594,7 @@ fn main() {
             get_file_info,
             create_new_window_with_file,
             open_file_in_current_window,
+            handle_file_drop_with_modification_check,
             
             // Python関連
             test_python,
@@ -577,79 +615,87 @@ fn main() {
             write_file
         ])
         
-        // Tauri 2.5対応のファイルドロップイベント設定（期待する動作に修正）
+        // Tauri 2.5対応のファイルドロップイベント設定（修正版）
         .on_window_event(|window, event| {
             match event {
-                tauri::WindowEvent::FileDrop(tauri::FileDropEvent::Dropped { paths, position: _ }) => {
-                    println!("📁 File drop event detected: {:?}", paths);
-                    
-                    // 最初のファイルのみ処理
-                    if let Some(first_path) = paths.first() {
-                        let file_path = first_path.to_string_lossy().to_string();
-                        println!("📂 Processing dropped file: {}", file_path);
-                        
-                        // ファイルパスの妥当性確認
-                        if first_path.exists() && first_path.is_file() {
-                            let window_clone = window.clone();
-                            let app_handle = window.app_handle().clone();
-                            let file_path_clone = file_path.clone();
+                // Tauri 2.5の正しいAPIを使用
+                tauri::WindowEvent::DragDrop(drag_event) => {
+                    match drag_event {
+                        tauri::DragDropEvent::Drop { paths, position: _ } => {
+                            println!("📁 File drop event detected: {:?}", paths);
                             
-                            // JavaScriptで変更状態を確認してから処理を決定
-                            tokio::spawn(async move {
-                                // ウィンドウが完全に読み込まれるまで少し待機
-                                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                            // 最初のファイルのみ処理
+                            if let Some(first_path) = paths.first() {
+                                let file_path = first_path.to_string_lossy().to_string();
+                                println!("📂 Processing dropped file: {}", file_path);
                                 
-                                // まず現在のウィンドウでファイルを開こうとする
-                                match window_clone.emit("check-modification-and-open", &file_path_clone) {
-                                    Ok(_) => {
-                                        println!("✅ File drop check event sent: {}", file_path_clone);
-                                    },
-                                    Err(e) => {
-                                        println!("❌ Failed to emit file drop check event: {}", e);
+                                // ファイルパスの妥当性確認
+                                if first_path.exists() && first_path.is_file() {
+                                    let window_clone = window.clone();
+                                    let app_handle = window.app_handle().clone();
+                                    let file_path_clone = file_path.clone();
+                                    
+                                    // JavaScriptに変更状態確認を依頼
+                                    tokio::spawn(async move {
+                                        // ウィンドウが完全に読み込まれるまで少し待機
+                                        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
                                         
-                                        // フォールバック: 新しいウィンドウを作成
-                                        let timestamp = std::time::SystemTime::now()
-                                            .duration_since(std::time::UNIX_EPOCH)
-                                            .unwrap_or_default()
-                                            .as_millis();
-                                        
-                                        let window_label = format!("editor_{}", timestamp);
-                                        
-                                        match tauri::WebviewWindowBuilder::new(
-                                            &app_handle,
-                                            window_label.clone(),
-                                            tauri::WebviewUrl::App("index.html".into())
-                                        )
-                                        .title(format!("Sert - {}", std::path::Path::new(&file_path_clone)
-                                            .file_name()
-                                            .and_then(|name| name.to_str())
-                                            .unwrap_or("Unknown File")))
-                                        .inner_size(1200.0, 800.0)
-                                        .center()
-                                        .resizable(true)
-                                        .build() {
-                                            Ok(new_window) => {
-                                                println!("✅ Fallback new window created: {}", window_label);
-                                                
-                                                // 新しいウィンドウにファイルを送信
-                                                tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
-                                                
-                                                if let Err(e) = new_window.emit("open-file-on-start", &file_path_clone) {
-                                                    println!("❌ Failed to emit open-file-on-start to fallback window: {}", e);
-                                                } else {
-                                                    println!("✅ File sent to fallback window: {}", file_path_clone);
-                                                }
+                                        // フロントエンドに変更状態チェックを依頼
+                                        match window_clone.emit("request-modification-status", &file_path_clone) {
+                                            Ok(_) => {
+                                                println!("✅ Modification status request sent: {}", file_path_clone);
                                             },
                                             Err(e) => {
-                                                println!("❌ Failed to create fallback window: {}", e);
+                                                println!("❌ Failed to request modification status: {}", e);
+                                                
+                                                // フォールバック: 新しいウィンドウを作成
+                                                let timestamp = std::time::SystemTime::now()
+                                                    .duration_since(std::time::UNIX_EPOCH)
+                                                    .unwrap_or_default()
+                                                    .as_millis();
+                                                
+                                                let window_label = format!("editor_{}", timestamp);
+                                                
+                                                match tauri::WebviewWindowBuilder::new(
+                                                    &app_handle,
+                                                    window_label.clone(),
+                                                    tauri::WebviewUrl::App("index.html".into())
+                                                )
+                                                .title(format!("Sert - {}", std::path::Path::new(&file_path_clone)
+                                                    .file_name()
+                                                    .and_then(|name| name.to_str())
+                                                    .unwrap_or("Unknown File")))
+                                                .inner_size(1200.0, 800.0)
+                                                .center()
+                                                .resizable(true)
+                                                .build() {
+                                                    Ok(new_window) => {
+                                                        println!("✅ Fallback new window created: {}", window_label);
+                                                        
+                                                        // 新しいウィンドウにファイルを送信
+                                                        tokio::time::sleep(std::time::Duration::from_millis(1500)).await;
+                                                        
+                                                        if let Err(e) = new_window.emit("open-file-on-start", &file_path_clone) {
+                                                            println!("❌ Failed to emit open-file-on-start to fallback window: {}", e);
+                                                        } else {
+                                                            println!("✅ File sent to fallback window: {}", file_path_clone);
+                                                        }
+                                                    },
+                                                    Err(e) => {
+                                                        println!("❌ Failed to create fallback window: {}", e);
+                                                    }
+                                                }
                                             }
                                         }
-                                    }
+                                    });
+                                    
+                                } else {
+                                    println!("❌ Invalid file dropped: {}", file_path);
                                 }
-                            });
-                            
-                        } else {
-                            println!("❌ Invalid file dropped: {}", file_path);
+                            }
+                        },
+                        _ => {
+                            // その他のドラッグイベント（Enter, Over, Leave）は無視
                         }
                     }
                 },
@@ -657,7 +703,7 @@ fn main() {
             }
         })
         
-        // アプリケーション初期化処理（Dockアイコンドロップ対応追加）
+        // アプリケーション初期化処理
         .setup(|app| {
             println!("🚀 Sert Editor starting up...");
             
