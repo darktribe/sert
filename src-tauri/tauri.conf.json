@@ -13,24 +13,11 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "label": "main",
         "title": "Sert Editor",
         "width": 1200,
         "height": 800,
         "resizable": true,
-        "maximizable": true,
-        "minimizable": true,
-        "closable": true,
-        "decorations": true,
-        "alwaysOnTop": false,
-        "fullscreen": false,
-        "skipTaskbar": false,
-        "transparent": false,
-        "visibleOnAllWorkspaces": false,
-        "contentProtected": false,
-        "shadow": true,
-        "focus": true,
-        "center": true
+        "fullscreen": false
       }
     ],
     "security": {
