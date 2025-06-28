@@ -11,10 +11,6 @@
 
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 use tauri::{Manager, Emitter, AppHandle, WebviewWindow, Window, WindowEvent};
 use std::path::Path;
 
@@ -504,7 +500,6 @@ fn main() {
         // アプリケーション初期化処理
         .setup(|_app| {
             println!("🚀 Sert Editor starting up...");
-            
             if let Some(_window) = app.get_webview_window("main") {
                 println!("✅ Main window found and configured");
                 
