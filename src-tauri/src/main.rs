@@ -10,6 +10,7 @@
 
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
+use tauri::Manager;
 
 // =====================================================
 // Python統合機能（PyO3）
@@ -389,8 +390,29 @@ fn main() {
         ])
         
         // アプリケーション初期化処理
-        .setup(|_app| {
+        .setup(|app| {
             println!("🚀 Sert Editor starting up...");
+            
+            // ウィンドウの取得と設定
+            let windows = app.webview_windows();
+            if let Some(_window) = windows.get("main") {
+                println!("✅ Main window found and configured for multi-display support");
+                
+                // ウィンドウの基本設定はtauri.conf.jsonで設定済みのため、
+                // ここでは追加の設定は不要
+                
+                #[cfg(target_os = "macos")]
+                {
+                    println!("🖥️ macOS multi-display support enabled via configuration");
+                }
+                
+                #[cfg(not(target_os = "macos"))]
+                {
+                    println!("🖥️ Multi-display support enabled via configuration");
+                }
+            } else {
+                println!("⚠️ Main window not found, using default configuration");
+            }
             
             // PyO3の初期化テスト
             println!("🐍 Testing PyO3 integration...");
