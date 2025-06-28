@@ -5,12 +5,96 @@
  * =====================================================
  * Sert Editor - Rustバックエンド
  * Python拡張機能対応のシンプルなテキストエディタ
+ * ドラッグアンドドロップ・ファイル関連付け対応
  * =====================================================
  */
 
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use tauri::Manager;
+
+// =====================================================
+// アプリケーション初期化とファイル関連付け
+// =====================================================
+
+/**
+ * 起動時のファイルパスを取得するコマンド
+ * コマンドライン引数から渡されたファイルパスを返す
+ */
+#[tauri::command]
+fn get_startup_file_path() -> Result<Option<String>, String> {
+    let args: Vec<String> = std::env::args().collect();
+    
+    // 最初の引数（実行ファイルパス）を除いて、ファイルパスがあるかチェック
+    if args.len() > 1 {
+        let file_path = &args[1];
+        
+        // ファイルが存在するかチェック
+        if std::path::Path::new(file_path).exists() {
+            println!("📂 Startup file detected: {}", file_path);
+            return Ok(Some(file_path.clone()));
+        } else {
+            println!("⚠️ Startup file does not exist: {}", file_path);
+        }
+    }
+    
+    Ok(None)
+}
+
+/**
+ * ファイルパスが有効かチェックするコマンド
+ */
+#[tauri::command]
+fn validate_file_path(path: String) -> Result<bool, String> {
+    let file_path = std::path::Path::new(&path);
+    
+    if file_path.exists() && file_path.is_file() {
+        println!("✅ Valid file path: {}", path);
+        Ok(true)
+    } else {
+        println!("❌ Invalid file path: {}", path);
+        Ok(false)
+    }
+}
+
+/**
+ * ファイルの基本情報を取得するコマンド
+ */
+#[tauri::command]
+fn get_file_info(path: String) -> Result<serde_json::Value, String> {
+    let file_path = std::path::Path::new(&path);
+    
+    if !file_path.exists() {
+        return Err(format!("File does not exist: {}", path));
+    }
+    
+    if !file_path.is_file() {
+        return Err(format!("Path is not a file: {}", path));
+    }
+    
+    let metadata = std::fs::metadata(&path).map_err(|e| format!("Failed to get metadata: {}", e))?;
+    let file_size = metadata.len();
+    
+    let file_name = file_path.file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("Unknown")
+        .to_string();
+    
+    let file_extension = file_path.extension()
+        .and_then(|ext| ext.to_str())
+        .unwrap_or("")
+        .to_string();
+    
+    let info = serde_json::json!({
+        "name": file_name,
+        "extension": file_extension,
+        "size": file_size,
+        "path": path
+    });
+    
+    println!("📋 File info: {}", info);
+    Ok(info)
+}
 
 // =====================================================
 // Python統合機能（PyO3）
@@ -362,6 +446,10 @@ fn main() {
     // PyO3の初期化
     pyo3::prepare_freethreaded_python();
     
+    // コマンドライン引数のログ出力
+    let args: Vec<String> = std::env::args().collect();
+    println!("🚀 Sert Editor starting with args: {:?}", args);
+    
     tauri::Builder::default()
         // プラグインの初期化
         .plugin(tauri_plugin_fs::init())
@@ -370,6 +458,11 @@ fn main() {
         
         // Tauriコマンドの登録
         .invoke_handler(tauri::generate_handler![
+            // ファイル関連付け・ドロップ機能
+            get_startup_file_path,
+            validate_file_path,
+            get_file_info,
+            
             // Python関連
             test_python,
             execute_python,
@@ -395,11 +488,37 @@ fn main() {
             
             // ウィンドウの取得と設定
             let windows = app.webview_windows();
-            if let Some(_window) = windows.get("main") {
+            if let Some(window) = windows.get("main") {
                 println!("✅ Main window found and configured for multi-display support");
                 
-                // ウィンドウの基本設定はtauri.conf.jsonで設定済みのため、
-                // ここでは追加の設定は不要
+                // ドラッグアンドドロップイベントの設定
+                let window_clone = window.clone();
+                window.on_file_drop(move |event| {
+                    println!("📂 File drop event: {:?}", event);
+                    
+                    match event.payload {
+                        tauri::DragDropEvent::Drop { paths, position: _ } => {
+                            if !paths.is_empty() {
+                                let first_file = &paths[0];
+                                println!("📁 Dropped file: {}", first_file.display());
+                                
+                                // フロントエンドにファイルドロップイベントを送信
+                                if let Err(e) = window_clone.emit("file-dropped", first_file.to_string_lossy().to_string()) {
+                                    println!("❌ Failed to emit file-dropped event: {}", e);
+                                }
+                            }
+                        }
+                        tauri::DragDropEvent::Enter { paths, position: _ } => {
+                            println!("📂 Drag enter: {} files", paths.len());
+                        }
+                        tauri::DragDropEvent::Over { position: _ } => {
+                            // ドラッグオーバー時の処理（必要に応じて）
+                        }
+                        tauri::DragDropEvent::Leave => {
+                            println!("📂 Drag leave");
+                        }
+                    }
+                });
                 
                 #[cfg(target_os = "macos")]
                 {
@@ -429,6 +548,8 @@ fn main() {
             
             println!("📋 Clipboard operations enabled");
             println!("📁 File operations enabled (JavaScript-based dialogs)");
+            println!("🗂️ Drag and drop functionality enabled");
+            println!("🔗 File association support enabled");
             println!("🎯 Sert Editor ready!");
             
             Ok(())

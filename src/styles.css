@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Sert Editor - スタイルシート（表示折り返し対応版）
+ * Sert Editor - スタイルシート（ドラッグアンドドロップ対応版）
  * =====================================================
  */
 
@@ -25,6 +25,30 @@ body, html {
   flex-direction: column;
   height: 100vh;
   width: 100vw;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* ドラッグアンドドロップ時の視覚的フィードバック */
+.container.drag-over {
+  background-color: rgba(0, 122, 204, 0.1);
+  box-shadow: inset 0 0 0 2px #007acc;
+}
+
+.container.drag-over::before {
+  content: "📁 Drop files here to open";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 122, 204, 0.9);
+  color: white;
+  padding: 20px 40px;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: bold;
+  z-index: 9999;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* =====================================================
@@ -529,5 +553,10 @@ body, html {
       min-width: 70px;
       padding: 6px 12px;
       font-size: 12px;
+  }
+
+  .container.drag-over::before {
+    font-size: 16px;
+    padding: 15px 30px;
   }
 }

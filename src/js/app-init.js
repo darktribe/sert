@@ -1,13 +1,14 @@
 /*
  * =====================================================
  * Sert Editor - アプリケーション初期化（多言語化対応版）
+ * ドラッグアンドドロップ・ファイル関連付け対応
  * =====================================================
  */
 
-import { setEditor, setCurrentContent, setTauriInvoke } from './globals.js';
+import { setEditor, setCurrentContent, setTauriInvoke, setCurrentFilePath, setIsModified } from './globals.js';
 import { initializeUndoStack } from './undo-redo.js';
 import { updateLineNumbers, updateStatus, updateWindowTitle } from './ui-updater.js';
-import { setupEventListeners } from './event-listeners.js';
+import { setupEventListeners, setupDropZoneEvents } from './event-listeners.js';
 import { exitApp } from './app-exit.js';
 import { initializeI18n, t, updateElementText } from './locales.js';
 import { createLanguageSwitcher } from './language-switcher.js';
@@ -49,17 +50,146 @@ async function initializeTauri() {
                 console.log('Window close handler set up');
             }
             
+            // ドラッグアンドドロップイベントの設定
+            if (window.__TAURI__.event) {
+                console.log('🗂️ Setting up file drop event listener');
+                await window.__TAURI__.event.listen('file-dropped', (event) => {
+                    console.log('📂 File dropped:', event.payload);
+                    handleDroppedFile(event.payload);
+                });
+                console.log('✅ File drop event listener set up');
+            }
+            
             // Tauri APIs の確認
             console.log('Tauri.fs available:', !!window.__TAURI__.fs);
             console.log('Tauri.dialog available:', !!window.__TAURI__.dialog);
             console.log('Tauri.clipboard available:', !!window.__TAURI__.clipboard);
             console.log('Tauri.window available:', !!window.__TAURI__.window);
+            console.log('Tauri.event available:', !!window.__TAURI__.event);
             
         } else {
             console.log('Tauri core not available');
         }
     } catch (error) {
         console.error('Tauri API initialization failed:', error);
+    }
+}
+
+/**
+ * 起動時のファイルパスを取得して開く
+ */
+async function handleStartupFile() {
+    try {
+        console.log('🔍 Checking for startup file...');
+        
+        if (window.__TAURI__ && window.__TAURI__.core) {
+            const startupFilePath = await window.__TAURI__.core.invoke('get_startup_file_path');
+            
+            if (startupFilePath) {
+                console.log('📂 Startup file found:', startupFilePath);
+                await openFileFromPath(startupFilePath);
+            } else {
+                console.log('📄 No startup file specified');
+            }
+        }
+    } catch (error) {
+        console.error('❌ Failed to handle startup file:', error);
+    }
+}
+
+/**
+ * ドロップされたファイルを処理
+ */
+async function handleDroppedFile(filePath) {
+    try {
+        console.log('📁 Processing dropped file:', filePath);
+        
+        // ファイルパスの妥当性をチェック
+        if (window.__TAURI__ && window.__TAURI__.core) {
+            const isValid = await window.__TAURI__.core.invoke('validate_file_path', { path: filePath });
+            
+            if (isValid) {
+                console.log('✅ Valid file path, opening file');
+                await openFileFromPath(filePath);
+                
+                // ファイル情報をログ出力
+                try {
+                    const fileInfo = await window.__TAURI__.core.invoke('get_file_info', { path: filePath });
+                    console.log('📋 File info:', fileInfo);
+                } catch (infoError) {
+                    console.warn('⚠️ Failed to get file info:', infoError);
+                }
+            } else {
+                console.error('❌ Invalid file path:', filePath);
+                showFileErrorMessage(t('messages.openError', { error: 'Invalid file path' }));
+            }
+        }
+    } catch (error) {
+        console.error('❌ Failed to handle dropped file:', error);
+        showFileErrorMessage(t('messages.openError', { error: error.message }));
+    }
+}
+
+/**
+ * パスからファイルを開く共通処理
+ */
+async function openFileFromPath(filePath) {
+    try {
+        console.log('📖 Opening file from path:', filePath);
+        
+        // 変更がある場合の確認処理は省略（ドロップ時は新しいファイルを直接開く）
+        let content;
+        
+        if (window.__TAURI__ && window.__TAURI__.fs) {
+            content = await window.__TAURI__.fs.readTextFile(filePath);
+        } else if (window.__TAURI__ && window.__TAURI__.core) {
+            content = await window.__TAURI__.core.invoke('read_file', { path: filePath });
+        } else {
+            throw new Error(t('messages.tauriOnly'));
+        }
+        
+        // エディタに設定してアンドゥスタックを完全リセット
+        const editorElement = document.getElementById('editor');
+        if (editorElement) {
+            editorElement.value = content;
+            setCurrentFilePath(filePath);
+            setIsModified(false);
+            setCurrentContent(content);
+            
+            // アンドゥスタックを完全リセット
+            const { undoStack, redoStack } = await import('./globals.js');
+            undoStack.length = 0;
+            redoStack.length = 0;
+            
+            // ファイル内容で初期化
+            initializeUndoStack();
+            updateLineNumbers();
+            updateStatus();
+            
+            // タイトル更新
+            console.log('🏷️ Updating title for opened file...');
+            await updateWindowTitle();
+            
+            console.log('✅ File opened successfully:', filePath);
+            
+            // エディタにフォーカスを設定
+            editorElement.focus();
+        }
+    } catch (error) {
+        console.error('❌ Failed to open file from path:', error);
+        showFileErrorMessage(t('messages.openError', { error: error.message }));
+    }
+}
+
+/**
+ * ファイルエラーメッセージを表示
+ */
+function showFileErrorMessage(message) {
+    try {
+        // シンプルなアラート表示（必要に応じてカスタムダイアログに変更可能）
+        alert(message);
+    } catch (error) {
+        console.error('❌ Failed to show error message:', error);
     }
 }
 
@@ -129,6 +259,42 @@ function setupLanguageChangeListener() {
 }
 
 /**
+ * ドロップゾーンの視覚的フィードバックを設定
+ */
+function setupDropZoneVisualFeedback() {
+    const container = document.querySelector('.container');
+    if (!container) return;
+    
+    // ドラッグエンター・オーバー時のクラス追加
+    container.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        container.classList.add('drag-over');
+        console.log('📂 Drag enter on container');
+    });
+    
+    container.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        container.classList.add('drag-over');
+    });
+    
+    container.addEventListener('dragleave', (e) => {
+        // 子要素への移動でない場合のみクラスを削除
+        if (!container.contains(e.relatedTarget)) {
+            container.classList.remove('drag-over');
+            console.log('📂 Drag leave container');
+        }
+    });
+    
+    container.addEventListener('drop', (e) => {
+        e.preventDefault();
+        container.classList.remove('drag-over');
+        console.log('📂 Drop on container - Tauri will handle file processing');
+    });
+    
+    console.log('✅ Drop zone visual feedback set up');
+}
+
+/**
  * アプリケーション初期化
  */
 export async function initializeApp() {
@@ -159,6 +325,9 @@ export async function initializeApp() {
     // イベントリスナーを設定
     setupEventListeners();
     
+    // ドロップゾーンの視覚的フィードバックを設定
+    setupDropZoneVisualFeedback();
+    
     // 言語変更イベントリスナーを設定
     setupLanguageChangeListener();
     
@@ -173,15 +342,20 @@ export async function initializeApp() {
     updateLineNumbers();
     updateStatus();
     
-    // 初期タイトル設定を追加
+    // 初期タイトル設定
     console.log('🏷️ Setting initial window title...');
     await updateWindowTitle();
+    
+    // 起動時のファイル処理
+    await handleStartupFile();
     
     // カーソルを1行目1列目に設定
     editorElement.setSelectionRange(0, 0);
     editorElement.focus();
     
-    console.log('App initialization completed');
+    console.log('🎯 App initialization completed');
+    console.log('🗂️ Drag and drop functionality ready');
+    console.log('🔗 File association support ready');
 }
 
 /**
