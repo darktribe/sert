@@ -15,7 +15,7 @@ import { handleGlobalClick, handleMenuEscape } from './menu-controller.js';
  * エディタのイベントリスナーを設定
  */
 export function setupEventListeners() {
-    console.log('Setting up event listeners...');
+    console.log('🔧 Setting up event listeners...');
     
     // テキスト入力関連
     editor.addEventListener('input', handleInput);
@@ -38,7 +38,7 @@ export function setupEventListeners() {
     // ドラッグアンドドロップ関連のイベントリスナーを設定
     setupDropZoneEvents();
     
-    console.log('Event listeners set up successfully');
+    console.log('✅ Event listeners set up successfully');
 }
 
 /**
@@ -87,29 +87,16 @@ export function setupDropZoneEvents() {
         }
     });
     
-    // ドロップ時の処理
+    // ドロップ時の処理 - Tauri 2.5では必要最小限に
     container.addEventListener('drop', (e) => {
         e.preventDefault();
         e.stopPropagation();
         
-        console.log('📁 Drop event detected on container');
+        console.log('📁 Drop event detected on container (handled by Tauri)');
         container.classList.remove('drag-over');
         
-        // ファイルが含まれているかチェック
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-            console.log(`📁 ${files.length} file(s) dropped`);
-            
-            // 最初のファイルのみ処理（複数ファイルのドロップは最初のファイルを開く）
-            const firstFile = files[0];
-            console.log('📁 Processing first dropped file:', firstFile.name);
-            
-            // ファイルパスを取得してTauriのファイルドロップハンドラーに渡す
-            // ブラウザ環境では完全なパスは取得できないため、Tauriのfile-droppedイベントを使用
-            console.log('📁 Tauri will handle the actual file opening via file-dropped event');
-        } else {
-            console.log('⚠️ No files found in drop event');
-        }
+        // Tauri 2.5では、ファイルドロップはRust側のon_window_eventで処理される
+        // ここでは視覚的フィードバックのクリアのみ実行
     });
     
     // エディタ要素自体にもドラッグアンドドロップイベントを設定
@@ -139,13 +126,9 @@ function setupEditorDropEvents() {
         e.preventDefault();
         e.stopPropagation();
         
-        console.log('📁 Drop event on editor area');
+        console.log('📁 Drop event on editor area (handled by Tauri)');
         
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-            console.log('📁 Files dropped directly on editor, delegating to Tauri handler');
-            // Tauriのfile-droppedイベントが処理するため、ここでは特別な処理は不要
-        }
+        // Tauri 2.5では、Rust側で処理されるため特別な処理は不要
     });
     
     console.log('✅ Editor drop events set up');
@@ -168,8 +151,6 @@ export function resetDropZoneState() {
 export function removeDropZoneEvents() {
     const container = document.querySelector('.container');
     if (container) {
-        // イベントリスナーの削除は通常、同じ関数参照が必要ですが、
-        // ここでは簡易的にクラスを削除してリセット
         container.classList.remove('drag-over');
     }
     console.log('🗑️ Drop zone events cleanup completed');

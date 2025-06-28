@@ -1,35 +1,32 @@
 /*
  * =====================================================
- * Sert Editor - アプリケーション初期化（Tauri 2.5対応版）
- * ドラッグアンドドロップ・ファイル関連付け対応（期待する動作実装版）
+ * Sert Editor - アプリケーション初期化（Tauri 2.5専用・安全版）
+ * ドラッグアンドドロップ・ファイル関連付け対応（修正版）
  * =====================================================
  */
 
-import { setEditor, setCurrentContent, setTauriInvoke, setCurrentFilePath, setIsModified } from './globals.js';
+import { setEditor, setCurrentContent, setTauriInvoke, setCurrentFilePath, setIsModified, initializeGlobalState } from './globals.js';
 import { initializeUndoStack } from './undo-redo.js';
 import { updateLineNumbers, updateStatus, updateWindowTitle } from './ui-updater.js';
-import { setupEventListeners, setupDropZoneEvents } from './event-listeners.js';
+import { setupEventListeners } from './event-listeners.js';
 import { exitApp } from './app-exit.js';
-import { initializeI18n, t, updateElementText } from './locales.js';
+import { initializeI18n, t } from './locales.js';
 import { createLanguageSwitcher } from './language-switcher.js';
 
 /**
- * Tauri APIの初期化 - Tauri 2.5対応版
- * ウィンドウクローズイベントとファイルドロップイベントの設定も行う
+ * Tauri APIの初期化 - Tauri 2.5専用版
  */
 async function initializeTauri() {
     try {
-        console.log('Initializing Tauri...');
-        console.log('window.__TAURI__:', typeof window.__TAURI__);
+        console.log('🔧 Initializing Tauri 2.5...');
         
         if (window.__TAURI__ && window.__TAURI__.core) {
-            console.log('Tauri core found, setting up invoke');
+            console.log('✅ Tauri core found, setting up invoke');
             setTauriInvoke(window.__TAURI__.core.invoke);
-            console.log('Tauri invoke set up successfully');
             
             // ウィンドウクローズイベントの設定
             if (window.__TAURI__.window) {
-                console.log('Setting up window close handler');
+                console.log('🚪 Setting up window close handler');
                 const { getCurrent } = window.__TAURI__.window;
                 const currentWindow = getCurrent();
                 
@@ -37,50 +34,51 @@ async function initializeTauri() {
                     console.log('🚪 Window close requested via X button');
                     event.preventDefault();
                     
-                    // 直接exitAppを呼び出し（フラグ管理や遅延を削除）
                     try {
-                        console.log('🚪 Calling exitApp from window close event');
                         await exitApp();
                     } catch (error) {
                         console.error('❌ Window close exitApp failed:', error);
-                        // エラー時は強制終了
                         await currentWindow.close();
                     }
                 });
-                console.log('Window close handler set up');
+                console.log('✅ Window close handler set up');
             }
             
-            // Tauri 2.5対応のファイルドロップイベント設定
+            // Tauri 2.5専用のファイルイベント設定
             if (window.__TAURI__.event) {
                 console.log('🗂️ Setting up file event listeners (Tauri 2.5)');
                 
-                // 新しいウィンドウでファイルを開くイベント
-                await window.__TAURI__.event.listen('open-file-on-start', (event) => {
-                    console.log('📂 Open file on start event received:', event.payload);
-                    handleOpenFileEvent(event.payload);
-                });
-                
-                // 変更状態チェック要求イベント（新しい期待動作対応）
-                await window.__TAURI__.event.listen('request-modification-status', (event) => {
-                    console.log('📂 Modification status request received:', event.payload);
-                    handleModificationStatusRequest(event.payload);
-                });
-                
-                console.log('✅ File open event listeners set up');
+                try {
+                    // 新しいウィンドウでファイルを開くイベント
+                    await window.__TAURI__.event.listen('open-file-on-start', (event) => {
+                        console.log('📂 Open file on start event received:', event.payload);
+                        handleOpenFileEventSafe(event.payload);
+                    });
+                    
+                    // 現在のウィンドウでファイルを開くイベント
+                    await window.__TAURI__.event.listen('open-file-in-current', (event) => {
+                        console.log('📂 Open file in current window event received:', event.payload);
+                        handleOpenFileEventSafe(event.payload);
+                    });
+                    
+                    // 変更状態チェック要求イベント（修正版）
+                    await window.__TAURI__.event.listen('request-modification-status', (event) => {
+                        console.log('📁 Modification status request received:', event.payload);
+                        handleModificationStatusRequestSafe(event.payload);
+                    });
+                    
+                    console.log('✅ File event listeners set up successfully');
+                } catch (eventError) {
+                    console.error('❌ Failed to set up event listeners:', eventError);
+                }
             }
             
-            // Tauri APIs の確認
-            console.log('Tauri.fs available:', !!window.__TAURI__.fs);
-            console.log('Tauri.dialog available:', !!window.__TAURI__.dialog);
-            console.log('Tauri.clipboard available:', !!window.__TAURI__.clipboard);
-            console.log('Tauri.window available:', !!window.__TAURI__.window);
-            console.log('Tauri.event available:', !!window.__TAURI__.event);
-            
+            console.log('✅ Tauri 2.5 initialization completed');
         } else {
-            console.log('Tauri core not available');
+            console.log('⚠️ Tauri core not available - running in browser mode');
         }
     } catch (error) {
-        console.error('Tauri API initialization failed:', error);
+        console.error('❌ Tauri API initialization failed:', error);
     }
 }
 
@@ -96,7 +94,7 @@ async function handleStartupFile() {
             
             if (startupFilePath) {
                 console.log('📂 Startup file found:', startupFilePath);
-                await openFileFromPath(startupFilePath);
+                await openFileFromPathSafe(startupFilePath);
             } else {
                 console.log('📄 No startup file specified');
             }
@@ -107,32 +105,47 @@ async function handleStartupFile() {
 }
 
 /**
- * 変更状態チェック要求を処理する（期待する動作対応）
+ * 変更状態チェック要求を処理する（Tauri 2.5専用版）
  */
-async function handleModificationStatusRequest(filePath) {
+async function handleModificationStatusRequestSafe(payload) {
     try {
-        console.log('📁 Processing modification status request for:', filePath);
+        // payload の構造を確認
+        let filePath, windowLabel;
         
-        // グローバルのisModifiedを取得
+        if (typeof payload === 'string') {
+            // 古い形式の場合
+            filePath = payload;
+            windowLabel = 'main';
+        } else if (payload && typeof payload === 'object') {
+            // 新しい形式の場合
+            filePath = payload.filePath || payload;
+            windowLabel = payload.windowLabel || 'main';
+        } else {
+            throw new Error('Invalid payload format');
+        }
+        
+        console.log('📁 Processing modification status request:');
+        console.log('  File:', filePath);
+        console.log('  Window:', windowLabel);
+        
+        // 安全にグローバル状態を取得
         const isCurrentlyModified = window.isModified || false;
         console.log('📝 Current modification status:', isCurrentlyModified);
         
         if (window.__TAURI__ && window.__TAURI__.core) {
-            // Rustコマンドを呼び出して適切な動作を実行
-            const result = await window.__TAURI__.core.invoke('handle_file_drop_with_modification_check', {
-                file_path: filePath,
-                is_modified: isCurrentlyModified
-            });
-            
-            console.log('✅ File drop handled:', result);
-            
-            // current_windowで開かれた場合の追加処理
-            if (result.startsWith('current_window:')) {
-                // 現在のウィンドウでファイルが開かれるため、追加の処理は不要
-                console.log('📂 File will be opened in current window');
-            } else if (result.startsWith('new_window:')) {
-                // 新しいウィンドウが作成された
-                console.log('📂 File opened in new window:', result);
+            try {
+                // Rustコマンドを呼び出して適切な動作を実行
+                const result = await window.__TAURI__.core.invoke('handle_file_drop_with_modification_check', {
+                    app_handle: {}, // Tauri 2.5 では app_handle は自動で渡される
+                    window_label: windowLabel,
+                    file_path: filePath,
+                    is_modified: isCurrentlyModified
+                });
+                
+                console.log('✅ File drop handled successfully:', result);
+            } catch (invokeError) {
+                console.error('❌ Failed to invoke file drop handler:', invokeError);
+                throw invokeError;
             }
         }
     } catch (error) {
@@ -141,9 +154,12 @@ async function handleModificationStatusRequest(filePath) {
         // エラー時のフォールバック：新しいウィンドウを作成
         try {
             if (window.__TAURI__ && window.__TAURI__.core) {
+                console.log('🔄 Attempting fallback: creating new window');
+                const filePath = typeof payload === 'string' ? payload : (payload.filePath || payload);
                 await window.__TAURI__.core.invoke('create_new_window_with_file', {
                     file_path: filePath
                 });
+                console.log('✅ Fallback new window created successfully');
             }
         } catch (fallbackError) {
             console.error('❌ Fallback new window creation also failed:', fallbackError);
@@ -152,27 +168,19 @@ async function handleModificationStatusRequest(filePath) {
 }
 
 /**
- * ファイルを開くイベントを処理（新しいウィンドウで開かれたファイル用）
+ * ファイルを開くイベントを処理（安全版）
  */
-async function handleOpenFileEvent(filePath) {
+async function handleOpenFileEventSafe(filePath) {
     try {
-        console.log('📁 Processing file open event for new window:', filePath);
+        console.log('📁 Processing file open event:', filePath);
         
         // ファイルパスの妥当性をチェック
         if (window.__TAURI__ && window.__TAURI__.core) {
             const isValid = await window.__TAURI__.core.invoke('validate_file_path', { path: filePath });
             
             if (isValid) {
-                console.log('✅ Valid file path, opening file in new window');
-                await openFileFromPath(filePath);
-                
-                // ファイル情報をログ出力
-                try {
-                    const fileInfo = await window.__TAURI__.core.invoke('get_file_info', { path: filePath });
-                    console.log('📋 File info:', fileInfo);
-                } catch (infoError) {
-                    console.warn('⚠️ Failed to get file info:', infoError);
-                }
+                console.log('✅ Valid file path, opening file');
+                await openFileFromPathSafe(filePath);
             } else {
                 console.error('❌ Invalid file path:', filePath);
                 showFileErrorMessage(t('messages.openError', { error: 'Invalid file path' }));
@@ -185,9 +193,9 @@ async function handleOpenFileEvent(filePath) {
 }
 
 /**
- * パスからファイルを開く共通処理（改良版 - ファイル内容表示を確実に）
+ * パスからファイルを開く共通処理（安全版）
  */
-async function openFileFromPath(filePath) {
+async function openFileFromPathSafe(filePath) {
     try {
         console.log('📖 Opening file from path:', filePath);
         
@@ -204,68 +212,53 @@ async function openFileFromPath(filePath) {
         }
         
         console.log(`📖 File content loaded: ${content.length} characters`);
-        console.log('📝 Content preview:', content.substring(0, 100) + (content.length > 100 ? '...' : ''));
         
         // エディタに設定してアンドゥスタックを完全リセット
         const editorElement = document.getElementById('editor');
         if (editorElement) {
             console.log('📝 Setting content in editor...');
             
-            // 段階的にエディタの状態を更新
-            console.log('📝 Step 1: Setting editor value');
+            // エディタの状態を更新
             editorElement.value = content;
             
-            // DOMを強制的に更新
-            editorElement.dispatchEvent(new Event('input', { bubbles: true }));
+            // DOM更新イベントを安全に発火
+            try {
+                editorElement.dispatchEvent(new Event('input', { bubbles: true }));
+            } catch (eventError) {
+                console.warn('⚠️ Failed to dispatch input event:', eventError);
+            }
             
-            console.log('📝 Step 2: Updating global state');
+            console.log('📝 Updating global state');
             setCurrentFilePath(filePath);
             setIsModified(false);
             setCurrentContent(content);
             
-            // グローバルのisModifiedを確実に設定
-            window.isModified = false;
-            console.log('📝 Step 3: Global isModified set to:', window.isModified);
-            
             // アンドゥスタックを完全リセット
-            console.log('📝 Step 4: Resetting undo/redo stacks');
+            console.log('📝 Resetting undo/redo stacks');
             const { undoStack, redoStack } = await import('./globals.js');
             undoStack.length = 0;
             redoStack.length = 0;
             
             // ファイル内容で初期化
-            console.log('📝 Step 5: Initializing undo stack');
+            console.log('📝 Initializing undo stack');
             initializeUndoStack();
             
-            console.log('📝 Step 6: Updating UI');
+            console.log('📝 Updating UI');
             updateLineNumbers();
             updateStatus();
             
             // タイトル更新
-            console.log('🏷️ Step 7: Updating window title');
+            console.log('🏷️ Updating window title');
             await updateWindowTitle();
             
             console.log('✅ File opened successfully:', filePath);
-            console.log('📝 Final editor value length:', editorElement.value.length);
-            console.log('📝 Final content check:', editorElement.value.substring(0, 50) + '...');
             
-            // エディタにフォーカスを設定（少し遅延させる）
+            // エディタにフォーカスを設定
             setTimeout(() => {
                 console.log('📝 Setting focus to editor');
                 editorElement.focus();
                 editorElement.setSelectionRange(0, 0);
             }, 100);
-            
-            // さらに確実にファイル内容を表示するため、追加のチェック
-            setTimeout(() => {
-                if (editorElement.value.length === 0 && content.length > 0) {
-                    console.log('⚠️ Editor content is empty, retrying...');
-                    editorElement.value = content;
-                    editorElement.dispatchEvent(new Event('input', { bubbles: true }));
-                    updateLineNumbers();
-                    updateStatus();
-                }
-            }, 500);
             
         } else {
             console.error('❌ Editor element not found');
@@ -278,11 +271,11 @@ async function openFileFromPath(filePath) {
 }
 
 /**
- * ファイルエラーメッセージを表示
+ * ファイルエラーメッセージを表示（安全版）
  */
 function showFileErrorMessage(message) {
     try {
-        // シンプルなアラート表示（必要に応じてカスタムダイアログに変更可能）
+        console.error('📢 Showing error message:', message);
         alert(message);
     } catch (error) {
         console.error('❌ Failed to show error message:', error);
@@ -355,138 +348,90 @@ function setupLanguageChangeListener() {
 }
 
 /**
- * ドロップゾーンの視覚的フィードバックを設定（Tauri 2.5対応版）
- */
-function setupDropZoneVisualFeedback() {
-    const container = document.querySelector('.container');
-    if (!container) return;
-    
-    // ドラッグエンター・オーバー時のクラス追加
-    container.addEventListener('dragenter', (e) => {
-        e.preventDefault();
-        container.classList.add('drag-over');
-        console.log('📂 Drag enter on container');
-    });
-    
-    container.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        container.classList.add('drag-over');
-    });
-    
-    container.addEventListener('dragleave', (e) => {
-        // 子要素への移動でない場合のみクラスを削除
-        if (!container.contains(e.relatedTarget)) {
-            container.classList.remove('drag-over');
-            console.log('📂 Drag leave container');
-        }
-    });
-    
-    container.addEventListener('drop', (e) => {
-        e.preventDefault();
-        container.classList.remove('drag-over');
-        console.log('📂 Drop on container - Files will be processed by Tauri 2.5 file drop handler');
-        
-        // Tauri 2.5では、ファイルドロップはon_window_eventで処理されるため
-        // ここでは視覚的フィードバックのみ処理
-    });
-    
-    console.log('✅ Drop zone visual feedback set up (Tauri 2.5)');
-}
-
-/**
- * グローバル変数の初期化（重要：isModifiedをグローバルに設定）
- */
-function initializeGlobalVariables() {
-    // 変更状態をグローバルに設定してRustから参照できるようにする
-    window.isModified = false;
-    
-    console.log('✅ Global variables initialized');
-    console.log('window.isModified:', window.isModified);
-}
-
-/**
- * アプリケーション初期化
+ * アプリケーション初期化（Tauri 2.5専用版）
  */
 export async function initializeApp() {
-    console.log('Starting app initialization...');
+    console.log('🚀 Starting app initialization (Tauri 2.5)...');
     
-    // グローバル変数の初期化
-    initializeGlobalVariables();
-    
-    // 多言語化システムの初期化
-    console.log('🌐 Initializing i18n system...');
-    const i18nSuccess = await initializeI18n();
-    if (!i18nSuccess) {
-        console.error('❌ Failed to initialize i18n system');
+    try {
+        // グローバル変数の初期化
+        initializeGlobalState();
+        
+        // 多言語化システムの初期化
+        console.log('🌐 Initializing i18n system...');
+        const i18nSuccess = await initializeI18n();
+        if (!i18nSuccess) {
+            console.error('❌ Failed to initialize i18n system');
+        }
+        
+        await initializeTauri();
+        
+        const editorElement = document.getElementById('editor');
+        if (!editorElement) {
+            console.error('❌ Editor element not found');
+            return;
+        }
+        
+        console.log('✅ Editor element found, setting up...');
+        setEditor(editorElement);
+        
+        // エディタの初期設定
+        setCurrentContent(editorElement.value);
+        initializeUndoStack();
+        
+        // イベントリスナーを設定
+        setupEventListeners();
+        
+        // 言語変更イベントリスナーを設定
+        setupLanguageChangeListener();
+        
+        // UIに多言語化を適用
+        applyI18nToUI();
+        
+        // 言語切り替えUIを作成
+        console.log('🌐 Creating language switcher...');
+        createLanguageSwitcher();
+        
+        // 初期UI更新
+        updateLineNumbers();
+        updateStatus();
+        
+        // 初期タイトル設定
+        console.log('🏷️ Setting initial window title...');
+        await updateWindowTitle();
+        
+        // 起動時のファイル処理
+        await handleStartupFile();
+        
+        // カーソルを1行目1列目に設定
+        editorElement.setSelectionRange(0, 0);
+        editorElement.focus();
+        
+        console.log('🎯 App initialization completed successfully (Tauri 2.5)');
+        console.log('🗂️ Drag and drop functionality ready');
+        console.log('🔗 File association support ready');
+        console.log('🍎 Build and install .app to test Dock icon drop');
+    } catch (error) {
+        console.error('❌ App initialization failed:', error);
     }
-    
-    await initializeTauri();
-    
-    const editorElement = document.getElementById('editor');
-    if (!editorElement) {
-        console.error('Editor element not found');
-        return;
-    }
-    
-    console.log('Editor element found, setting up...');
-    setEditor(editorElement);
-    
-    // エディタの初期設定
-    setCurrentContent(editorElement.value);
-    initializeUndoStack();
-    
-    // イベントリスナーを設定
-    setupEventListeners();
-    
-    // ドロップゾーンの視覚的フィードバックを設定
-    setupDropZoneVisualFeedback();
-    
-    // 言語変更イベントリスナーを設定
-    setupLanguageChangeListener();
-    
-    // UIに多言語化を適用
-    applyI18nToUI();
-    
-    // 言語切り替えUIを作成
-    console.log('🌐 Creating language switcher...');
-    createLanguageSwitcher();
-    
-    // 初期UI更新
-    updateLineNumbers();
-    updateStatus();
-    
-    // 初期タイトル設定
-    console.log('🏷️ Setting initial window title...');
-    await updateWindowTitle();
-    
-    // 起動時のファイル処理
-    await handleStartupFile();
-    
-    // カーソルを1行目1列目に設定
-    editorElement.setSelectionRange(0, 0);
-    editorElement.focus();
-    
-    console.log('🎯 App initialization completed');
-    console.log('🗂️ Drag and drop functionality ready (Smart current/new window detection)');
-    console.log('🔗 File association support ready');
-    console.log('🍎 Dock icon file drop support ready (macOS)');
 }
 
 /**
- * ステータス更新時の多言語化対応（他のモジュールから呼び出される）
- */
-/**
- * ステータス更新時の多言語化対応（他のモジュールから呼び出される）
+ * ステータス更新時の多言語化対応
  */
 export function updateStatusI18n(line, column, charCount) {
-    const cursorPosition = document.getElementById('cursor-position');
-    const charCountElement = document.getElementById('char-count');
-    
-    if (cursorPosition) {
-        cursorPosition.textContent = `${t('statusBar.line')}: ${line}, ${t('statusBar.column')}: ${column}`;
-    }
-    
-    if (charCountElement) {
-        charCountElement.textContent = `${t('statusBar.charCount')}: ${charCount}`;
+    try {
+        const cursorPosition = document.getElementById('cursor-position');
+        const charCountElement = document.getElementById('char-count');
+        
+        if (cursorPosition) {
+            cursorPosition.textContent = `${t('statusBar.line')}: ${line}, ${t('statusBar.column')}: ${column}`;
+        }
+        
+        if (charCountElement) {
+            charCountElement.textContent = `${t('statusBar.charCount')}: ${charCount}`;
+        }
+    } catch (error) {
+        console.error('❌ Failed to update status i18n:', error);
     }
 }

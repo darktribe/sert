@@ -56,7 +56,7 @@
     "longDescription": "Sert is a lightweight, cross-platform text editor built with Rust and Tauri. It supports multiple languages and provides essential text editing features.",
     "macOS": {
       "frameworks": [],
-      "minimumSystemVersion": "",
+      "minimumSystemVersion": "10.13",
       "exceptionDomain": "",
       "signingIdentity": null,
       "providerShortName": null,
