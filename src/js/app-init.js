@@ -60,7 +60,13 @@ async function initializeTauri() {
                     handleOpenFileEvent(event.payload);
                 });
                 
-                console.log('✅ File open event listener set up');
+                // ファイルドロップ時の変更チェックイベント（期待する動作に対応）
+                await window.__TAURI__.event.listen('check-modification-and-open', (event) => {
+                    console.log('📂 Check modification and open event received:', event.payload);
+                    handleCheckModificationAndOpen(event.payload);
+                });
+                
+                console.log('✅ File open event listeners set up');
             }
             
             // 現在のウィンドウでファイルを開くイベント（カスタムイベント）
@@ -103,6 +109,47 @@ async function handleStartupFile() {
         }
     } catch (error) {
         console.error('❌ Failed to handle startup file:', error);
+    }
+}
+
+/**
+ * ファイルドロップ時の変更チェックと開く処理（期待する動作）
+ */
+async function handleCheckModificationAndOpen(filePath) {
+    try {
+        console.log('📁 Checking modification status for file drop:', filePath);
+        
+        // グローバルのisModifiedをチェック
+        const isCurrentlyModified = window.isModified || false;
+        console.log('📝 Current modification status:', isCurrentlyModified);
+        
+        if (!isCurrentlyModified) {
+            // 変更がない場合：現在のウィンドウでファイルを開く
+            console.log('📂 No modifications, opening file in current window');
+            await openFileFromPath(filePath);
+        } else {
+            // 変更がある場合：新しいウィンドウを作成
+            console.log('📂 Has modifications, creating new window');
+            
+            if (window.__TAURI__ && window.__TAURI__.core) {
+                await window.__TAURI__.core.invoke('create_new_window_with_file', {
+                    file_path: filePath
+                });
+            }
+        }
+    } catch (error) {
+        console.error('❌ Failed to handle check modification and open:', error);
+        
+        // エラー時のフォールバック：新しいウィンドウを作成
+        try {
+            if (window.__TAURI__ && window.__TAURI__.core) {
+                await window.__TAURI__.core.invoke('create_new_window_with_file', {
+                    file_path: filePath
+                });
+            }
+        } catch (fallbackError) {
+            console.error('❌ Fallback new window creation also failed:', fallbackError);
+        }
     }
 }
 
@@ -173,7 +220,7 @@ async function handleOpenFileInCurrent(filePath) {
 }
 
 /**
- * パスからファイルを開く共通処理（改良版）
+ * パスからファイルを開く共通処理（改良版 - ファイル内容表示を確実に）
  */
 async function openFileFromPath(filePath) {
     try {
@@ -192,37 +239,55 @@ async function openFileFromPath(filePath) {
         }
         
         console.log(`📖 File content loaded: ${content.length} characters`);
+        console.log('📝 Content preview:', content.substring(0, 100) + (content.length > 100 ? '...' : ''));
         
         // エディタに設定してアンドゥスタックを完全リセット
         const editorElement = document.getElementById('editor');
         if (editorElement) {
             console.log('📝 Setting content in editor...');
+            
+            // 段階的にエディタの状態を更新
+            console.log('📝 Step 1: Setting editor value');
             editorElement.value = content;
+            
+            console.log('📝 Step 2: Updating global state');
             setCurrentFilePath(filePath);
             setIsModified(false);
             setCurrentContent(content);
             
             // グローバルのisModifiedを確実に設定
             window.isModified = false;
+            console.log('📝 Step 3: Global isModified set to:', window.isModified);
             
             // アンドゥスタックを完全リセット
+            console.log('📝 Step 4: Resetting undo/redo stacks');
             const { undoStack, redoStack } = await import('./globals.js');
             undoStack.length = 0;
             redoStack.length = 0;
             
             // ファイル内容で初期化
+            console.log('📝 Step 5: Initializing undo stack');
             initializeUndoStack();
+            
+            console.log('📝 Step 6: Updating UI');
             updateLineNumbers();
             updateStatus();
             
             // タイトル更新
-            console.log('🏷️ Updating title for opened file...');
+            console.log('🏷️ Step 7: Updating window title');
             await updateWindowTitle();
             
             console.log('✅ File opened successfully:', filePath);
+            console.log('📝 Final editor value length:', editorElement.value.length);
+            console.log('📝 Final content check:', editorElement.value.substring(0, 50) + '...');
             
-            // エディタにフォーカスを設定
-            editorElement.focus();
+            // エディタにフォーカスを設定（少し遅延させる）
+            setTimeout(() => {
+                console.log('📝 Setting focus to editor');
+                editorElement.focus();
+                editorElement.setSelectionRange(0, 0);
+            }, 100);
+            
         } else {
             console.error('❌ Editor element not found');
             throw new Error('Editor element not found');

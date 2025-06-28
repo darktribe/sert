@@ -98,22 +98,7 @@ fn get_file_info(path: String) -> Result<serde_json::Value, String> {
 }
 
 /**
- * 現在のウィンドウの変更状態をチェック
- */
-#[tauri::command]
-async fn check_window_modified_status(window: WebviewWindow) -> Result<bool, String> {
-    // JavaScriptからの変更状態を取得
-    match window.eval("window.isModified || false") {
-        Ok(_) => {
-            // evalの結果は直接取得できないため、JSからイベント経由で状態を取得
-            Ok(false) // フォールバック値
-        },
-        Err(_) => Ok(false)
-    }
-}
-
-/**
- * 現在のウィンドウでファイルを開く
+ * 現在のウィンドウでファイルを開く（Tauri 2.5対応版）
  */
 #[tauri::command]
 async fn open_file_in_current_window(window: WebviewWindow, file_path: String) -> Result<(), String> {
@@ -281,7 +266,7 @@ fn create_new_window_with_file(app_handle: AppHandle, file_path: String) -> Resu
             
             // ウィンドウが完全に読み込まれるまで少し待機
             std::thread::spawn(move || {
-                std::thread::sleep(std::time::Duration::from_millis(500));
+                std::thread::sleep(std::time::Duration::from_millis(1000)); // 1秒に増加
                 
                 if let Err(e) = window_clone.emit("open-file-on-start", &file_path_clone) {
                     println!("❌ Failed to emit open-file-on-start event: {}", e);
@@ -571,7 +556,6 @@ fn main() {
             validate_file_path,
             get_file_info,
             create_new_window_with_file,
-            check_window_modified_status,
             open_file_in_current_window,
             
             // Python関連
@@ -596,7 +580,7 @@ fn main() {
         // Tauri 2.5対応のファイルドロップイベント設定（期待する動作に修正）
         .on_window_event(|window, event| {
             match event {
-                tauri::WindowEvent::DragDrop(tauri::DragDropEvent::Drop { paths, .. }) => {
+                tauri::WindowEvent::FileDrop(tauri::FileDropEvent::Dropped { paths, position: _ }) => {
                     println!("📁 File drop event detected: {:?}", paths);
                     
                     // 最初のファイルのみ処理
@@ -611,34 +595,58 @@ fn main() {
                             let file_path_clone = file_path.clone();
                             
                             // JavaScriptで変更状態を確認してから処理を決定
-                            let _ = window.eval(&format!(
-                                r#"
-                                (async () => {{
-                                    try {{
-                                        const isModified = window.isModified || false;
-                                        console.log('📝 Current window modification status:', isModified);
+                            tokio::spawn(async move {
+                                // ウィンドウが完全に読み込まれるまで少し待機
+                                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                                
+                                // まず現在のウィンドウでファイルを開こうとする
+                                match window_clone.emit("check-modification-and-open", &file_path_clone) {
+                                    Ok(_) => {
+                                        println!("✅ File drop check event sent: {}", file_path_clone);
+                                    },
+                                    Err(e) => {
+                                        println!("❌ Failed to emit file drop check event: {}", e);
                                         
-                                        if (!isModified) {{
-                                            // 変更がない場合は現在のウィンドウでファイルを開く
-                                            console.log('📂 Opening file in current window (no modifications)');
-                                            window.dispatchEvent(new CustomEvent('open-file-in-current', {{
-                                                detail: '{}'
-                                            }}));
-                                        }} else {{
-                                            // 変更がある場合は新しいウィンドウを作成
-                                            console.log('📂 Creating new window (has modifications)');
-                                            await window.__TAURI__.core.invoke('create_new_window_with_file', {{
-                                                file_path: '{}'
-                                            }});
-                                        }}
-                                    }} catch (error) {{
-                                        console.error('❌ File drop processing error:', error);
-                                    }}
-                                }})();
-                                "#, 
-                                file_path_clone.replace("'", "\\'"),
-                                file_path_clone.replace("'", "\\'")
-                            ));
+                                        // フォールバック: 新しいウィンドウを作成
+                                        let timestamp = std::time::SystemTime::now()
+                                            .duration_since(std::time::UNIX_EPOCH)
+                                            .unwrap_or_default()
+                                            .as_millis();
+                                        
+                                        let window_label = format!("editor_{}", timestamp);
+                                        
+                                        match tauri::WebviewWindowBuilder::new(
+                                            &app_handle,
+                                            window_label.clone(),
+                                            tauri::WebviewUrl::App("index.html".into())
+                                        )
+                                        .title(format!("Sert - {}", std::path::Path::new(&file_path_clone)
+                                            .file_name()
+                                            .and_then(|name| name.to_str())
+                                            .unwrap_or("Unknown File")))
+                                        .inner_size(1200.0, 800.0)
+                                        .center()
+                                        .resizable(true)
+                                        .build() {
+                                            Ok(new_window) => {
+                                                println!("✅ Fallback new window created: {}", window_label);
+                                                
+                                                // 新しいウィンドウにファイルを送信
+                                                tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
+                                                
+                                                if let Err(e) = new_window.emit("open-file-on-start", &file_path_clone) {
+                                                    println!("❌ Failed to emit open-file-on-start to fallback window: {}", e);
+                                                } else {
+                                                    println!("✅ File sent to fallback window: {}", file_path_clone);
+                                                }
+                                            },
+                                            Err(e) => {
+                                                println!("❌ Failed to create fallback window: {}", e);
+                                            }
+                                        }
+                                    }
+                                }
+                            });
                             
                         } else {
                             println!("❌ Invalid file dropped: {}", file_path);
