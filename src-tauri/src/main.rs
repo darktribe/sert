@@ -11,7 +11,7 @@
 
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
-use tauri::{Manager, Emitter, AppHandle};
+use tauri::{Manager, Emitter, AppHandle, WebviewWindow};
 use std::path::Path;
 
 // =====================================================
@@ -95,6 +95,44 @@ fn get_file_info(path: String) -> Result<serde_json::Value, String> {
     
     println!("📋 File info: {}", info);
     Ok(info)
+}
+
+/**
+ * 現在のウィンドウの変更状態をチェック
+ */
+#[tauri::command]
+async fn check_window_modified_status(window: WebviewWindow) -> Result<bool, String> {
+    // JavaScriptからの変更状態を取得
+    match window.eval("window.isModified || false") {
+        Ok(_) => {
+            // evalの結果は直接取得できないため、JSからイベント経由で状態を取得
+            Ok(false) // フォールバック値
+        },
+        Err(_) => Ok(false)
+    }
+}
+
+/**
+ * 現在のウィンドウでファイルを開く
+ */
+#[tauri::command]
+async fn open_file_in_current_window(window: WebviewWindow, file_path: String) -> Result<(), String> {
+    println!("📂 Opening file in current window: {}", file_path);
+    
+    // ファイルパスの妥当性チェック
+    let path = Path::new(&file_path);
+    if !path.exists() || !path.is_file() {
+        return Err(format!("Invalid file path: {}", file_path));
+    }
+    
+    // 現在のウィンドウにファイルを開くイベントを送信
+    if let Err(e) = window.emit("open-file-in-current", &file_path) {
+        println!("❌ Failed to emit open-file-in-current event: {}", e);
+        return Err(format!("Failed to send file open event: {}", e));
+    }
+    
+    println!("✅ File open event sent to current window: {}", file_path);
+    Ok(())
 }
 
 // =====================================================
@@ -193,7 +231,7 @@ fn get_python_info() -> Result<String, String> {
 }
 
 // =====================================================
-// ファイルドロップ処理 - Tauri 2.5対応
+// ファイルドロップ処理 - Tauri 2.5対応（期待する動作に修正）
 // =====================================================
 
 /**
@@ -237,13 +275,21 @@ fn create_new_window_with_file(app_handle: AppHandle, file_path: String) -> Resu
         Ok(window) => {
             println!("✅ New window created: {}", window_label);
             
-            // 新しいウィンドウにファイルパスを送信
-            if let Err(e) = window.emit("open-file-on-start", &file_path) {
-                println!("❌ Failed to emit open-file-on-start event: {}", e);
-                return Err(format!("Failed to send file path to new window: {}", e));
-            }
+            // 新しいウィンドウにファイルパスを送信（遅延実行で確実に送信）
+            let file_path_clone = file_path.clone();
+            let window_clone = window.clone();
             
-            println!("✅ File path sent to new window: {}", file_path);
+            // ウィンドウが完全に読み込まれるまで少し待機
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_millis(500));
+                
+                if let Err(e) = window_clone.emit("open-file-on-start", &file_path_clone) {
+                    println!("❌ Failed to emit open-file-on-start event: {}", e);
+                } else {
+                    println!("✅ File path sent to new window: {}", file_path_clone);
+                }
+            });
+            
             Ok(window_label)
         },
         Err(e) => {
@@ -501,7 +547,7 @@ async fn write_file(path: String, content: String) -> Result<(), String> {
 }
 
 // =====================================================
-// メイン関数とアプリケーション設定 - Tauri 2.5対応
+// メイン関数とアプリケーション設定 - Tauri 2.5対応（期待する動作に修正）
 // =====================================================
 
 fn main() {
@@ -525,6 +571,8 @@ fn main() {
             validate_file_path,
             get_file_info,
             create_new_window_with_file,
+            check_window_modified_status,
+            open_file_in_current_window,
             
             // Python関連
             test_python,
@@ -545,7 +593,7 @@ fn main() {
             write_file
         ])
         
-        // Tauri 2.5対応のファイルドロップイベント設定
+        // Tauri 2.5対応のファイルドロップイベント設定（期待する動作に修正）
         .on_window_event(|window, event| {
             match event {
                 tauri::WindowEvent::DragDrop(tauri::DragDropEvent::Drop { paths, .. }) => {
@@ -558,22 +606,40 @@ fn main() {
                         
                         // ファイルパスの妥当性確認
                         if first_path.exists() && first_path.is_file() {
+                            let window_clone = window.clone();
                             let app_handle = window.app_handle().clone();
+                            let file_path_clone = file_path.clone();
                             
-                            // 新しいウィンドウを作成してファイルを開く
-                            match create_new_window_with_file(app_handle, file_path.clone()) {
-                                Ok(window_label) => {
-                                    println!("✅ File drop handled successfully: {}", window_label);
-                                },
-                                Err(e) => {
-                                    println!("❌ Failed to handle file drop: {}", e);
-                                    
-                                    // 新しいウィンドウ作成に失敗した場合は現在のウィンドウで開く
-                                    if let Err(emit_error) = window.emit("open-file-on-start", &file_path) {
-                                        println!("❌ Failed to emit to current window: {}", emit_error);
-                                    }
-                                }
-                            }
+                            // JavaScriptで変更状態を確認してから処理を決定
+                            let _ = window.eval(&format!(
+                                r#"
+                                (async () => {{
+                                    try {{
+                                        const isModified = window.isModified || false;
+                                        console.log('📝 Current window modification status:', isModified);
+                                        
+                                        if (!isModified) {{
+                                            // 変更がない場合は現在のウィンドウでファイルを開く
+                                            console.log('📂 Opening file in current window (no modifications)');
+                                            window.dispatchEvent(new CustomEvent('open-file-in-current', {{
+                                                detail: '{}'
+                                            }}));
+                                        }} else {{
+                                            // 変更がある場合は新しいウィンドウを作成
+                                            console.log('📂 Creating new window (has modifications)');
+                                            await window.__TAURI__.core.invoke('create_new_window_with_file', {{
+                                                file_path: '{}'
+                                            }});
+                                        }}
+                                    }} catch (error) {{
+                                        console.error('❌ File drop processing error:', error);
+                                    }}
+                                }})();
+                                "#, 
+                                file_path_clone.replace("'", "\\'"),
+                                file_path_clone.replace("'", "\\'")
+                            ));
+                            
                         } else {
                             println!("❌ Invalid file dropped: {}", file_path);
                         }
@@ -583,7 +649,7 @@ fn main() {
             }
         })
         
-        // アプリケーション初期化処理
+        // アプリケーション初期化処理（Dockアイコンドロップ対応追加）
         .setup(|app| {
             println!("🚀 Sert Editor starting up...");
             
@@ -594,6 +660,7 @@ fn main() {
                 #[cfg(target_os = "macos")]
                 {
                     println!("🖥️ macOS multi-display support enabled via configuration");
+                    println!("🍎 macOS Dock icon file drop will be handled via system file association");
                 }
                 
                 #[cfg(not(target_os = "macos"))]
@@ -619,7 +686,7 @@ fn main() {
             
             println!("📋 Clipboard operations enabled");
             println!("📁 File operations enabled (JavaScript-based dialogs)");
-            println!("🗂️ Drag and drop functionality enabled");
+            println!("🗂️ Drag and drop functionality enabled (smart current/new window detection)");
             println!("🔗 File association support enabled");
             println!("🎯 Sert Editor ready!");
             

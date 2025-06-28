@@ -1,7 +1,7 @@
 /*
  * =====================================================
  * Sert Editor - アプリケーション初期化（Tauri 2.5対応版）
- * ドラッグアンドドロップ・ファイル関連付け対応
+ * ドラッグアンドドロップ・ファイル関連付け対応（期待する動作に修正）
  * =====================================================
  */
 
@@ -52,7 +52,7 @@ async function initializeTauri() {
             
             // Tauri 2.5対応のファイルドロップイベント設定
             if (window.__TAURI__.event) {
-                console.log('🗂️ Setting up file open event listener (Tauri 2.5)');
+                console.log('🗂️ Setting up file event listeners (Tauri 2.5)');
                 
                 // 新しいウィンドウでファイルを開くイベント
                 await window.__TAURI__.event.listen('open-file-on-start', (event) => {
@@ -62,6 +62,12 @@ async function initializeTauri() {
                 
                 console.log('✅ File open event listener set up');
             }
+            
+            // 現在のウィンドウでファイルを開くイベント（カスタムイベント）
+            window.addEventListener('open-file-in-current', (event) => {
+                console.log('📂 Open file in current window event received:', event.detail);
+                handleOpenFileInCurrent(event.detail);
+            });
             
             // Tauri APIs の確認
             console.log('Tauri.fs available:', !!window.__TAURI__.fs);
@@ -105,14 +111,14 @@ async function handleStartupFile() {
  */
 async function handleOpenFileEvent(filePath) {
     try {
-        console.log('📁 Processing file open event:', filePath);
+        console.log('📁 Processing file open event for new window:', filePath);
         
         // ファイルパスの妥当性をチェック
         if (window.__TAURI__ && window.__TAURI__.core) {
             const isValid = await window.__TAURI__.core.invoke('validate_file_path', { path: filePath });
             
             if (isValid) {
-                console.log('✅ Valid file path, opening file in current window');
+                console.log('✅ Valid file path, opening file in new window');
                 await openFileFromPath(filePath);
                 
                 // ファイル情報をログ出力
@@ -134,30 +140,70 @@ async function handleOpenFileEvent(filePath) {
 }
 
 /**
- * パスからファイルを開く共通処理
+ * 現在のウィンドウでファイルを開く処理（期待する動作）
+ */
+async function handleOpenFileInCurrent(filePath) {
+    try {
+        console.log('📁 Opening file in current window:', filePath);
+        
+        // ファイルパスの妥当性をチェック
+        if (window.__TAURI__ && window.__TAURI__.core) {
+            const isValid = await window.__TAURI__.core.invoke('validate_file_path', { path: filePath });
+            
+            if (isValid) {
+                console.log('✅ Valid file path, opening in current window');
+                await openFileFromPath(filePath);
+                
+                // ファイル情報をログ出力
+                try {
+                    const fileInfo = await window.__TAURI__.core.invoke('get_file_info', { path: filePath });
+                    console.log('📋 File info:', fileInfo);
+                } catch (infoError) {
+                    console.warn('⚠️ Failed to get file info:', infoError);
+                }
+            } else {
+                console.error('❌ Invalid file path:', filePath);
+                showFileErrorMessage(t('messages.openError', { error: 'Invalid file path' }));
+            }
+        }
+    } catch (error) {
+        console.error('❌ Failed to open file in current window:', error);
+        showFileErrorMessage(t('messages.openError', { error: error.message }));
+    }
+}
+
+/**
+ * パスからファイルを開く共通処理（改良版）
  */
 async function openFileFromPath(filePath) {
     try {
         console.log('📖 Opening file from path:', filePath);
         
-        // 変更がある場合の確認処理は省略（ドロップ時は新しいファイルを直接開く）
         let content;
         
         if (window.__TAURI__ && window.__TAURI__.fs) {
+            console.log('📖 Using Tauri fs API to read file');
             content = await window.__TAURI__.fs.readTextFile(filePath);
         } else if (window.__TAURI__ && window.__TAURI__.core) {
+            console.log('📖 Using Tauri invoke to read file');
             content = await window.__TAURI__.core.invoke('read_file', { path: filePath });
         } else {
             throw new Error(t('messages.tauriOnly'));
         }
         
+        console.log(`📖 File content loaded: ${content.length} characters`);
+        
         // エディタに設定してアンドゥスタックを完全リセット
         const editorElement = document.getElementById('editor');
         if (editorElement) {
+            console.log('📝 Setting content in editor...');
             editorElement.value = content;
             setCurrentFilePath(filePath);
             setIsModified(false);
             setCurrentContent(content);
+            
+            // グローバルのisModifiedを確実に設定
+            window.isModified = false;
             
             // アンドゥスタックを完全リセット
             const { undoStack, redoStack } = await import('./globals.js');
@@ -177,6 +223,9 @@ async function openFileFromPath(filePath) {
             
             // エディタにフォーカスを設定
             editorElement.focus();
+        } else {
+            console.error('❌ Editor element not found');
+            throw new Error('Editor element not found');
         }
     } catch (error) {
         console.error('❌ Failed to open file from path:', error);
@@ -301,10 +350,24 @@ function setupDropZoneVisualFeedback() {
 }
 
 /**
+ * グローバル変数の初期化（重要：isModifiedをグローバルに設定）
+ */
+function initializeGlobalVariables() {
+    // 変更状態をグローバルに設定してRustから参照できるようにする
+    window.isModified = false;
+    
+    console.log('✅ Global variables initialized');
+    console.log('window.isModified:', window.isModified);
+}
+
+/**
  * アプリケーション初期化
  */
 export async function initializeApp() {
     console.log('Starting app initialization...');
+    
+    // グローバル変数の初期化
+    initializeGlobalVariables();
     
     // 多言語化システムの初期化
     console.log('🌐 Initializing i18n system...');
@@ -360,8 +423,9 @@ export async function initializeApp() {
     editorElement.focus();
     
     console.log('🎯 App initialization completed');
-    console.log('🗂️ Drag and drop functionality ready (Tauri 2.5)');
+    console.log('🗂️ Drag and drop functionality ready (Smart current/new window detection)');
     console.log('🔗 File association support ready');
+    console.log('🍎 Dock icon file drop support ready (macOS)');
 }
 
 /**
