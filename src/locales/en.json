@@ -114,7 +114,7 @@
       "newFileError": "Cannot save new file. Please use 'Save As' first."
     },
     "window": {
-      "defaultTitle": "Sert - Untitled",
-      "titleFormat": "Sert - {filename}"
+      "defaultTitle": "Vinsert - Untitled",
+      "titleFormat": "Vinsert - {filename}"
     }
   }

@@ -114,7 +114,7 @@
       "newFileError": "Impossible de sauvegarder un nouveau fichier. Veuillez d'abord utiliser 'Enregistrer sous'."
     },
     "window": {
-      "defaultTitle": "Sert - Sans titre",
-      "titleFormat": "Sert - {filename}"
+      "defaultTitle": "Vinsert - Sans titre",
+      "titleFormat": "Vinsert - {filename}"
     }
   }

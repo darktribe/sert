@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schema.json",
-  "productName": "sert",
+  "productName": "Vinsert",
   "version": "0.1.0",
-  "identifier": "com.sert.dev",
+  "identifier": "com.vinsert.dev",
   "build": {
     "beforeBuildCommand": "npm run build",
     "beforeDevCommand": "npm run dev",

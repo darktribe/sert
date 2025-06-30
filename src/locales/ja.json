@@ -114,7 +114,7 @@
       "newFileError": "新規ファイルのため保存できません。先に「名前を付けて保存」を実行してください。"
     },
     "window": {
-      "defaultTitle": "Sert - 名前なし",
-      "titleFormat": "Sert - {filename}"
+      "defaultTitle": "Vinsert - 名前なし",
+      "titleFormat": "Vinsert - {filename}"
     }
   }
