@@ -41,6 +41,17 @@
                 </div>
             </div>
 
+            <!-- 表示メニュー（新規追加） -->
+            <div class="menu-item" onclick="toggleMenu('view-menu')">
+                <span data-i18n="menu.view">View</span>
+                <div class="dropdown-menu" id="view-menu">
+                    <div class="menu-option" onclick="showFontSettingsDialog()" data-i18n="viewMenu.fontSettings">Font Settings</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" onclick="increaseFontSize()" data-i18n="viewMenu.increaseFontSize">Increase Font Size</div>
+                    <div class="menu-option" onclick="decreaseFontSize()" data-i18n="viewMenu.decreaseFontSize">Decrease Font Size</div>
+                </div>
+            </div>
+
             <!-- 検索メニュー -->
             <div class="menu-item" onclick="toggleMenu('search-menu')">
                 <span data-i18n="menu.search">Search</span>

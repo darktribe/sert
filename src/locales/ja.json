@@ -1,120 +1,141 @@
 {
-    "menu": {
-      "file": "ファイル",
-      "edit": "編集",
-      "search": "検索"
-    },
-    "fileMenu": {
-      "new": "新規作成",
-      "open": "開く", 
-      "save": "上書き保存",
-      "saveAs": "名前をつけて保存",
-      "exit": "終了"
-    },
-    "editMenu": {
-      "undo": "元に戻す",
-      "redo": "やりなおし",
-      "cut": "切り取り",
-      "copy": "コピー",
-      "paste": "貼り付け",
-      "selectAll": "すべて選択"
-    },
-    "searchMenu": {
-      "find": "検索",
-      "replace": "置換"
-    },
-    "editor": {
-      "placeholder": "ここにテキストを入力してください..."
-    },
-    "statusBar": {
-      "line": "行",
-      "column": "列",
-      "encoding": "UTF-8",
-      "charCount": "総文字数"
-    },
-    "dialogs": {
-      "newFile": {
-        "title": "内容に変更があります",
-        "message": "保存せずに新規作成すると、変更内容は失われます。",
-        "saveAndNew": "保存して新規作成",
-        "newWithoutSaving": "保存せずに新規作成",
-        "cancel": "キャンセル"
-      },
-      "openFile": {
-        "title": "内容に変更があります",
-        "message": "保存せずにファイルを開くと、変更内容は失われます。",
-        "saveAndOpen": "保存してから開く",
-        "openWithoutSaving": "保存せずに開く",
-        "cancel": "キャンセル"
-      },
-      "exit": {
-        "title": "内容に変更があります",
-        "message": "保存せずに終了すると、変更内容は失われます。",
-        "saveAndExit": "保存して終了",
-        "exitWithoutSaving": "保存せずに終了",
-        "cancel": "キャンセル"
-      },
-      "fileDialog": {
-        "openTitle": "ファイルを開く",
-        "saveTitle": "名前を付けて保存",
-        "saveBeforeNewTitle": "ファイルを保存してから新規作成",
-        "saveBeforeOpenTitle": "ファイルを保存してから開く",
-        "saveBeforeExitTitle": "ファイルを保存"
-      },
-      "fileFilters": {
-        "textFiles": "テキストファイル",
-        "markdownFiles": "Markdownファイル",
-        "allFiles": "すべてのファイル"
-      }
-    },
-    "search": {
-      "searchTitle": "検索",
-      "replaceTitle": "置換",
-      "searchLabel": "検索文字:",
-      "searchPlaceholder": "検索する文字列を入力",
-      "replaceSearchLabel": "置換するテキスト:",
-      "replaceSearchPlaceholder": "置換するテキストを入力",
-      "replaceLabel": "置換後のテキスト:",
-      "replacePlaceholder": "置換後のテキストを入力",
-      "useRegex": "正規表現",
-      "caseSensitive": "大文字小文字を区別",
-      "resultCount": "結果: {count}件",
-      "resultPosition": "結果: {total}件 {current}/{total}",
-      "buttons": {
-        "search": "検索",
-        "replace": "置換",
-        "next": "次へ",
-        "previous": "前へ",
-        "replaceAll": "すべて置換",
-        "clear": "クリア",
-        "close": "閉じる"
-      },
-      "messages": {
-        "noSearchText": "検索する文字列を入力して下さい",
-        "noReplaceText": "置換するテキストと置換後のテキストを入力して下さい",
-        "noResults": "検索結果：0件",
-        "noTarget": "置換する対象が選択されていません。次へ・前へで選択して下さい",
-        "noMatches": "置換する対象がありません",
-        "replaceAllComplete": "全{count}件を置換しました",
-        "regexError": "正規表現に問題があります。正規表現でなくその文字自体を検索したい場合、正規表現のチェックを外して下さい。"
-      }
+  "menu": {
+    "file": "ファイル",
+    "edit": "編集",
+    "view": "表示",
+    "search": "検索"
+  },
+  "fileMenu": {
+    "new": "新規作成",
+    "open": "開く", 
+    "save": "上書き保存",
+    "saveAs": "名前をつけて保存",
+    "exit": "終了"
+  },
+  "editMenu": {
+    "undo": "元に戻す",
+    "redo": "やりなおし",
+    "cut": "切り取り",
+    "copy": "コピー",
+    "paste": "貼り付け",
+    "selectAll": "すべて選択"
+  },
+  "viewMenu": {
+    "fontSettings": "フォント設定",
+    "increaseFontSize": "フォントサイズを大きく",
+    "decreaseFontSize": "フォントサイズを小さく"
+  },
+  "searchMenu": {
+    "find": "検索",
+    "replace": "置換"
+  },
+  "editor": {
+    "placeholder": "ここにテキストを入力してください..."
+  },
+  "statusBar": {
+    "line": "行",
+    "column": "列",
+    "encoding": "UTF-8",
+    "charCount": "総文字数"
+  },
+  "fonts": {
+    "title": "フォント設定",
+    "fontFamily": "フォントファミリ",
+    "fontSize": "フォントサイズ",
+    "preview": "プレビュー",
+    "previewText": "function example() {\n    // 日本語のコメント\n    console.log('Hello, World!');\n    return 42;\n}",
+    "buttons": {
+      "apply": "適用",
+      "reset": "リセット",
+      "cancel": "キャンセル"
     },
     "messages": {
-      "messageTitle": "メッセージ",
-      "ok": "OK",
-      "saveError": "保存に失敗しました: {error}",
-      "saveCancelNew": "新規作成をキャンセルします。",
-      "saveCancelOpen": "ファイルを開く処理をキャンセルします。",
-      "saveCancelExit": "終了をキャンセルします。",
-      "openError": "ファイルを開くことができませんでした: {error}",
-      "copyError": "コピーに失敗:",
-      "cutError": "切り取りに失敗:",
-      "pasteError": "貼り付けに失敗:",
-      "tauriOnly": "この機能はTauriアプリでのみ利用可能です",
-      "newFileError": "新規ファイルのため保存できません。先に「名前を付けて保存」を実行してください。"
-    },
-    "window": {
-      "defaultTitle": "Vinsert - 名前なし",
-      "titleFormat": "Vinsert - {filename}"
+      "resetConfirm": "フォント設定をデフォルトに戻しますか？"
     }
+  },
+  "dialogs": {
+    "newFile": {
+      "title": "内容に変更があります",
+      "message": "保存せずに新規作成すると、変更内容は失われます。",
+      "saveAndNew": "保存して新規作成",
+      "newWithoutSaving": "保存せずに新規作成",
+      "cancel": "キャンセル"
+    },
+    "openFile": {
+      "title": "内容に変更があります",
+      "message": "保存せずにファイルを開くと、変更内容は失われます。",
+      "saveAndOpen": "保存してから開く",
+      "openWithoutSaving": "保存せずに開く",
+      "cancel": "キャンセル"
+    },
+    "exit": {
+      "title": "内容に変更があります",
+      "message": "保存せずに終了すると、変更内容は失われます。",
+      "saveAndExit": "保存して終了",
+      "exitWithoutSaving": "保存せずに終了",
+      "cancel": "キャンセル"
+    },
+    "fileDialog": {
+      "openTitle": "ファイルを開く",
+      "saveTitle": "名前を付けて保存",
+      "saveBeforeNewTitle": "ファイルを保存してから新規作成",
+      "saveBeforeOpenTitle": "ファイルを保存してから開く",
+      "saveBeforeExitTitle": "ファイルを保存"
+    },
+    "fileFilters": {
+      "textFiles": "テキストファイル",
+      "markdownFiles": "Markdownファイル",
+      "allFiles": "すべてのファイル"
+    }
+  },
+  "search": {
+    "searchTitle": "検索",
+    "replaceTitle": "置換",
+    "searchLabel": "検索文字:",
+    "searchPlaceholder": "検索する文字列を入力",
+    "replaceSearchLabel": "置換するテキスト:",
+    "replaceSearchPlaceholder": "置換するテキストを入力",
+    "replaceLabel": "置換後のテキスト:",
+    "replacePlaceholder": "置換後のテキストを入力",
+    "useRegex": "正規表現",
+    "caseSensitive": "大文字小文字を区別",
+    "resultCount": "結果: {count}件",
+    "resultPosition": "結果: {total}件 {current}/{total}",
+    "buttons": {
+      "search": "検索",
+      "replace": "置換",
+      "next": "次へ",
+      "previous": "前へ",
+      "replaceAll": "すべて置換",
+      "clear": "クリア",
+      "close": "閉じる"
+    },
+    "messages": {
+      "noSearchText": "検索する文字列を入力して下さい",
+      "noReplaceText": "置換するテキストと置換後のテキストを入力して下さい",
+      "noResults": "検索結果：0件",
+      "noTarget": "置換する対象が選択されていません。次へ・前へで選択して下さい",
+      "noMatches": "置換する対象がありません",
+      "replaceAllComplete": "全{count}件を置換しました",
+      "regexError": "正規表現に問題があります。正規表現でなくその文字自体を検索したい場合、正規表現のチェックを外して下さい。"
+    }
+  },
+  "messages": {
+    "messageTitle": "メッセージ",
+    "ok": "OK",
+    "saveError": "保存に失敗しました: {error}",
+    "saveCancelNew": "新規作成をキャンセルします。",
+    "saveCancelOpen": "ファイルを開く処理をキャンセルします。",
+    "saveCancelExit": "終了をキャンセルします。",
+    "openError": "ファイルを開くことができませんでした: {error}",
+    "copyError": "コピーに失敗:",
+    "cutError": "切り取りに失敗:",
+    "pasteError": "貼り付けに失敗:",
+    "tauriOnly": "この機能はTauriアプリでのみ利用可能です",
+    "newFileError": "新規ファイルのため保存できません。先に「名前を付けて保存」を実行してください。"
+  },
+  "window": {
+    "defaultTitle": "Vinsert - 名前なし",
+    "titleFormat": "Vinsert - {filename}"
   }
+}

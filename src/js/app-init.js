@@ -11,6 +11,7 @@ import { setupEventListeners } from './event-listeners.js';
 import { exitApp } from './app-exit.js';
 import { initializeI18n, t, updateElementText } from './locales.js';
 import { createLanguageSwitcher } from './language-switcher.js';
+import { loadFontSettings } from './font-settings.js';
 
 /**
  * Tauri APIの初期化
@@ -155,6 +156,10 @@ export async function initializeApp() {
     // エディタの初期設定
     setCurrentContent(editorElement.value);
     initializeUndoStack();
+    
+    // フォント設定の初期化（新規追加）
+    console.log('🎨 Initializing font settings...');
+    loadFontSettings();
     
     // イベントリスナーを設定
     setupEventListeners();

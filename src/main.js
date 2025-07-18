@@ -10,6 +10,7 @@ import { newFile, openFile, saveFile, saveAsFile } from './js/file-operations.js
 import { undo, redo } from './js/undo-redo.js';
 import { copy, cut, paste, selectAll } from './js/edit-operations.js';
 import { showSearchDialog, showReplaceDialog, findNext, findPrevious } from './js/search-replace.js';
+import { showFontSettingsDialog, increaseFontSize, decreaseFontSize } from './js/font-settings.js';
 import { exitApp } from './js/app-exit.js';
 import { createLanguageSwitcher, removeLanguageSwitcher, reinitializeLanguageSwitcher } from './js/language-switcher.js';
 import { changeLanguage, getCurrentLanguage, getAvailableLanguages } from './js/locales.js';
@@ -32,6 +33,11 @@ window.selectAll = selectAll;
 window.showSearchDialog = showSearchDialog;
 window.showReplaceDialog = showReplaceDialog;
 window.exitApp = exitApp;
+
+// フォント設定機能（新規追加）
+window.showFontSettingsDialog = showFontSettingsDialog;
+window.increaseFontSize = increaseFontSize;
+window.decreaseFontSize = decreaseFontSize;
 
 // 言語切り替え機能
 window.createLanguageSwitcher = createLanguageSwitcher;
@@ -57,6 +63,12 @@ console.log('window.selectAll:', typeof window.selectAll);
 console.log('window.showSearchDialog:', typeof window.showSearchDialog);
 console.log('window.showReplaceDialog:', typeof window.showReplaceDialog);
 console.log('window.exitApp:', typeof window.exitApp);
+
+// フォント設定関数
+console.log('🎨 Font functions:');
+console.log('window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
+console.log('window.increaseFontSize:', typeof window.increaseFontSize);
+console.log('window.decreaseFontSize:', typeof window.decreaseFontSize);
 
 // 言語切り替え関数
 console.log('🌐 Language functions:');
@@ -86,6 +98,18 @@ window.testSearchDialog = function() {
         console.log('✅ showSearchDialog test completed');
     } catch (error) {
         console.error('❌ showSearchDialog test failed:', error);
+    }
+};
+
+// フォント設定テスト用デバッグ関数を追加
+window.testFontSettings = function() {
+    console.log('🧪 Testing font settings...');
+    console.log('showFontSettingsDialog function:', window.showFontSettingsDialog);
+    try {
+        window.showFontSettingsDialog();
+        console.log('✅ showFontSettingsDialog test completed');
+    } catch (error) {
+        console.error('❌ showFontSettingsDialog test failed:', error);
     }
 };
 
@@ -120,6 +144,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // グローバル関数が正しく登録されているかさらに確認
     console.log('🔍 Final check - window.saveFile:', typeof window.saveFile);
     console.log('🔍 Final check - window.showSearchDialog:', typeof window.showSearchDialog);
+    console.log('🔍 Final check - window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
     console.log('🔍 Final check - window.changeLanguage:', typeof window.changeLanguage);
     
     await initializeApp();
@@ -130,8 +155,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('- window.openFile():', typeof window.openFile);
     console.log('- window.showSearchDialog():', typeof window.showSearchDialog);
     console.log('- window.showReplaceDialog():', typeof window.showReplaceDialog);
+    console.log('- window.showFontSettingsDialog():', typeof window.showFontSettingsDialog);
     console.log('- window.changeLanguage():', typeof window.changeLanguage);
     console.log('- window.testLanguageSwitching():', typeof window.testLanguageSwitching);
+    console.log('- window.testFontSettings():', typeof window.testFontSettings);
 });
 
 /**
@@ -142,6 +169,7 @@ if (document.readyState === 'loading') {
         console.log('📄 DOM loaded via readyState check...');
         console.log('🔍 Backup check - window.saveFile:', typeof window.saveFile);
         console.log('🔍 Backup check - window.showSearchDialog:', typeof window.showSearchDialog);
+        console.log('🔍 Backup check - window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
         console.log('🔍 Backup check - window.changeLanguage:', typeof window.changeLanguage);
         await initializeApp();
     });
@@ -149,6 +177,7 @@ if (document.readyState === 'loading') {
     console.log('📄 DOM already loaded, initializing immediately...');
     console.log('🔍 Immediate check - window.saveFile:', typeof window.saveFile);
     console.log('🔍 Immediate check - window.showSearchDialog:', typeof window.showSearchDialog);
+    console.log('🔍 Immediate check - window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
     console.log('🔍 Immediate check - window.changeLanguage:', typeof window.changeLanguage);
     initializeApp();
 }
@@ -163,10 +192,14 @@ setTimeout(() => {
     window.saveAsFile = saveAsFile;
     window.showSearchDialog = showSearchDialog;
     window.showReplaceDialog = showReplaceDialog;
+    window.showFontSettingsDialog = showFontSettingsDialog;
+    window.increaseFontSize = increaseFontSize;
+    window.decreaseFontSize = decreaseFontSize;
     window.changeLanguage = changeLanguage;
     window.createLanguageSwitcher = createLanguageSwitcher;
     
     console.log('✅ Fallback registration complete - window.saveFile:', typeof window.saveFile);
     console.log('✅ Fallback registration complete - window.showSearchDialog:', typeof window.showSearchDialog);
+    console.log('✅ Fallback registration complete - window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
     console.log('✅ Fallback registration complete - window.changeLanguage:', typeof window.changeLanguage);
 }, 1000);

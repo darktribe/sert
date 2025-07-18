@@ -1,120 +1,141 @@
 {
-    "menu": {
-      "file": "File",
-      "edit": "Edit",
-      "search": "Search"
-    },
-    "fileMenu": {
-      "new": "New",
-      "open": "Open", 
-      "save": "Save",
-      "saveAs": "Save As",
-      "exit": "Exit"
-    },
-    "editMenu": {
-      "undo": "Undo",
-      "redo": "Redo",
-      "cut": "Cut",
-      "copy": "Copy",
-      "paste": "Paste",
-      "selectAll": "Select All"
-    },
-    "searchMenu": {
-      "find": "Find",
-      "replace": "Replace"
-    },
-    "editor": {
-      "placeholder": "Please enter text here..."
-    },
-    "statusBar": {
-      "line": "Line",
-      "column": "Column",
-      "encoding": "UTF-8",
-      "charCount": "Character count"
-    },
-    "dialogs": {
-      "newFile": {
-        "title": "Unsaved Changes",
-        "message": "Creating a new file without saving will lose your changes.",
-        "saveAndNew": "Save and New",
-        "newWithoutSaving": "New Without Saving",
-        "cancel": "Cancel"
-      },
-      "openFile": {
-        "title": "Unsaved Changes",
-        "message": "Opening a file without saving will lose your changes.",
-        "saveAndOpen": "Save and Open",
-        "openWithoutSaving": "Open Without Saving",
-        "cancel": "Cancel"
-      },
-      "exit": {
-        "title": "Unsaved Changes",
-        "message": "Exiting without saving will lose your changes.",
-        "saveAndExit": "Save and Exit",
-        "exitWithoutSaving": "Exit Without Saving",
-        "cancel": "Cancel"
-      },
-      "fileDialog": {
-        "openTitle": "Open File",
-        "saveTitle": "Save As",
-        "saveBeforeNewTitle": "Save File Before Creating New",
-        "saveBeforeOpenTitle": "Save File Before Opening",
-        "saveBeforeExitTitle": "Save File"
-      },
-      "fileFilters": {
-        "textFiles": "Text Files",
-        "markdownFiles": "Markdown Files",
-        "allFiles": "All Files"
-      }
-    },
-    "search": {
-      "searchTitle": "Search",
-      "replaceTitle": "Replace",
-      "searchLabel": "Search for:",
-      "searchPlaceholder": "Enter text to search",
-      "replaceSearchLabel": "Text to replace:",
-      "replaceSearchPlaceholder": "Enter text to replace",
-      "replaceLabel": "Replace with:",
-      "replacePlaceholder": "Enter replacement text",
-      "useRegex": "Regular Expression",
-      "caseSensitive": "Case Sensitive",
-      "resultCount": "Results: {count}",
-      "resultPosition": "Results: {total} ({current}/{total})",
-      "buttons": {
-        "search": "Search",
-        "replace": "Replace",
-        "next": "Next",
-        "previous": "Previous",
-        "replaceAll": "Replace All",
-        "clear": "Clear",
-        "close": "Close"
-      },
-      "messages": {
-        "noSearchText": "Please enter text to search for",
-        "noReplaceText": "Please enter both search text and replacement text",
-        "noResults": "No results found",
-        "noTarget": "No target selected for replacement. Use Next/Previous to select",
-        "noMatches": "No matches to replace",
-        "replaceAllComplete": "Replaced all {count} matches",
-        "regexError": "Regular expression error. If you want to search for these characters literally, uncheck Regular Expression."
-      }
+  "menu": {
+    "file": "File",
+    "edit": "Edit",
+    "view": "View",
+    "search": "Search"
+  },
+  "fileMenu": {
+    "new": "New",
+    "open": "Open", 
+    "save": "Save",
+    "saveAs": "Save As",
+    "exit": "Exit"
+  },
+  "editMenu": {
+    "undo": "Undo",
+    "redo": "Redo",
+    "cut": "Cut",
+    "copy": "Copy",
+    "paste": "Paste",
+    "selectAll": "Select All"
+  },
+  "viewMenu": {
+    "fontSettings": "Font Settings",
+    "increaseFontSize": "Increase Font Size",
+    "decreaseFontSize": "Decrease Font Size"
+  },
+  "searchMenu": {
+    "find": "Find",
+    "replace": "Replace"
+  },
+  "editor": {
+    "placeholder": "Please enter text here..."
+  },
+  "statusBar": {
+    "line": "Line",
+    "column": "Column",
+    "encoding": "UTF-8",
+    "charCount": "Character count"
+  },
+  "fonts": {
+    "title": "Font Settings",
+    "fontFamily": "Font Family",
+    "fontSize": "Font Size",
+    "preview": "Preview",
+    "previewText": "function example() {\n    // English comment\n    console.log('Hello, World!');\n    return 42;\n}",
+    "buttons": {
+      "apply": "Apply",
+      "reset": "Reset",
+      "cancel": "Cancel"
     },
     "messages": {
-      "messageTitle": "Message",
-      "ok": "OK",
-      "saveError": "Save failed: {error}",
-      "saveCancelNew": "New file creation cancelled.",
-      "saveCancelOpen": "File opening cancelled.",
-      "saveCancelExit": "Exit cancelled.",
-      "openError": "Could not open file: {error}",
-      "copyError": "Copy failed:",
-      "cutError": "Cut failed:",
-      "pasteError": "Paste failed:",
-      "tauriOnly": "This feature is only available in Tauri applications",
-      "newFileError": "Cannot save new file. Please use 'Save As' first."
-    },
-    "window": {
-      "defaultTitle": "Vinsert - Untitled",
-      "titleFormat": "Vinsert - {filename}"
+      "resetConfirm": "Reset font settings to default?"
     }
+  },
+  "dialogs": {
+    "newFile": {
+      "title": "Unsaved Changes",
+      "message": "Creating a new file without saving will lose your changes.",
+      "saveAndNew": "Save and New",
+      "newWithoutSaving": "New Without Saving",
+      "cancel": "Cancel"
+    },
+    "openFile": {
+      "title": "Unsaved Changes",
+      "message": "Opening a file without saving will lose your changes.",
+      "saveAndOpen": "Save and Open",
+      "openWithoutSaving": "Open Without Saving",
+      "cancel": "Cancel"
+    },
+    "exit": {
+      "title": "Unsaved Changes",
+      "message": "Exiting without saving will lose your changes.",
+      "saveAndExit": "Save and Exit",
+      "exitWithoutSaving": "Exit Without Saving",
+      "cancel": "Cancel"
+    },
+    "fileDialog": {
+      "openTitle": "Open File",
+      "saveTitle": "Save As",
+      "saveBeforeNewTitle": "Save File Before Creating New",
+      "saveBeforeOpenTitle": "Save File Before Opening",
+      "saveBeforeExitTitle": "Save File"
+    },
+    "fileFilters": {
+      "textFiles": "Text Files",
+      "markdownFiles": "Markdown Files",
+      "allFiles": "All Files"
+    }
+  },
+  "search": {
+    "searchTitle": "Search",
+    "replaceTitle": "Replace",
+    "searchLabel": "Search for:",
+    "searchPlaceholder": "Enter text to search",
+    "replaceSearchLabel": "Text to replace:",
+    "replaceSearchPlaceholder": "Enter text to replace",
+    "replaceLabel": "Replace with:",
+    "replacePlaceholder": "Enter replacement text",
+    "useRegex": "Regular Expression",
+    "caseSensitive": "Case Sensitive",
+    "resultCount": "Results: {count}",
+    "resultPosition": "Results: {total} ({current}/{total})",
+    "buttons": {
+      "search": "Search",
+      "replace": "Replace",
+      "next": "Next",
+      "previous": "Previous",
+      "replaceAll": "Replace All",
+      "clear": "Clear",
+      "close": "Close"
+    },
+    "messages": {
+      "noSearchText": "Please enter text to search for",
+      "noReplaceText": "Please enter both search text and replacement text",
+      "noResults": "No results found",
+      "noTarget": "No target selected for replacement. Use Next/Previous to select",
+      "noMatches": "No matches to replace",
+      "replaceAllComplete": "Replaced all {count} matches",
+      "regexError": "Regular expression error. If you want to search for these characters literally, uncheck Regular Expression."
+    }
+  },
+  "messages": {
+    "messageTitle": "Message",
+    "ok": "OK",
+    "saveError": "Save failed: {error}",
+    "saveCancelNew": "New file creation cancelled.",
+    "saveCancelOpen": "File opening cancelled.",
+    "saveCancelExit": "Exit cancelled.",
+    "openError": "Could not open file: {error}",
+    "copyError": "Copy failed:",
+    "cutError": "Cut failed:",
+    "pasteError": "Paste failed:",
+    "tauriOnly": "This feature is only available in Tauri applications",
+    "newFileError": "Cannot save new file. Please use 'Save As' first."
+  },
+  "window": {
+    "defaultTitle": "Vinsert - Untitled",
+    "titleFormat": "Vinsert - {filename}"
   }
+}

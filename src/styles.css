@@ -437,97 +437,65 @@ body, html {
 }
 
 /* =====================================================
- スクロールバー（Webkit系ブラウザ）
+ フォント設定ダイアログ（新規追加）
  ===================================================== */
-.editor-textarea::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+.font-settings-overlay {
+  z-index: 10001;
 }
 
-.editor-textarea::-webkit-scrollbar-track {
-  background: #1e1e1e;
+.font-settings-dialog {
+  min-width: 520px;
+  max-width: 680px;
 }
 
-.editor-textarea::-webkit-scrollbar-thumb {
-  background: #424242;
-  border-radius: 6px;
+.font-settings-section {
+  margin-bottom: 20px;
 }
 
-.editor-textarea::-webkit-scrollbar-thumb:hover {
-  background: #555555;
+.font-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #3e3e40;
+  border-radius: 4px;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
 }
 
-/* 横スクロールバーは非表示（縦スクロールバーのみ表示） */
-.editor-textarea::-webkit-scrollbar:horizontal {
-  height: 0px;
-  background: transparent;
+.font-select:focus {
+  outline: none;
+  border-color: #007acc;
+  box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.3);
 }
 
-.line-numbers::-webkit-scrollbar {
-  width: 0px;
-  background: transparent;
+.font-select option {
+  background-color: #2d2d30;
+  color: #d4d4d4;
+  padding: 8px;
 }
 
-/* =====================================================
- レスポンシブ対応
- ===================================================== */
-@media (max-width: 768px) {
-  .menu-bar {
-      font-size: 12px;
-  }
-  
-  .menu-item {
-      padding: 4px 8px;
-  }
-  
-  .language-switcher {
-    margin-right: 5px;
-  }
-  
-  .language-btn {
-    padding: 3px 6px;
-    font-size: 10px;
-    min-width: 24px;
-  }
-  
-  .line-numbers {
-      min-width: 40px;
-      max-width: 60px;
-      font-size: 12px;
-      padding: 8px 6px;
-  }
-  
-  .editor-textarea {
-      font-size: 12px;
-      padding: 8px;
-  }
-  
-  .status-bar {
-      font-size: 10px;
-      padding: 2px 8px;
-  }
-  
-  .search-dialog {
-      min-width: 320px;
-      max-width: 90vw;
-      margin: 20px;
-  }
-  
-  .replace-dialog {
-      min-width: 340px;
-  }
-  
-  .search-dialog-content {
-      padding: 16px;
-  }
-  
-  .search-button-group {
-      justify-content: center;
-  }
-  
-  .search-button {
-      min-width: 70px;
-      padding: 6px 12px;
-      font-size: 12px;
-  }
+.font-size-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
+
+.font-size-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: #3e3e40;
+  outline: none;
+  cursor: pointer;
+}
+
+.font-size-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 1

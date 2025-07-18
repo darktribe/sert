@@ -1,120 +1,141 @@
 {
-    "menu": {
-      "file": "Fichier",
-      "edit": "Édition",
-      "search": "Recherche"
-    },
-    "fileMenu": {
-      "new": "Nouveau",
-      "open": "Ouvrir", 
-      "save": "Enregistrer",
-      "saveAs": "Enregistrer sous",
-      "exit": "Quitter"
-    },
-    "editMenu": {
-      "undo": "Annuler",
-      "redo": "Rétablir",
-      "cut": "Couper",
-      "copy": "Copier",
-      "paste": "Coller",
-      "selectAll": "Tout sélectionner"
-    },
-    "searchMenu": {
-      "find": "Rechercher",
-      "replace": "Remplacer"
-    },
-    "editor": {
-      "placeholder": "Veuillez saisir votre texte ici..."
-    },
-    "statusBar": {
-      "line": "Ligne",
-      "column": "Colonne",
-      "encoding": "UTF-8",
-      "charCount": "Nombre de caractères"
-    },
-    "dialogs": {
-      "newFile": {
-        "title": "Modifications non sauvegardées",
-        "message": "Créer un nouveau fichier sans sauvegarder fera perdre vos modifications.",
-        "saveAndNew": "Sauvegarder et nouveau",
-        "newWithoutSaving": "Nouveau sans sauvegarder",
-        "cancel": "Annuler"
-      },
-      "openFile": {
-        "title": "Modifications non sauvegardées",
-        "message": "Ouvrir un fichier sans sauvegarder fera perdre vos modifications.",
-        "saveAndOpen": "Sauvegarder et ouvrir",
-        "openWithoutSaving": "Ouvrir sans sauvegarder",
-        "cancel": "Annuler"
-      },
-      "exit": {
-        "title": "Modifications non sauvegardées",
-        "message": "Quitter sans sauvegarder fera perdre vos modifications.",
-        "saveAndExit": "Sauvegarder et quitter",
-        "exitWithoutSaving": "Quitter sans sauvegarder",
-        "cancel": "Annuler"
-      },
-      "fileDialog": {
-        "openTitle": "Ouvrir un fichier",
-        "saveTitle": "Enregistrer sous",
-        "saveBeforeNewTitle": "Sauvegarder le fichier avant de créer un nouveau",
-        "saveBeforeOpenTitle": "Sauvegarder le fichier avant d'ouvrir",
-        "saveBeforeExitTitle": "Sauvegarder le fichier"
-      },
-      "fileFilters": {
-        "textFiles": "Fichiers texte",
-        "markdownFiles": "Fichiers Markdown",
-        "allFiles": "Tous les fichiers"
-      }
-    },
-    "search": {
-      "searchTitle": "Recherche",
-      "replaceTitle": "Remplacer",
-      "searchLabel": "Rechercher :",
-      "searchPlaceholder": "Saisir le texte à rechercher",
-      "replaceSearchLabel": "Texte à remplacer :",
-      "replaceSearchPlaceholder": "Saisir le texte à remplacer",
-      "replaceLabel": "Remplacer par :",
-      "replacePlaceholder": "Saisir le texte de remplacement",
-      "useRegex": "Expression régulière",
-      "caseSensitive": "Sensible à la casse",
-      "resultCount": "Résultats : {count}",
-      "resultPosition": "Résultats : {total} ({current}/{total})",
-      "buttons": {
-        "search": "Rechercher",
-        "replace": "Remplacer",
-        "next": "Suivant",
-        "previous": "Précédent",
-        "replaceAll": "Tout remplacer",
-        "clear": "Effacer",
-        "close": "Fermer"
-      },
-      "messages": {
-        "noSearchText": "Veuillez saisir un texte à rechercher",
-        "noReplaceText": "Veuillez saisir le texte à rechercher et le texte de remplacement",
-        "noResults": "Aucun résultat trouvé",
-        "noTarget": "Aucune cible sélectionnée pour le remplacement. Utilisez Suivant/Précédent pour sélectionner",
-        "noMatches": "Aucune correspondance à remplacer",
-        "replaceAllComplete": "Toutes les {count} correspondances ont été remplacées",
-        "regexError": "Erreur d'expression régulière. Si vous voulez rechercher ces caractères littéralement, décochez Expression régulière."
-      }
+  "menu": {
+    "file": "Fichier",
+    "edit": "Édition",
+    "view": "Affichage",
+    "search": "Recherche"
+  },
+  "fileMenu": {
+    "new": "Nouveau",
+    "open": "Ouvrir", 
+    "save": "Enregistrer",
+    "saveAs": "Enregistrer sous",
+    "exit": "Quitter"
+  },
+  "editMenu": {
+    "undo": "Annuler",
+    "redo": "Rétablir",
+    "cut": "Couper",
+    "copy": "Copier",
+    "paste": "Coller",
+    "selectAll": "Tout sélectionner"
+  },
+  "viewMenu": {
+    "fontSettings": "Paramètres de police",
+    "increaseFontSize": "Augmenter la taille de police",
+    "decreaseFontSize": "Diminuer la taille de police"
+  },
+  "searchMenu": {
+    "find": "Rechercher",
+    "replace": "Remplacer"
+  },
+  "editor": {
+    "placeholder": "Veuillez saisir votre texte ici..."
+  },
+  "statusBar": {
+    "line": "Ligne",
+    "column": "Colonne",
+    "encoding": "UTF-8",
+    "charCount": "Nombre de caractères"
+  },
+  "fonts": {
+    "title": "Paramètres de police",
+    "fontFamily": "Famille de police",
+    "fontSize": "Taille de police",
+    "preview": "Aperçu",
+    "previewText": "function exemple() {\n    // Commentaire français\n    console.log('Bonjour, le monde!');\n    return 42;\n}",
+    "buttons": {
+      "apply": "Appliquer",
+      "reset": "Réinitialiser",
+      "cancel": "Annuler"
     },
     "messages": {
-      "messageTitle": "Message",
-      "ok": "OK",
-      "saveError": "Échec de la sauvegarde : {error}",
-      "saveCancelNew": "Création du nouveau fichier annulée.",
-      "saveCancelOpen": "Ouverture du fichier annulée.",
-      "saveCancelExit": "Sortie annulée.",
-      "openError": "Impossible d'ouvrir le fichier : {error}",
-      "copyError": "Échec de la copie :",
-      "cutError": "Échec de la coupure :",
-      "pasteError": "Échec du collage :",
-      "tauriOnly": "Cette fonctionnalité n'est disponible que dans les applications Tauri",
-      "newFileError": "Impossible de sauvegarder un nouveau fichier. Veuillez d'abord utiliser 'Enregistrer sous'."
-    },
-    "window": {
-      "defaultTitle": "Vinsert - Sans titre",
-      "titleFormat": "Vinsert - {filename}"
+      "resetConfirm": "Réinitialiser les paramètres de police par défaut ?"
     }
+  },
+  "dialogs": {
+    "newFile": {
+      "title": "Modifications non sauvegardées",
+      "message": "Créer un nouveau fichier sans sauvegarder fera perdre vos modifications.",
+      "saveAndNew": "Sauvegarder et nouveau",
+      "newWithoutSaving": "Nouveau sans sauvegarder",
+      "cancel": "Annuler"
+    },
+    "openFile": {
+      "title": "Modifications non sauvegardées",
+      "message": "Ouvrir un fichier sans sauvegarder fera perdre vos modifications.",
+      "saveAndOpen": "Sauvegarder et ouvrir",
+      "openWithoutSaving": "Ouvrir sans sauvegarder",
+      "cancel": "Annuler"
+    },
+    "exit": {
+      "title": "Modifications non sauvegardées",
+      "message": "Quitter sans sauvegarder fera perdre vos modifications.",
+      "saveAndExit": "Sauvegarder et quitter",
+      "exitWithoutSaving": "Quitter sans sauvegarder",
+      "cancel": "Annuler"
+    },
+    "fileDialog": {
+      "openTitle": "Ouvrir un fichier",
+      "saveTitle": "Enregistrer sous",
+      "saveBeforeNewTitle": "Sauvegarder le fichier avant de créer un nouveau",
+      "saveBeforeOpenTitle": "Sauvegarder le fichier avant d'ouvrir",
+      "saveBeforeExitTitle": "Sauvegarder le fichier"
+    },
+    "fileFilters": {
+      "textFiles": "Fichiers texte",
+      "markdownFiles": "Fichiers Markdown",
+      "allFiles": "Tous les fichiers"
+    }
+  },
+  "search": {
+    "searchTitle": "Recherche",
+    "replaceTitle": "Remplacer",
+    "searchLabel": "Rechercher :",
+    "searchPlaceholder": "Saisir le texte à rechercher",
+    "replaceSearchLabel": "Texte à remplacer :",
+    "replaceSearchPlaceholder": "Saisir le texte à remplacer",
+    "replaceLabel": "Remplacer par :",
+    "replacePlaceholder": "Saisir le texte de remplacement",
+    "useRegex": "Expression régulière",
+    "caseSensitive": "Sensible à la casse",
+    "resultCount": "Résultats : {count}",
+    "resultPosition": "Résultats : {total} ({current}/{total})",
+    "buttons": {
+      "search": "Rechercher",
+      "replace": "Remplacer",
+      "next": "Suivant",
+      "previous": "Précédent",
+      "replaceAll": "Tout remplacer",
+      "clear": "Effacer",
+      "close": "Fermer"
+    },
+    "messages": {
+      "noSearchText": "Veuillez saisir un texte à rechercher",
+      "noReplaceText": "Veuillez saisir le texte à rechercher et le texte de remplacement",
+      "noResults": "Aucun résultat trouvé",
+      "noTarget": "Aucune cible sélectionnée pour le remplacement. Utilisez Suivant/Précédent pour sélectionner",
+      "noMatches": "Aucune correspondance à remplacer",
+      "replaceAllComplete": "Toutes les {count} correspondances ont été remplacées",
+      "regexError": "Erreur d'expression régulière. Si vous voulez rechercher ces caractères littéralement, décochez Expression régulière."
+    }
+  },
+  "messages": {
+    "messageTitle": "Message",
+    "ok": "OK",
+    "saveError": "Échec de la sauvegarde : {error}",
+    "saveCancelNew": "Création du nouveau fichier annulée.",
+    "saveCancelOpen": "Ouverture du fichier annulée.",
+    "saveCancelExit": "Sortie annulée.",
+    "openError": "Impossible d'ouvrir le fichier : {error}",
+    "copyError": "Échec de la copie :",
+    "cutError": "Échec de la coupure :",
+    "pasteError": "Échec du collage :",
+    "tauriOnly": "Cette fonctionnalité n'est disponible que dans les applications Tauri",
+    "newFileError": "Impossible de sauvegarder un nouveau fichier. Veuillez d'abord utiliser 'Enregistrer sous'."
+  },
+  "window": {
+    "defaultTitle": "Vinsert - Sans titre",
+    "titleFormat": "Vinsert - {filename}"
   }
+}
