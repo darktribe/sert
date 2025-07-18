@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - メインエントリーポイント
+ * Vinsert Editor - メインエントリーポイント（新機能対応版）
  * =====================================================
  */
 
@@ -10,7 +10,7 @@ import { newFile, openFile, saveFile, saveAsFile } from './js/file-operations.js
 import { undo, redo } from './js/undo-redo.js';
 import { copy, cut, paste, selectAll } from './js/edit-operations.js';
 import { showSearchDialog, showReplaceDialog, findNext, findPrevious } from './js/search-replace.js';
-import { showFontSettingsDialog, increaseFontSize, decreaseFontSize } from './js/font-settings.js';
+import { showFontSettingsDialog, showFontSizeInputDialog, increaseFontSize, decreaseFontSize } from './js/font-settings.js';
 import { exitApp } from './js/app-exit.js';
 import { createLanguageSwitcher, removeLanguageSwitcher, reinitializeLanguageSwitcher } from './js/language-switcher.js';
 import { changeLanguage, getCurrentLanguage, getAvailableLanguages } from './js/locales.js';
@@ -34,8 +34,9 @@ window.showSearchDialog = showSearchDialog;
 window.showReplaceDialog = showReplaceDialog;
 window.exitApp = exitApp;
 
-// フォント設定機能（新規追加）
+// フォント設定機能（新機能追加）
 window.showFontSettingsDialog = showFontSettingsDialog;
+window.showFontSizeInputDialog = showFontSizeInputDialog;  // 新機能
 window.increaseFontSize = increaseFontSize;
 window.decreaseFontSize = decreaseFontSize;
 
@@ -67,6 +68,7 @@ console.log('window.exitApp:', typeof window.exitApp);
 // フォント設定関数
 console.log('🎨 Font functions:');
 console.log('window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
+console.log('window.showFontSizeInputDialog:', typeof window.showFontSizeInputDialog);  // 新機能
 console.log('window.increaseFontSize:', typeof window.increaseFontSize);
 console.log('window.decreaseFontSize:', typeof window.decreaseFontSize);
 
@@ -76,6 +78,33 @@ console.log('window.createLanguageSwitcher:', typeof window.createLanguageSwitch
 console.log('window.changeLanguage:', typeof window.changeLanguage);
 console.log('window.getCurrentLanguage:', typeof window.getCurrentLanguage);
 console.log('window.getAvailableLanguages:', typeof window.getAvailableLanguages);
+
+// 新機能のテスト用デバッグ関数を追加
+window.testFontSizeInput = function() {
+    console.log('🧪 Testing font size input dialog...');
+    console.log('showFontSizeInputDialog function:', window.showFontSizeInputDialog);
+    try {
+        window.showFontSizeInputDialog();
+        console.log('✅ showFontSizeInputDialog test completed');
+    } catch (error) {
+        console.error('❌ showFontSizeInputDialog test failed:', error);
+    }
+};
+
+// Tab機能のテスト用デバッグ関数を追加
+window.testTabFeature = function() {
+    console.log('🧪 Testing Tab feature...');
+    console.log('エディタでTabキーを押してみてください。');
+    console.log('- Tab: インデント追加');
+    console.log('- Shift+Tab: インデント削除');
+    console.log('- 複数行選択してShift+Tab: 選択行全体のインデント削除');
+    
+    const editor = document.getElementById('editor');
+    if (editor) {
+        editor.focus();
+        console.log('✅ エディタにフォーカスを設定しました');
+    }
+};
 
 // 保存機能のテスト用デバッグ関数を追加
 window.testSaveFile = async function() {
@@ -145,6 +174,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('🔍 Final check - window.saveFile:', typeof window.saveFile);
     console.log('🔍 Final check - window.showSearchDialog:', typeof window.showSearchDialog);
     console.log('🔍 Final check - window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
+    console.log('🔍 Final check - window.showFontSizeInputDialog:', typeof window.showFontSizeInputDialog);
     console.log('🔍 Final check - window.changeLanguage:', typeof window.changeLanguage);
     
     await initializeApp();
@@ -156,9 +186,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('- window.showSearchDialog():', typeof window.showSearchDialog);
     console.log('- window.showReplaceDialog():', typeof window.showReplaceDialog);
     console.log('- window.showFontSettingsDialog():', typeof window.showFontSettingsDialog);
+    console.log('- window.showFontSizeInputDialog():', typeof window.showFontSizeInputDialog);
     console.log('- window.changeLanguage():', typeof window.changeLanguage);
     console.log('- window.testLanguageSwitching():', typeof window.testLanguageSwitching);
     console.log('- window.testFontSettings():', typeof window.testFontSettings);
+    console.log('- window.testFontSizeInput():', typeof window.testFontSizeInput);
+    console.log('- window.testTabFeature():', typeof window.testTabFeature);
 });
 
 /**
@@ -170,6 +203,7 @@ if (document.readyState === 'loading') {
         console.log('🔍 Backup check - window.saveFile:', typeof window.saveFile);
         console.log('🔍 Backup check - window.showSearchDialog:', typeof window.showSearchDialog);
         console.log('🔍 Backup check - window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
+        console.log('🔍 Backup check - window.showFontSizeInputDialog:', typeof window.showFontSizeInputDialog);
         console.log('🔍 Backup check - window.changeLanguage:', typeof window.changeLanguage);
         await initializeApp();
     });
@@ -178,6 +212,7 @@ if (document.readyState === 'loading') {
     console.log('🔍 Immediate check - window.saveFile:', typeof window.saveFile);
     console.log('🔍 Immediate check - window.showSearchDialog:', typeof window.showSearchDialog);
     console.log('🔍 Immediate check - window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
+    console.log('🔍 Immediate check - window.showFontSizeInputDialog:', typeof window.showFontSizeInputDialog);
     console.log('🔍 Immediate check - window.changeLanguage:', typeof window.changeLanguage);
     initializeApp();
 }
@@ -193,6 +228,7 @@ setTimeout(() => {
     window.showSearchDialog = showSearchDialog;
     window.showReplaceDialog = showReplaceDialog;
     window.showFontSettingsDialog = showFontSettingsDialog;
+    window.showFontSizeInputDialog = showFontSizeInputDialog;  // 新機能
     window.increaseFontSize = increaseFontSize;
     window.decreaseFontSize = decreaseFontSize;
     window.changeLanguage = changeLanguage;
@@ -201,5 +237,6 @@ setTimeout(() => {
     console.log('✅ Fallback registration complete - window.saveFile:', typeof window.saveFile);
     console.log('✅ Fallback registration complete - window.showSearchDialog:', typeof window.showSearchDialog);
     console.log('✅ Fallback registration complete - window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
+    console.log('✅ Fallback registration complete - window.showFontSizeInputDialog:', typeof window.showFontSizeInputDialog);
     console.log('✅ Fallback registration complete - window.changeLanguage:', typeof window.changeLanguage);
 }, 1000);

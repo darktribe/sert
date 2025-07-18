@@ -5,6 +5,7 @@
  */
 
 import { editor, currentFilePath, tauriInvoke } from './globals.js';
+import { getCurrentFontSettings } from './font-settings.js';  // ← この行を追加
 import { t } from './locales.js';
 
 /**
@@ -38,10 +39,12 @@ export function syncScroll() {
 /**
  * ステータスバーの更新（多言語化対応）
  */
+// 変更後の updateStatus 関数（フォントサイズ表示を追加）
 export function updateStatus() {
     const cursorPosition = document.getElementById('cursor-position');
     const charCount = document.getElementById('char-count');
     const fileEncoding = document.getElementById('file-encoding');
+    const fontSizeDisplay = document.getElementById('font-size-display');  // ← 追加
     
     if (cursorPosition) {
         const cursorPos = editor.selectionStart;
@@ -59,6 +62,12 @@ export function updateStatus() {
     
     if (charCount) {
         charCount.textContent = `${t('statusBar.charCount')}: ${editor.value.length}`;
+    }
+    
+    // フォントサイズ表示の更新（新規追加）
+    if (fontSizeDisplay) {
+        const fontSettings = getCurrentFontSettings();
+        fontSizeDisplay.textContent = `${t('statusBar.fontSize')}: ${fontSettings.fontSize}px`;
     }
 }
 
@@ -143,5 +152,16 @@ export async function updateWindowTitle() {
         } catch (fallbackError) {
             console.error('❌ Even fallback title update failed:', fallbackError);
         }
+    }
+}
+
+/**
+ * フォントサイズ表示のみを更新（フォント設定変更時に呼び出し）
+ */
+export function updateFontSizeDisplay() {
+    const fontSizeDisplay = document.getElementById('font-size-display');
+    if (fontSizeDisplay) {
+        const fontSettings = getCurrentFontSettings();
+        fontSizeDisplay.textContent = `${t('statusBar.fontSize')}: ${fontSettings.fontSize}px`;
     }
 }

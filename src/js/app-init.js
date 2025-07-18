@@ -1,12 +1,12 @@
 /*
  * =====================================================
- * Vinsert Editor - アプリケーション初期化（多言語化対応版）
+ * Vinsert Editor - アプリケーション初期化（フォントサイズ表示対応版）
  * =====================================================
  */
 
 import { setEditor, setCurrentContent, setTauriInvoke } from './globals.js';
 import { initializeUndoStack } from './undo-redo.js';
-import { updateLineNumbers, updateStatus, updateWindowTitle } from './ui-updater.js';
+import { updateLineNumbers, updateStatus, updateWindowTitle, updateFontSizeDisplay } from './ui-updater.js';
 import { setupEventListeners } from './event-listeners.js';
 import { exitApp } from './app-exit.js';
 import { initializeI18n, t, updateElementText } from './locales.js';
@@ -99,11 +99,12 @@ function applyI18nToUI() {
 }
 
 /**
- * ステータスバーの多言語化
+ * ステータスバーの多言語化（フォントサイズ表示対応）
  */
 function updateStatusBarI18n() {
     const cursorPosition = document.getElementById('cursor-position');
     const charCount = document.getElementById('char-count');
+    const fontSizeDisplay = document.getElementById('font-size-display');
     
     if (cursorPosition) {
         cursorPosition.textContent = `${t('statusBar.line')}: 1, ${t('statusBar.column')}: 1`;
@@ -111,6 +112,11 @@ function updateStatusBarI18n() {
     
     if (charCount) {
         charCount.textContent = `${t('statusBar.charCount')}: 0`;
+    }
+    
+    if (fontSizeDisplay) {
+        // フォントサイズ表示の初期化（loadFontSettings後に正確な値で更新される）
+        fontSizeDisplay.textContent = `${t('statusBar.fontSize')}: 14px`;
     }
 }
 
@@ -126,6 +132,9 @@ function setupLanguageChangeListener() {
         import('./language-switcher.js').then(module => {
             module.updateLanguageSwitcherState();
         });
+        
+        // フォントサイズ表示も更新
+        updateFontSizeDisplay();
     });
 }
 
@@ -157,7 +166,7 @@ export async function initializeApp() {
     setCurrentContent(editorElement.value);
     initializeUndoStack();
     
-    // フォント設定の初期化（新規追加）
+    // フォント設定の初期化
     console.log('🎨 Initializing font settings...');
     loadFontSettings();
     
@@ -178,6 +187,10 @@ export async function initializeApp() {
     updateLineNumbers();
     updateStatus();
     
+    // フォントサイズ表示の初期化
+    console.log('🎨 Initializing font size display...');
+    updateFontSizeDisplay();
+    
     // 初期タイトル設定を追加
     console.log('🏷️ Setting initial window title...');
     await updateWindowTitle();
@@ -187,6 +200,15 @@ export async function initializeApp() {
     editorElement.focus();
     
     console.log('App initialization completed');
+    
+    // Tab機能の使用方法をコンソールに表示
+    console.log('🔧 Tab機能が有効になりました:');
+    console.log('  - Tab: インデント追加（タブ文字挿入）');
+    console.log('  - Shift+Tab: インデント削除');
+    console.log('  - 複数行選択してShift+Tab: 選択行全体のインデント削除');
+    console.log('🎨 フォントサイズ表示機能が有効になりました:');
+    console.log('  - ステータスバーに現在のフォントサイズが表示されます');
+    console.log('  - 表示メニュー > フォントサイズ指定で直接数値入力できます');
 }
 
 /**

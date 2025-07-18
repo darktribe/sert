@@ -22,6 +22,7 @@
   },
   "viewMenu": {
     "fontSettings": "Font Settings",
+    "fontSizeInput": "Font Size Input",
     "increaseFontSize": "Increase Font Size",
     "decreaseFontSize": "Decrease Font Size"
   },
@@ -36,6 +37,7 @@
     "line": "Line",
     "column": "Column",
     "encoding": "UTF-8",
+    "fontSize": "Font",
     "charCount": "Character count"
   },
   "fonts": {
@@ -44,6 +46,13 @@
     "fontSize": "Font Size",
     "preview": "Preview",
     "previewText": "function example() {\n    // English comment\n    console.log('Hello, World!');\n    return 42;\n}",
+    "sizeInput": {
+      "title": "Font Size Input",
+      "label": "Font Size",
+      "placeholder": "Enter size 8-32",
+      "rangeInfo": "Valid range: {min}px - {max}px",
+      "invalidRange": "Font size must be between {min}px and {max}px"
+    },
     "buttons": {
       "apply": "Apply",
       "reset": "Reset",
@@ -137,5 +146,12 @@
   "window": {
     "defaultTitle": "Vinsert - Untitled",
     "titleFormat": "Vinsert - {filename}"
+  },
+  "keyboard": {
+    "shortcuts": {
+      "tab": "Tab: Add indent",
+      "shiftTab": "Shift+Tab: Remove indent",
+      "info": "Press Tab in the editor to insert indentation (tab character). Use Shift+Tab to remove indentation."
+    }
   }
 }

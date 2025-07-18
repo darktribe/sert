@@ -22,6 +22,7 @@
   },
   "viewMenu": {
     "fontSettings": "フォント設定",
+    "fontSizeInput": "フォントサイズ指定",
     "increaseFontSize": "フォントサイズを大きく",
     "decreaseFontSize": "フォントサイズを小さく"
   },
@@ -36,6 +37,7 @@
     "line": "行",
     "column": "列",
     "encoding": "UTF-8",
+    "fontSize": "フォント",
     "charCount": "総文字数"
   },
   "fonts": {
@@ -44,6 +46,13 @@
     "fontSize": "フォントサイズ",
     "preview": "プレビュー",
     "previewText": "function example() {\n    // 日本語のコメント\n    console.log('Hello, World!');\n    return 42;\n}",
+    "sizeInput": {
+      "title": "フォントサイズ指定",
+      "label": "フォントサイズ",
+      "placeholder": "8-32の数値を入力",
+      "rangeInfo": "指定可能範囲: {min}px ～ {max}px",
+      "invalidRange": "フォントサイズは{min}px～{max}pxの範囲で指定してください"
+    },
     "buttons": {
       "apply": "適用",
       "reset": "リセット",
@@ -137,5 +146,12 @@
   "window": {
     "defaultTitle": "Vinsert - 名前なし",
     "titleFormat": "Vinsert - {filename}"
+  },
+  "keyboard": {
+    "shortcuts": {
+      "tab": "Tab: インデント追加",
+      "shiftTab": "Shift+Tab: インデント削除",
+      "info": "エディタ内でTabキーを押すとインデント（タブ文字）が挿入されます。Shift+Tabでインデントを削除できます。"
+    }
   }
 }

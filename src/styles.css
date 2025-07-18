@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Sert Editor - スタイルシート（表示折り返し対応版）
+ * Sert Editor - スタイルシート（新機能対応版）
  * =====================================================
  */
 
@@ -161,7 +161,7 @@ body, html {
 }
 
 /* =====================================================
- エディタテキストエリア - 表示折り返し対応
+ エディタテキストエリア - Tab入力対応
  ===================================================== */
 .editor-textarea {
   flex: 1;
@@ -175,22 +175,17 @@ body, html {
   padding: 10px;
   resize: none;
   
-  /* 🔧 修正箇所: 表示折り返しの設定 */
-  white-space: pre-wrap;        /* pre から pre-wrap に変更: 改行を保持しつつ画面端で折り返し */
-  overflow-wrap: break-word;    /* normal から break-word に変更: 長い単語も折り返し */
-  word-wrap: break-word;        /* 互換性のため追加 */
-  overflow-x: hidden;           /* auto から hidden に変更: 横スクロールバーを非表示 */
-  overflow-y: auto;             /* 縦スクロールは維持 */
+  /* 表示折り返しの設定 */
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  overflow-x: hidden;
+  overflow-y: auto;
   
+  /* Tab文字のサイズ設定 */
   tab-size: 4;
-}
-
-/* 将来の設定用: 横スクロールモード（現在は未使用） */
-.editor-textarea.horizontal-scroll {
-  white-space: pre;
-  overflow-wrap: normal;
-  word-wrap: normal;
-  overflow-x: auto;
+  -moz-tab-size: 4;
+  -webkit-tab-size: 4;
 }
 
 .editor-textarea::placeholder {
@@ -202,7 +197,7 @@ body, html {
 }
 
 /* =====================================================
- ステータスバー
+ ステータスバー（フォントサイズ表示対応）
  ===================================================== */
 .status-bar {
   background-color: #007acc;
@@ -216,13 +211,22 @@ body, html {
   height: 24px;
 }
 
-#cursor-position, #file-encoding, #char-count {
+#cursor-position, #file-encoding, #font-size-display, #char-count {
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  white-space: nowrap;
 }
 
 #file-encoding {
   flex: 1;
   text-align: center;
+}
+
+#font-size-display {
+  margin: 0 8px;
+  padding: 0 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  font-weight: bold;
 }
 
 /* =====================================================
@@ -260,6 +264,16 @@ body, html {
 .message-dialog {
   min-width: 360px;
   max-width: 480px;
+}
+
+/* フォントサイズ入力ダイアログ（新機能） */
+.font-size-input-dialog {
+  min-width: 420px;
+  max-width: 500px;
+}
+
+.font-size-input-overlay {
+  z-index: 10002;
 }
 
 @keyframes searchDialogSlideIn {
@@ -437,7 +451,7 @@ body, html {
 }
 
 /* =====================================================
- フォント設定ダイアログ（新規追加）
+ フォント設定ダイアログ
  ===================================================== */
 .font-settings-overlay {
   z-index: 10001;
@@ -498,4 +512,147 @@ body, html {
   -webkit-appearance: none;
   appearance: none;
   width: 18px;
-  height: 1
+  height: 18px;
+  border-radius: 50%;
+  background: #007acc;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.font-size-slider::-webkit-slider-thumb:hover {
+  background: #005a9e;
+}
+
+.font-size-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #007acc;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s;
+}
+
+.font-size-slider::-moz-range-thumb:hover {
+  background: #005a9e;
+}
+
+.font-size-number {
+  width: 80px;
+  padding: 6px 8px;
+  border: 1px solid #3e3e40;
+  border-radius: 4px;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  text-align: center;
+}
+
+.font-size-number:focus {
+  outline: none;
+  border-color: #007acc;
+  box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.3);
+}
+
+.font-size-unit {
+  color: #cccccc;
+  font-size: 14px;
+  min-width: 20px;
+}
+
+/* フォントサイズ直接入力専用（新機能） */
+.font-size-direct-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.font-size-direct-input {
+  width: 120px !important;
+  text-align: center;
+}
+
+.font-size-range-info {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #888888;
+  font-style: italic;
+}
+
+.font-preview-section {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.font-preview-section label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #cccccc;
+}
+
+.font-preview {
+  background-color: #1e1e1e;
+  border: 1px solid #3e3e40;
+  border-radius: 4px;
+  padding: 12px;
+  min-height: 80px;
+  white-space: pre-wrap;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow: auto;
+}
+
+/* =====================================================
+ レスポンシブ対応
+ ===================================================== */
+@media (max-width: 768px) {
+  .search-dialog {
+    min-width: 90vw;
+    max-width: 95vw;
+    margin: 10px;
+  }
+  
+  .font-settings-dialog {
+    min-width: 90vw;
+    max-width: 95vw;
+  }
+  
+  .font-size-input-dialog {
+    min-width: 90vw;
+    max-width: 95vw;
+  }
+  
+  .font-size-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .font-size-direct-controls {
+    justify-content: center;
+  }
+  
+  .search-button-group {
+    justify-content: center;
+  }
+  
+  .search-checkbox-group {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .menu-bar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 30px;
+  }
+  
+  .language-switcher {
+    margin-left: auto;
+    margin-right: 5px;
+  }
+}
