@@ -24,7 +24,9 @@
     "fontSettings": "フォント設定",
     "fontSizeInput": "フォントサイズ指定",
     "increaseFontSize": "フォントサイズを大きく",
-    "decreaseFontSize": "フォントサイズを小さく"
+    "decreaseFontSize": "フォントサイズを小さく",
+    "typewriterMode": "タイプライターモード",
+    "typewriterSettings": "タイプライター設定"
   },
   "searchMenu": {
     "find": "検索",
@@ -60,6 +62,27 @@
     },
     "messages": {
       "resetConfirm": "フォント設定をデフォルトに戻しますか？"
+    }
+  },
+  "typewriter": {
+    "settingsTitle": "タイプライター設定",
+    "enableMode": "タイプライターモードを有効にする",
+    "centerPosition": "カーソル行の位置",
+    "positionInfo": "20% = 上寄り、50% = 中央、80% = 下寄り",
+    "smoothScroll": "スムーススクロールを使用",
+    "dynamicPadding": "見せかけの空行を表示",
+    "scrollOnTyping": "文字入力時にスクロール",
+    "scrollOnLineChange": "行変更時にスクロール",
+    "enabled": "有効",
+    "disabled": "無効",
+    "settingsApplied": "設定を適用しました",
+    "testMode": "テストモード（2秒間）",
+    "resetConfirm": "タイプライター設定をデフォルトに戻しますか？",
+    "buttons": {
+      "apply": "適用",
+      "test": "テスト",
+      "reset": "リセット",
+      "cancel": "キャンセル"
     }
   },
   "dialogs": {

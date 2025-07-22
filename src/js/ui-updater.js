@@ -1,11 +1,12 @@
 /*
  * =====================================================
- * Vinsert Editor - UI更新機能（多言語化対応版）
+ * Vinsert Editor - UI更新機能（タイプライターモード対応版）
  * =====================================================
  */
 
 import { editor, currentFilePath, tauriInvoke } from './globals.js';
-import { getCurrentFontSettings } from './font-settings.js';  // ← この行を追加
+import { getCurrentFontSettings } from './font-settings.js';
+import { centerCurrentLine } from './typewriter-mode.js';
 import { t } from './locales.js';
 
 /**
@@ -38,13 +39,13 @@ export function syncScroll() {
 
 /**
  * ステータスバーの更新（多言語化対応）
+ * カーソル移動時にタイプライターモードも適用
  */
-// 変更後の updateStatus 関数（フォントサイズ表示を追加）
 export function updateStatus() {
     const cursorPosition = document.getElementById('cursor-position');
     const charCount = document.getElementById('char-count');
     const fileEncoding = document.getElementById('file-encoding');
-    const fontSizeDisplay = document.getElementById('font-size-display');  // ← 追加
+    const fontSizeDisplay = document.getElementById('font-size-display');
     
     if (cursorPosition) {
         const cursorPos = editor.selectionStart;
@@ -64,11 +65,55 @@ export function updateStatus() {
         charCount.textContent = `${t('statusBar.charCount')}: ${editor.value.length}`;
     }
     
-    // フォントサイズ表示の更新（新規追加）
+    // フォントサイズ表示の更新
     if (fontSizeDisplay) {
         const fontSettings = getCurrentFontSettings();
         fontSizeDisplay.textContent = `${t('statusBar.fontSize')}: ${fontSettings.fontSize}px`;
     }
+    
+    // タイプライターモード適用（カーソル移動時）
+    // 遅延実行でスムーズな動作を確保
+    setTimeout(() => {
+        centerCurrentLine();
+    }, 10);
+}
+
+/**
+ * カーソル移動専用のステータス更新（タイプライターモード含む）
+ * キーボードイベントやクリックイベントから呼び出される
+ */
+export function updateStatusWithTypewriter() {
+    const cursorPosition = document.getElementById('cursor-position');
+    const charCount = document.getElementById('char-count');
+    const fileEncoding = document.getElementById('file-encoding');
+    const fontSizeDisplay = document.getElementById('font-size-display');
+    
+    if (cursorPosition) {
+        const cursorPos = editor.selectionStart;
+        const textBeforeCursor = editor.value.substring(0, cursorPos);
+        const lines = textBeforeCursor.split('\n');
+        const line = lines.length;
+        const column = lines[lines.length - 1].length + 1;
+        
+        cursorPosition.textContent = `${t('statusBar.line')}: ${line}, ${t('statusBar.column')}: ${column}`;
+    }
+    
+    if (fileEncoding) {
+        fileEncoding.textContent = t('statusBar.encoding');
+    }
+    
+    if (charCount) {
+        charCount.textContent = `${t('statusBar.charCount')}: ${editor.value.length}`;
+    }
+    
+    // フォントサイズ表示の更新
+    if (fontSizeDisplay) {
+        const fontSettings = getCurrentFontSettings();
+        fontSizeDisplay.textContent = `${t('statusBar.fontSize')}: ${fontSettings.fontSize}px`;
+    }
+    
+    // タイプライターモード適用（カーソル移動時により積極的に適用）
+    centerCurrentLine();
 }
 
 /**

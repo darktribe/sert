@@ -24,7 +24,9 @@
     "fontSettings": "Font Settings",
     "fontSizeInput": "Font Size Input",
     "increaseFontSize": "Increase Font Size",
-    "decreaseFontSize": "Decrease Font Size"
+    "decreaseFontSize": "Decrease Font Size",
+    "typewriterMode": "Typewriter Mode",
+    "typewriterSettings": "Typewriter Settings"
   },
   "searchMenu": {
     "find": "Find",
@@ -60,6 +62,27 @@
     },
     "messages": {
       "resetConfirm": "Reset font settings to default?"
+    }
+  },
+  "typewriter": {
+    "settingsTitle": "Typewriter Settings",
+    "enableMode": "Enable Typewriter Mode",
+    "centerPosition": "Cursor Line Position",
+    "positionInfo": "20% = Near top, 50% = Center, 80% = Near bottom",
+    "smoothScroll": "Use Smooth Scroll",
+    "dynamicPadding": "Show Virtual Blank Lines",
+    "scrollOnTyping": "Scroll When Typing",
+    "scrollOnLineChange": "Scroll When Line Changes",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "settingsApplied": "Settings Applied",
+    "testMode": "Test Mode (2 seconds)",
+    "resetConfirm": "Reset typewriter settings to default?",
+    "buttons": {
+      "apply": "Apply",
+      "test": "Test",
+      "reset": "Reset",
+      "cancel": "Cancel"
     }
   },
   "dialogs": {

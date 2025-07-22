@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - アプリケーション初期化（フォントサイズ表示対応版）
+ * Vinsert Editor - アプリケーション初期化（タイプライターモード対応版）
  * =====================================================
  */
 
@@ -12,6 +12,7 @@ import { exitApp } from './app-exit.js';
 import { initializeI18n, t, updateElementText } from './locales.js';
 import { createLanguageSwitcher } from './language-switcher.js';
 import { loadFontSettings } from './font-settings.js';
+import { loadTypewriterSettings } from './typewriter-mode.js';
 
 /**
  * Tauri APIの初期化
@@ -170,6 +171,10 @@ export async function initializeApp() {
     console.log('🎨 Initializing font settings...');
     loadFontSettings();
     
+    // タイプライターモード設定の初期化（新機能）
+    console.log('📝 Initializing typewriter mode settings...');
+    loadTypewriterSettings();
+    
     // イベントリスナーを設定
     setupEventListeners();
     
@@ -209,6 +214,10 @@ export async function initializeApp() {
     console.log('🎨 フォントサイズ表示機能が有効になりました:');
     console.log('  - ステータスバーに現在のフォントサイズが表示されます');
     console.log('  - 表示メニュー > フォントサイズ指定で直接数値入力できます');
+    console.log('📝 タイプライターモードが有効になりました:');
+    console.log('  - 表示メニュー > タイプライターモードでON/OFF切り替え');
+    console.log('  - 表示メニュー > タイプライター設定で詳細設定可能');
+    console.log('  - カーソル行が常に指定位置に表示されるようになります');
 }
 
 /**

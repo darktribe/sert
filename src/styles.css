@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Sert Editor - スタイルシート（新機能対応版）
+ * Sert Editor - スタイルシート（タイプライターモード対応版）
  * =====================================================
  */
 
@@ -186,6 +186,9 @@ body, html {
   tab-size: 4;
   -moz-tab-size: 4;
   -webkit-tab-size: 4;
+  
+  /* タイプライターモード用のスムーススクロール */
+  scroll-behavior: auto; /* JavaScriptで制御するためautoに設定 */
 }
 
 .editor-textarea::placeholder {
@@ -266,7 +269,7 @@ body, html {
   max-width: 480px;
 }
 
-/* フォントサイズ入力ダイアログ（新機能） */
+/* フォントサイズ入力ダイアログ */
 .font-size-input-dialog {
   min-width: 420px;
   max-width: 500px;
@@ -274,6 +277,161 @@ body, html {
 
 .font-size-input-overlay {
   z-index: 10002;
+}
+
+/* =====================================================
+ タイプライターモード関連ダイアログ（新機能）
+ ===================================================== */
+.typewriter-settings-dialog {
+  min-width: 520px;
+  max-width: 680px;
+}
+
+.typewriter-settings-overlay {
+  z-index: 10003;
+}
+
+.typewriter-settings-section {
+  margin-bottom: 20px;
+}
+
+.typewriter-main-toggle {
+  font-size: 16px !important;
+  font-weight: bold;
+  color: #ffffff !important;
+  padding: 8px 0;
+  border-bottom: 1px solid #3e3e40;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+}
+
+.typewriter-main-toggle input[type="checkbox"] {
+  width: 18px !important;
+  height: 18px !important;
+  margin-right: 12px !important;
+}
+
+.typewriter-position-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.typewriter-position-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: #3e3e40;
+  outline: none;
+  cursor: pointer;
+}
+
+.typewriter-position-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #007acc;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.typewriter-position-slider::-webkit-slider-thumb:hover {
+  background: #005a9e;
+}
+
+.typewriter-position-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #007acc;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s;
+}
+
+.typewriter-position-slider::-moz-range-thumb:hover {
+  background: #005a9e;
+}
+
+.typewriter-position-display {
+  color: #ffffff;
+  font-weight: bold;
+  min-width: 40px;
+  text-align: center;
+  font-size: 14px;
+  background-color: #37373d;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.typewriter-position-info {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #888888;
+  font-style: italic;
+}
+
+.typewriter-margin-settings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #3e3e40;
+}
+
+.typewriter-number-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #3e3e40;
+  border-radius: 4px;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  text-align: center;
+}
+
+.typewriter-number-input:focus {
+  outline: none;
+  border-color: #007acc;
+  box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.3);
+}
+
+/* =====================================================
+ タイプライターモードステータス表示（新機能）
+ ===================================================== */
+.typewriter-status-message {
+  position: fixed;
+  top: 50px;
+  right: 20px;
+  background-color: #007acc;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: bold;
+  z-index: 10004;
+  animation: typewriterStatusSlideIn 0.3s ease-out;
+  max-width: 300px;
+  word-wrap: break-word;
+}
+
+@keyframes typewriterStatusSlideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes searchDialogSlideIn {
@@ -338,6 +496,14 @@ body, html {
   display: flex;
   gap: 20px;
   flex-wrap: wrap;
+}
+
+/* タイプライター設定用のチェックボックスグループ */
+.typewriter-settings-section .search-checkbox-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .search-checkbox-label {
@@ -561,7 +727,7 @@ body, html {
   min-width: 20px;
 }
 
-/* フォントサイズ直接入力専用（新機能） */
+/* フォントサイズ直接入力専用 */
 .font-size-direct-controls {
   display: flex;
   align-items: center;
@@ -626,6 +792,11 @@ body, html {
     max-width: 95vw;
   }
   
+  .typewriter-settings-dialog {
+    min-width: 90vw;
+    max-width: 95vw;
+  }
+  
   .font-size-controls {
     flex-direction: column;
     align-items: stretch;
@@ -634,6 +805,17 @@ body, html {
   
   .font-size-direct-controls {
     justify-content: center;
+  }
+  
+  .typewriter-position-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .typewriter-margin-settings {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
   
   .search-button-group {
@@ -654,5 +836,11 @@ body, html {
   .language-switcher {
     margin-left: auto;
     margin-right: 5px;
+  }
+  
+  .typewriter-status-message {
+    right: 10px;
+    max-width: calc(100vw - 20px);
+    font-size: 12px;
   }
 }

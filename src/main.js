@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - メインエントリーポイント（新機能対応版）
+ * Vinsert Editor - メインエントリーポイント（タイプライターモード対応版）
  * =====================================================
  */
 
@@ -11,6 +11,7 @@ import { undo, redo } from './js/undo-redo.js';
 import { copy, cut, paste, selectAll } from './js/edit-operations.js';
 import { showSearchDialog, showReplaceDialog, findNext, findPrevious } from './js/search-replace.js';
 import { showFontSettingsDialog, showFontSizeInputDialog, increaseFontSize, decreaseFontSize } from './js/font-settings.js';
+import { toggleTypewriterMode, showTypewriterSettingsDialog, centerCurrentLine } from './js/typewriter-mode.js';
 import { exitApp } from './js/app-exit.js';
 import { createLanguageSwitcher, removeLanguageSwitcher, reinitializeLanguageSwitcher } from './js/language-switcher.js';
 import { changeLanguage, getCurrentLanguage, getAvailableLanguages } from './js/locales.js';
@@ -34,11 +35,16 @@ window.showSearchDialog = showSearchDialog;
 window.showReplaceDialog = showReplaceDialog;
 window.exitApp = exitApp;
 
-// フォント設定機能（新機能追加）
+// フォント設定機能
 window.showFontSettingsDialog = showFontSettingsDialog;
-window.showFontSizeInputDialog = showFontSizeInputDialog;  // 新機能
+window.showFontSizeInputDialog = showFontSizeInputDialog;
 window.increaseFontSize = increaseFontSize;
 window.decreaseFontSize = decreaseFontSize;
+
+// タイプライターモード機能（新機能追加）
+window.toggleTypewriterMode = toggleTypewriterMode;
+window.showTypewriterSettingsDialog = showTypewriterSettingsDialog;
+window.centerCurrentLine = centerCurrentLine;
 
 // 言語切り替え機能
 window.createLanguageSwitcher = createLanguageSwitcher;
@@ -68,9 +74,15 @@ console.log('window.exitApp:', typeof window.exitApp);
 // フォント設定関数
 console.log('🎨 Font functions:');
 console.log('window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
-console.log('window.showFontSizeInputDialog:', typeof window.showFontSizeInputDialog);  // 新機能
+console.log('window.showFontSizeInputDialog:', typeof window.showFontSizeInputDialog);
 console.log('window.increaseFontSize:', typeof window.increaseFontSize);
 console.log('window.decreaseFontSize:', typeof window.decreaseFontSize);
+
+// タイプライターモード関数（新機能）
+console.log('📝 Typewriter mode functions:');
+console.log('window.toggleTypewriterMode:', typeof window.toggleTypewriterMode);
+console.log('window.showTypewriterSettingsDialog:', typeof window.showTypewriterSettingsDialog);
+console.log('window.centerCurrentLine:', typeof window.centerCurrentLine);
 
 // 言語切り替え関数
 console.log('🌐 Language functions:');
@@ -88,6 +100,28 @@ window.testFontSizeInput = function() {
         console.log('✅ showFontSizeInputDialog test completed');
     } catch (error) {
         console.error('❌ showFontSizeInputDialog test failed:', error);
+    }
+};
+
+// タイプライターモードのテスト用デバッグ関数を追加（新機能）
+window.testTypewriterMode = function() {
+    console.log('🧪 Testing typewriter mode...');
+    console.log('toggleTypewriterMode function:', window.toggleTypewriterMode);
+    console.log('showTypewriterSettingsDialog function:', window.showTypewriterSettingsDialog);
+    console.log('centerCurrentLine function:', window.centerCurrentLine);
+    
+    try {
+        console.log('📝 Testing toggle...');
+        window.toggleTypewriterMode();
+        console.log('✅ toggleTypewriterMode test completed');
+        
+        setTimeout(() => {
+            console.log('📝 Testing settings dialog...');
+            window.showTypewriterSettingsDialog();
+            console.log('✅ showTypewriterSettingsDialog test completed');
+        }, 1000);
+    } catch (error) {
+        console.error('❌ typewriter mode test failed:', error);
     }
 };
 
@@ -175,6 +209,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('🔍 Final check - window.showSearchDialog:', typeof window.showSearchDialog);
     console.log('🔍 Final check - window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
     console.log('🔍 Final check - window.showFontSizeInputDialog:', typeof window.showFontSizeInputDialog);
+    console.log('🔍 Final check - window.toggleTypewriterMode:', typeof window.toggleTypewriterMode);
+    console.log('🔍 Final check - window.showTypewriterSettingsDialog:', typeof window.showTypewriterSettingsDialog);
     console.log('🔍 Final check - window.changeLanguage:', typeof window.changeLanguage);
     
     await initializeApp();
@@ -187,10 +223,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('- window.showReplaceDialog():', typeof window.showReplaceDialog);
     console.log('- window.showFontSettingsDialog():', typeof window.showFontSettingsDialog);
     console.log('- window.showFontSizeInputDialog():', typeof window.showFontSizeInputDialog);
+    console.log('- window.toggleTypewriterMode():', typeof window.toggleTypewriterMode);
+    console.log('- window.showTypewriterSettingsDialog():', typeof window.showTypewriterSettingsDialog);
     console.log('- window.changeLanguage():', typeof window.changeLanguage);
     console.log('- window.testLanguageSwitching():', typeof window.testLanguageSwitching);
     console.log('- window.testFontSettings():', typeof window.testFontSettings);
     console.log('- window.testFontSizeInput():', typeof window.testFontSizeInput);
+    console.log('- window.testTypewriterMode():', typeof window.testTypewriterMode);
     console.log('- window.testTabFeature():', typeof window.testTabFeature);
 });
 
@@ -204,6 +243,8 @@ if (document.readyState === 'loading') {
         console.log('🔍 Backup check - window.showSearchDialog:', typeof window.showSearchDialog);
         console.log('🔍 Backup check - window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
         console.log('🔍 Backup check - window.showFontSizeInputDialog:', typeof window.showFontSizeInputDialog);
+        console.log('🔍 Backup check - window.toggleTypewriterMode:', typeof window.toggleTypewriterMode);
+        console.log('🔍 Backup check - window.showTypewriterSettingsDialog:', typeof window.showTypewriterSettingsDialog);
         console.log('🔍 Backup check - window.changeLanguage:', typeof window.changeLanguage);
         await initializeApp();
     });
@@ -213,6 +254,8 @@ if (document.readyState === 'loading') {
     console.log('🔍 Immediate check - window.showSearchDialog:', typeof window.showSearchDialog);
     console.log('🔍 Immediate check - window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
     console.log('🔍 Immediate check - window.showFontSizeInputDialog:', typeof window.showFontSizeInputDialog);
+    console.log('🔍 Immediate check - window.toggleTypewriterMode:', typeof window.toggleTypewriterMode);
+    console.log('🔍 Immediate check - window.showTypewriterSettingsDialog:', typeof window.showTypewriterSettingsDialog);
     console.log('🔍 Immediate check - window.changeLanguage:', typeof window.changeLanguage);
     initializeApp();
 }
@@ -228,9 +271,12 @@ setTimeout(() => {
     window.showSearchDialog = showSearchDialog;
     window.showReplaceDialog = showReplaceDialog;
     window.showFontSettingsDialog = showFontSettingsDialog;
-    window.showFontSizeInputDialog = showFontSizeInputDialog;  // 新機能
+    window.showFontSizeInputDialog = showFontSizeInputDialog;
     window.increaseFontSize = increaseFontSize;
     window.decreaseFontSize = decreaseFontSize;
+    window.toggleTypewriterMode = toggleTypewriterMode;
+    window.showTypewriterSettingsDialog = showTypewriterSettingsDialog;
+    window.centerCurrentLine = centerCurrentLine;
     window.changeLanguage = changeLanguage;
     window.createLanguageSwitcher = createLanguageSwitcher;
     
@@ -238,5 +284,7 @@ setTimeout(() => {
     console.log('✅ Fallback registration complete - window.showSearchDialog:', typeof window.showSearchDialog);
     console.log('✅ Fallback registration complete - window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
     console.log('✅ Fallback registration complete - window.showFontSizeInputDialog:', typeof window.showFontSizeInputDialog);
+    console.log('✅ Fallback registration complete - window.toggleTypewriterMode:', typeof window.toggleTypewriterMode);
+    console.log('✅ Fallback registration complete - window.showTypewriterSettingsDialog:', typeof window.showTypewriterSettingsDialog);
     console.log('✅ Fallback registration complete - window.changeLanguage:', typeof window.changeLanguage);
 }, 1000);
