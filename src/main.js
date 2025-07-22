@@ -11,7 +11,8 @@ import { undo, redo } from './js/undo-redo.js';
 import { copy, cut, paste, selectAll } from './js/edit-operations.js';
 import { showSearchDialog, showReplaceDialog, findNext, findPrevious } from './js/search-replace.js';
 import { showFontSettingsDialog, showFontSizeInputDialog, increaseFontSize, decreaseFontSize } from './js/font-settings.js';
-import { toggleTypewriterMode, showTypewriterSettingsDialog, centerCurrentLine } from './js/typewriter-mode.js';
+import { toggleTypewriterMode, showTypewriterSettingsDialog, centerCurrentLine, onWindowResize, debugTypewriterState } from './js/typewriter-mode.js';
+
 import { exitApp } from './js/app-exit.js';
 import { createLanguageSwitcher, removeLanguageSwitcher, reinitializeLanguageSwitcher } from './js/language-switcher.js';
 import { changeLanguage, getCurrentLanguage, getAvailableLanguages } from './js/locales.js';

@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - タイプライターモード機能（真のタイプライター動作版）
+ * Vinsert Editor - タイプライターモード機能（完全同期・正確なワードラップ対応版）
  * =====================================================
  */
 
@@ -23,9 +23,160 @@ let isScrolling = false;
 let scrollAnimationId = null;
 
 // 前回の状態を記憶
-let lastLineNumber = 1;
+let lastVisualLineNumber = 1;
 let lastCursorPosition = 0;
 let isComposingText = false;
+let lastScrollHeight = 0;
+let lastTextAreaHeight = 0;
+
+// 測定用の隠しDIV（キャッシュ）
+let measureDiv = null;
+
+/**
+ * 測定用DIVを初期化
+ */
+function initializeMeasureDiv() {
+    if (measureDiv) return measureDiv;
+    
+    measureDiv = document.createElement('div');
+    measureDiv.style.cssText = `
+        position: absolute;
+        visibility: hidden;
+        top: -9999px;
+        left: -9999px;
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        word-break: normal;
+        hyphens: none;
+        font-family: ${getComputedStyle(editor).fontFamily};
+        font-size: ${getComputedStyle(editor).fontSize};
+        line-height: ${getComputedStyle(editor).lineHeight};
+        padding: ${getComputedStyle(editor).padding};
+        border: ${getComputedStyle(editor).border};
+        box-sizing: border-box;
+    `;
+    
+    document.body.appendChild(measureDiv);
+    return measureDiv;
+}
+
+/**
+ * 測定用DIVの幅を更新
+ */
+function updateMeasureDivWidth() {
+    if (!measureDiv || !editor) return;
+    
+    const editorStyle = getComputedStyle(editor);
+    const paddingLeft = parseFloat(editorStyle.paddingLeft);
+    const paddingRight = parseFloat(editorStyle.paddingRight);
+    const borderLeft = parseFloat(editorStyle.borderLeftWidth);
+    const borderRight = parseFloat(editorStyle.borderRightWidth);
+    
+    const contentWidth = editor.clientWidth - paddingLeft - paddingRight - borderLeft - borderRight;
+    measureDiv.style.width = `${contentWidth}px`;
+    
+    console.log('📏 Measure div width updated:', contentWidth);
+}
+
+/**
+ * より精密な視覚的行番号計算（改善版）
+ */
+function getPreciseVisualLineNumber(cursorPosition) {
+    if (!editor) return 1;
+    
+    try {
+        // 測定用DIVを初期化・更新
+        initializeMeasureDiv();
+        updateMeasureDivWidth();
+        
+        // カーソル位置までのテキストを取得
+        const textBeforeCursor = editor.value.substring(0, cursorPosition);
+        
+        // 測定用DIVにテキストを設定
+        measureDiv.textContent = textBeforeCursor;
+        
+        // 高さを測定
+        const height = measureDiv.offsetHeight;
+        const lineHeight = parseFloat(getComputedStyle(editor).lineHeight);
+        
+        // 視覚的行数を計算
+        const visualLines = Math.max(1, Math.round(height / lineHeight));
+        
+        console.log('📏 Precise visual line calculation:', {
+            cursorPosition,
+            textLength: textBeforeCursor.length,
+            height,
+            lineHeight,
+            visualLines,
+            textSample: textBeforeCursor.slice(-20)
+        });
+        
+        return visualLines;
+        
+    } catch (error) {
+        console.warn('Failed to calculate precise visual line number:', error);
+        return getFallbackVisualLineNumber(cursorPosition);
+    }
+}
+
+/**
+ * フォールバック用の視覚的行数計算
+ */
+function getFallbackVisualLineNumber(cursorPosition) {
+    const textBeforeCursor = editor.value.substring(0, cursorPosition);
+    const lines = textBeforeCursor.split('\n');
+    
+    // 基本の論理行数
+    let visualLines = lines.length;
+    
+    // 簡易的なワードラップ計算
+    const style = getComputedStyle(editor);
+    const fontSize = parseFloat(style.fontSize);
+    const editorWidth = editor.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    const charWidth = fontSize * 0.6; // 等幅フォントの概算
+    const maxCharsPerLine = Math.floor(editorWidth / charWidth);
+    
+    let additionalLines = 0;
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (line.length > maxCharsPerLine) {
+            additionalLines += Math.floor(line.length / maxCharsPerLine);
+        }
+    }
+    
+    return Math.max(1, visualLines + additionalLines);
+}
+
+/**
+ * 行番号のスクロールを確実に同期
+ */
+function ensureLineNumberSync() {
+    const lineNumbers = document.getElementById('line-numbers');
+    if (!lineNumbers || !editor) return;
+    
+    // 複数の方法で同期を確保
+    const targetScrollTop = editor.scrollTop;
+    
+    // 1. 即座に同期
+    lineNumbers.scrollTop = targetScrollTop;
+    
+    // 2. requestAnimationFrame で確実に同期
+    requestAnimationFrame(() => {
+        lineNumbers.scrollTop = targetScrollTop;
+        
+        // 3. 更にもう一度確認して同期
+        requestAnimationFrame(() => {
+            if (Math.abs(lineNumbers.scrollTop - targetScrollTop) > 1) {
+                lineNumbers.scrollTop = targetScrollTop;
+                console.log('🔗 Final line number sync correction applied');
+            }
+        });
+    });
+    
+    console.log('🔗 Line numbers synced to:', targetScrollTop);
+}
 
 /**
  * タイプライターモード設定をローカルストレージから読み込み
@@ -98,6 +249,10 @@ function applyTypewriterMode() {
     if (typewriterSettings.enabled) {
         console.log('📝 Applying typewriter mode');
         setupDynamicPadding();
+        
+        // 測定用DIVを更新
+        updateMeasureDivWidth();
+        
         centerCurrentLine();
     } else {
         console.log('📝 Typewriter mode disabled');
@@ -118,6 +273,13 @@ function setupDynamicPadding() {
     editor.style.paddingTop = `${centerOffset}px`;
     editor.style.paddingBottom = `${editorHeight - centerOffset}px`;
     
+    // 行番号のパディングも同じように設定
+    const lineNumbers = document.getElementById('line-numbers');
+    if (lineNumbers) {
+        lineNumbers.style.paddingTop = `${centerOffset}px`;
+        lineNumbers.style.paddingBottom = `${editorHeight - centerOffset}px`;
+    }
+    
     console.log('📝 Dynamic padding applied:', { 
         top: centerOffset, 
         bottom: editorHeight - centerOffset 
@@ -133,11 +295,18 @@ function removeDynamicPadding() {
     editor.style.paddingTop = '10px'; // デフォルトに戻す
     editor.style.paddingBottom = '10px';
     
+    // 行番号のパディングもリセット
+    const lineNumbers = document.getElementById('line-numbers');
+    if (lineNumbers) {
+        lineNumbers.style.paddingTop = '10px';
+        lineNumbers.style.paddingBottom = '10px';
+    }
+    
     console.log('📝 Dynamic padding removed');
 }
 
 /**
- * 現在の行を中央に配置
+ * 現在の行を中央に配置（完全同期版）
  */
 export function centerCurrentLine() {
     if (!typewriterSettings.enabled || !editor) {
@@ -145,21 +314,41 @@ export function centerCurrentLine() {
     }
     
     const cursorPosition = editor.selectionStart;
-    const textBeforeCursor = editor.value.substring(0, cursorPosition);
-    const currentLineNumber = textBeforeCursor.split('\n').length;
+    const currentVisualLine = getPreciseVisualLineNumber(cursorPosition);
     
-    // 前回と同じ行で、入力による変更でない場合はスクロールしない
-    if (currentLineNumber === lastLineNumber && !shouldScrollOnInput(cursorPosition)) {
+    // エディタの高さ変化をチェック
+    const currentTextAreaHeight = editor.scrollHeight;
+    const textAreaHeightChanged = currentTextAreaHeight !== lastTextAreaHeight;
+    lastTextAreaHeight = currentTextAreaHeight;
+    
+    // スクロール高さの変化をチェック（ワードラップによる行の増加を検出）
+    const currentScrollHeight = editor.scrollHeight;
+    const scrollHeightChanged = currentScrollHeight !== lastScrollHeight;
+    lastScrollHeight = currentScrollHeight;
+    
+    console.log('📝 Center current line check:', {
+        cursorPosition,
+        currentVisualLine,
+        lastVisualLineNumber,
+        scrollHeightChanged,
+        textAreaHeightChanged
+    });
+    
+    // 前回と同じ視覚的行で、変化がない場合はスクロールしない
+    if (currentVisualLine === lastVisualLineNumber && 
+        !shouldScrollOnInput(cursorPosition) && 
+        !scrollHeightChanged &&
+        !textAreaHeightChanged) {
         return;
     }
     
-    // 行が変わった場合や入力時のスクロール判定
-    if (shouldPerformScroll(currentLineNumber, cursorPosition)) {
-        performTypewriterScroll(currentLineNumber);
+    // スクロールを実行すべき条件をチェック
+    if (shouldPerformScroll(currentVisualLine, cursorPosition, scrollHeightChanged, textAreaHeightChanged)) {
+        performTypewriterScroll(currentVisualLine);
     }
     
     // 状態を更新
-    lastLineNumber = currentLineNumber;
+    lastVisualLineNumber = currentVisualLine;
     lastCursorPosition = cursorPosition;
 }
 
@@ -172,24 +361,30 @@ function shouldScrollOnInput(cursorPosition) {
     // カーソル位置が前回より進んでいる（文字が追加された）
     const isTyping = cursorPosition > lastCursorPosition;
     
-    // IME入力中でも行が変わった場合は考慮
-    const currentLineNumber = editor.value.substring(0, cursorPosition).split('\n').length;
-    const lineChanged = currentLineNumber !== lastLineNumber;
+    // 視覚的行が変わった場合は考慮
+    const currentVisualLine = getPreciseVisualLineNumber(cursorPosition);
+    const visualLineChanged = currentVisualLine !== lastVisualLineNumber;
     
-    return isTyping || (lineChanged && typewriterSettings.scrollOnLineChange);
+    return isTyping || (visualLineChanged && typewriterSettings.scrollOnLineChange);
 }
 
 /**
- * スクロールを実行すべきかを判定
+ * スクロールを実行すべきかを判定（ワードラップ対応強化）
  */
-function shouldPerformScroll(currentLineNumber, cursorPosition) {
-    // 行が変わった場合
-    if (currentLineNumber !== lastLineNumber && typewriterSettings.scrollOnLineChange) {
-        console.log('📝 Line changed:', lastLineNumber, '->', currentLineNumber);
+function shouldPerformScroll(currentVisualLine, cursorPosition, scrollHeightChanged, textAreaHeightChanged) {
+    // 視覚的行が変わった場合
+    if (currentVisualLine !== lastVisualLineNumber && typewriterSettings.scrollOnLineChange) {
+        console.log('📝 Visual line changed:', lastVisualLineNumber, '->', currentVisualLine);
         return true;
     }
     
-    // 文字入力時
+    // スクロール高さまたはテキストエリア高さが変化した場合（ワードラップ）
+    if ((scrollHeightChanged || textAreaHeightChanged) && typewriterSettings.scrollOnTyping) {
+        console.log('📝 Height changed - scroll:', scrollHeightChanged, 'textarea:', textAreaHeightChanged);
+        return true;
+    }
+    
+    // 文字入力時の詳細チェック
     if (cursorPosition > lastCursorPosition && typewriterSettings.scrollOnTyping) {
         // 改行文字が追加された場合
         const addedText = editor.value.substring(lastCursorPosition, cursorPosition);
@@ -198,14 +393,16 @@ function shouldPerformScroll(currentLineNumber, cursorPosition) {
             return true;
         }
         
-        // 長い行で折り返しが発生した可能性をチェック
-        const lineHeight = parseFloat(getComputedStyle(editor).lineHeight);
-        const currentLine = getCurrentLineFromPosition(cursorPosition);
-        const linePixelWidth = getLinePixelWidth(currentLine);
-        const editorWidth = editor.clientWidth - 20; // パディング考慮
+        // 長い行での入力チェック（ワードラップの可能性）
+        const currentLineText = getCurrentLineText(cursorPosition);
+        if (currentLineText.length > getEstimatedCharsPerLine()) {
+            console.log('📝 Long line detected, possible word wrap');
+            return true;
+        }
         
-        if (linePixelWidth > editorWidth) {
-            console.log('📝 Line wrap detected');
+        // カーソルが画面の可視領域から外れた可能性をチェック
+        if (isCursorOutOfView()) {
+            console.log('📝 Cursor is out of view');
             return true;
         }
     }
@@ -214,30 +411,78 @@ function shouldPerformScroll(currentLineNumber, cursorPosition) {
 }
 
 /**
- * 指定位置の行テキストを取得
+ * 現在の行のテキストを取得
  */
-function getCurrentLineFromPosition(position) {
+function getCurrentLineText(cursorPosition) {
     const text = editor.value;
-    const lines = text.split('\n');
-    const textBeforePosition = text.substring(0, position);
-    const lineNumber = textBeforePosition.split('\n').length - 1;
-    return lines[lineNumber] || '';
+    const beforeCursor = text.substring(0, cursorPosition);
+    const afterCursor = text.substring(cursorPosition);
+    
+    const lineStart = beforeCursor.lastIndexOf('\n') + 1;
+    const lineEnd = afterCursor.indexOf('\n');
+    
+    const currentLineEnd = lineEnd === -1 ? text.length : cursorPosition + lineEnd;
+    
+    return text.substring(lineStart, currentLineEnd);
 }
 
 /**
- * 行のピクセル幅を概算
+ * 1行あたりの推定文字数を取得
  */
-function getLinePixelWidth(lineText) {
-    // フォントサイズとフォントファミリから概算
-    const fontSize = parseFloat(getComputedStyle(editor).fontSize);
-    const averageCharWidth = fontSize * 0.6; // 等幅フォントの概算
-    return lineText.length * averageCharWidth;
+function getEstimatedCharsPerLine() {
+    const style = getComputedStyle(editor);
+    const fontSize = parseFloat(style.fontSize);
+    const paddingLeft = parseFloat(style.paddingLeft);
+    const paddingRight = parseFloat(style.paddingRight);
+    const editorWidth = editor.clientWidth - paddingLeft - paddingRight;
+    
+    // より保守的な文字幅計算
+    const charWidth = fontSize * 0.55; // 若干小さめに見積もり
+    return Math.floor(editorWidth / charWidth);
 }
 
 /**
- * タイプライター風スクロールを実行
+ * カーソルが画面の可視領域から外れているかチェック
  */
-function performTypewriterScroll(currentLineNumber) {
+function isCursorOutOfView() {
+    if (!editor) return false;
+    
+    try {
+        const lineHeight = parseFloat(getComputedStyle(editor).lineHeight);
+        const currentVisualLine = getPreciseVisualLineNumber(editor.selectionStart);
+        const cursorY = (currentVisualLine - 1) * lineHeight;
+        
+        const editorHeight = editor.clientHeight;
+        const scrollTop = editor.scrollTop;
+        const paddingTop = parseFloat(editor.style.paddingTop || 0);
+        
+        // 可視領域の範囲
+        const visibleTop = scrollTop - paddingTop;
+        const visibleBottom = scrollTop + editorHeight - paddingTop;
+        
+        // カーソルが可視領域から外れているかチェック
+        const isOutOfView = cursorY < visibleTop || cursorY > visibleBottom;
+        
+        if (isOutOfView) {
+            console.log('📝 Cursor out of view:', {
+                cursorY,
+                visibleTop,
+                visibleBottom,
+                currentVisualLine
+            });
+        }
+        
+        return isOutOfView;
+    } catch (error) {
+        console.warn('Failed to check cursor visibility:', error);
+        return false;
+    }
+}
+
+/**
+ * タイプライター風スクロールを実行（完全同期版）
+ */
+function performTypewriterScroll(currentVisualLine) {
     // 既存のアニメーションをキャンセル
     if (scrollAnimationId) {
         cancelAnimationFrame(scrollAnimationId);
@@ -249,7 +494,7 @@ function performTypewriterScroll(currentLineNumber) {
     const centerOffset = editorHeight * typewriterSettings.centerPosition;
     
     // 目標スクロール位置を計算（パディングを考慮）
-    const targetLineY = (currentLineNumber - 1) * lineHeight;
+    const targetLineY = (currentVisualLine - 1) * lineHeight;
     const targetScrollTop = targetLineY - centerOffset + parseFloat(editor.style.paddingTop || 0);
     
     // 境界値チェック
@@ -258,22 +503,24 @@ function performTypewriterScroll(currentLineNumber) {
     const finalScrollTop = Math.max(minScrollTop, Math.min(maxScrollTop, targetScrollTop));
     
     console.log('📝 Typewriter scroll:', {
-        currentLine: currentLineNumber,
+        currentVisualLine: currentVisualLine,
         targetY: targetLineY,
         targetScrollTop: finalScrollTop,
-        currentScrollTop: editor.scrollTop
+        currentScrollTop: editor.scrollTop,
+        centerOffset,
+        lineHeight
     });
     
     if (typewriterSettings.smoothScroll) {
         animateScrollTo(finalScrollTop);
     } else {
         editor.scrollTop = finalScrollTop;
-        syncLineNumbersScroll();
+        ensureLineNumberSync();
     }
 }
 
 /**
- * スムーススクロールアニメーション
+ * スムーススクロールアニメーション（完全同期版）
  */
 function animateScrollTo(targetScrollTop) {
     if (isScrolling) return;
@@ -284,7 +531,7 @@ function animateScrollTo(targetScrollTop) {
     // 距離が小さい場合は瞬時に移動
     if (Math.abs(distance) < 2) {
         editor.scrollTop = targetScrollTop;
-        syncLineNumbersScroll();
+        ensureLineNumberSync();
         return;
     }
     
@@ -302,27 +549,24 @@ function animateScrollTo(targetScrollTop) {
         
         const currentScrollTop = startScrollTop + (distance * easeProgress);
         editor.scrollTop = currentScrollTop;
-        syncLineNumbersScroll();
+        
+        // アニメーション中も確実に行番号を同期
+        ensureLineNumberSync();
         
         if (progress < 1) {
             scrollAnimationId = requestAnimationFrame(animate);
         } else {
             isScrolling = false;
             scrollAnimationId = null;
+            
+            // アニメーション完了後にも行番号同期を確実に実行
+            setTimeout(() => {
+                ensureLineNumberSync();
+            }, 10);
         }
     }
     
     scrollAnimationId = requestAnimationFrame(animate);
-}
-
-/**
- * 行番号のスクロールを同期
- */
-function syncLineNumbersScroll() {
-    const lineNumbers = document.getElementById('line-numbers');
-    if (lineNumbers) {
-        lineNumbers.scrollTop = editor.scrollTop;
-    }
 }
 
 /**
@@ -352,6 +596,9 @@ export function onCompositionEnd() {
 export function onInputEvent() {
     if (!typewriterSettings.enabled) return;
     
+    // 測定用DIVの幅を更新（レイアウト変更に対応）
+    updateMeasureDivWidth();
+    
     // 少し遅延させてDOM更新を待つ
     setTimeout(() => {
         centerCurrentLine();
@@ -370,6 +617,33 @@ export function onKeyEvent(e) {
             centerCurrentLine();
         }, 10);
     }
+    
+    // 文字入力系のキーでもスクロールチェック
+    if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete') {
+        setTimeout(() => {
+            centerCurrentLine();
+        }, 15);
+    }
+}
+
+/**
+ * ウィンドウリサイズ時の処理
+ */
+export function onWindowResize() {
+    if (!typewriterSettings.enabled) return;
+    
+    console.log('📐 Window resized, updating typewriter mode');
+    
+    // 測定用DIVを更新
+    updateMeasureDivWidth();
+    
+    // パディングを再計算
+    setupDynamicPadding();
+    
+    // 現在行を再センタリング
+    setTimeout(() => {
+        centerCurrentLine();
+    }, 100);
 }
 
 /**
@@ -648,4 +922,20 @@ export function setTypewriterSettings(newSettings) {
  */
 export function isTypewriterModeEnabled() {
     return typewriterSettings.enabled;
+}
+
+/**
+ * デバッグ用：現在の状態を表示
+ */
+export function debugTypewriterState() {
+    console.log('🐛 Typewriter debug state:', {
+        enabled: typewriterSettings.enabled,
+        currentVisualLine: getPreciseVisualLineNumber(editor.selectionStart),
+        lastVisualLineNumber,
+        cursorPosition: editor.selectionStart,
+        lastCursorPosition,
+        scrollTop: editor.scrollTop,
+        scrollHeight: editor.scrollHeight,
+        estimatedCharsPerLine: getEstimatedCharsPerLine()
+    });
 }

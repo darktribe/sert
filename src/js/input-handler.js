@@ -1,6 +1,6 @@
 /**
  * =====================================================
- * Vinsert Editor - テキスト入力処理（真のタイプライターモード対応版）
+ * Vinsert Editor - テキスト入力処理（行番号キャッシュクリア対応版）
  * =====================================================
  */
 import {
@@ -16,7 +16,7 @@ import {
     redoStack
 } from './globals.js';
 import { saveToUndoStack } from './undo-redo.js';
-import { updateLineNumbers, updateStatus } from './ui-updater.js';
+import { updateLineNumbers, updateStatus, clearLineNumberCache } from './ui-updater.js';
 import { onInputEvent } from './typewriter-mode.js';
 
 /**
@@ -34,6 +34,9 @@ export function handleInput(e) {
     if (isUndoRedoOperation) {
         console.log('Skipping history - undo/redo operation');
         setIsUndoRedoOperation(false);
+        
+        // キャッシュをクリアして行番号を更新
+        clearLineNumberCache();
         updateLineNumbers();
         updateStatus();
         
@@ -48,6 +51,9 @@ export function handleInput(e) {
     // IME変換中は履歴作成をスキップ（ただしタイプライターモードは適用）
     if (isComposing) {
         console.log('Skipping history - IME composing');
+        
+        // IME変換中でもキャッシュクリアと行番号更新は行う
+        clearLineNumberCache();
         updateLineNumbers();
         updateStatus();
         
@@ -62,7 +68,11 @@ export function handleInput(e) {
     // IME確定直後の入力は履歴作成をスキップ
     if (justFinishedComposition) {
         console.log('Skipping history - just finished IME composition');
+        
         setCurrentContent(editor.value);
+        
+        // IME確定後もキャッシュクリアと行番号更新
+        clearLineNumberCache();
         updateLineNumbers();
         updateStatus();
         
@@ -103,6 +113,12 @@ export function handleInput(e) {
         console.log('Content unchanged, not saving to history');
     }
 
+    // テキストが変更された場合は常にキャッシュをクリア
+    if (newContent !== currentContent || newContent.length !== currentContent.length) {
+        console.log('📝 Clearing line number cache due to content change');
+        clearLineNumberCache();
+    }
+
     updateLineNumbers();
     updateStatus();
     
@@ -116,6 +132,8 @@ export function handleInput(e) {
         delay = 5; // 改行は即座に
     } else if (inputType === 'insertText' || inputType === 'insertCompositionText') {
         delay = 15; // 通常入力は少し遅延
+    } else if (inputType === 'deleteContentBackward' || inputType === 'deleteContentForward') {
+        delay = 20; // 削除は少し多めに遅延
     }
     
     setTimeout(() => {

@@ -1,12 +1,12 @@
 /*
  * =====================================================
- * Vinsert Editor - アプリケーション初期化（タイプライターモード対応版）
+ * Vinsert Editor - アプリケーション初期化（正しい行番号表示対応版）
  * =====================================================
  */
 
 import { setEditor, setCurrentContent, setTauriInvoke } from './globals.js';
 import { initializeUndoStack } from './undo-redo.js';
-import { updateLineNumbers, updateStatus, updateWindowTitle, updateFontSizeDisplay } from './ui-updater.js';
+import { updateLineNumbers, updateStatus, updateWindowTitle, updateFontSizeDisplay, getCurrentLogicalLineNumber, getCurrentColumnNumber } from './ui-updater.js';
 import { setupEventListeners } from './event-listeners.js';
 import { exitApp } from './app-exit.js';
 import { initializeI18n, t, updateElementText } from './locales.js';
@@ -100,7 +100,7 @@ function applyI18nToUI() {
 }
 
 /**
- * ステータスバーの多言語化（フォントサイズ表示対応）
+ * ステータスバーの多言語化（論理行・列番号対応）
  */
 function updateStatusBarI18n() {
     const cursorPosition = document.getElementById('cursor-position');
@@ -108,6 +108,7 @@ function updateStatusBarI18n() {
     const fontSizeDisplay = document.getElementById('font-size-display');
     
     if (cursorPosition) {
+        // 論理行・列番号を表示（初期値）
         cursorPosition.textContent = `${t('statusBar.line')}: 1, ${t('statusBar.column')}: 1`;
     }
     
@@ -206,32 +207,42 @@ export async function initializeApp() {
     
     console.log('App initialization completed');
     
-    // Tab機能の使用方法をコンソールに表示
-    console.log('🔧 Tab機能が有効になりました:');
-    console.log('  - Tab: インデント追加（タブ文字挿入）');
-    console.log('  - Shift+Tab: インデント削除');
-    console.log('  - 複数行選択してShift+Tab: 選択行全体のインデント削除');
-    console.log('🎨 フォントサイズ表示機能が有効になりました:');
-    console.log('  - ステータスバーに現在のフォントサイズが表示されます');
-    console.log('  - 表示メニュー > フォントサイズ指定で直接数値入力できます');
-    console.log('📝 タイプライターモードが有効になりました:');
-    console.log('  - 表示メニュー > タイプライターモードでON/OFF切り替え');
-    console.log('  - 表示メニュー > タイプライター設定で詳細設定可能');
-    console.log('  - カーソル行が常に指定位置に表示されるようになります');
+    // 機能の説明をコンソールに表示
+    console.log('🔧 機能が正常に初期化されました:');
+    console.log('  📊 行番号: 論理行のみ表示（改行文字でのみ増加）');
+    console.log('  🔤 ワードラップ: 視覚的な折り返しのみ（行番号は増加しない）');
+    console.log('  🔍 ステータスバー: 論理行・列番号を表示');
+    console.log('  ⌨️  Tab機能: Tab（インデント追加）、Shift+Tab（インデント削除）');
+    console.log('  🎨 フォント機能: サイズ変更・直接入力・ステータス表示');
+    console.log('  📝 タイプライターモード: 視覚行でスクロール、論理行で行番号表示');
 }
 
 /**
- * ステータス更新時の多言語化対応（他のモジュールから呼び出される）
+ * ステータス更新時の多言語化対応（論理行・列番号版）
  */
 export function updateStatusI18n(line, column, charCount) {
     const cursorPosition = document.getElementById('cursor-position');
     const charCountElement = document.getElementById('char-count');
     
     if (cursorPosition) {
+        // 論理行・列番号を表示
         cursorPosition.textContent = `${t('statusBar.line')}: ${line}, ${t('statusBar.column')}: ${column}`;
     }
     
     if (charCountElement) {
         charCountElement.textContent = `${t('statusBar.charCount')}: ${charCount}`;
     }
+}
+
+/**
+ * リアルタイムステータス更新（論理行・列番号対応）
+ */
+export function updateCurrentStatus() {
+    if (!window.editor) return;
+    
+    const logicalLine = getCurrentLogicalLineNumber();
+    const column = getCurrentColumnNumber();
+    const charCount = window.editor.value.length;
+    
+    updateStatusI18n(logicalLine, column, charCount);
 }

@@ -1,13 +1,13 @@
 /*
  * =====================================================
- * Vinsert Editor - フォント設定機能（直接数値指定対応版）
+ * Vinsert Editor - フォント設定機能（行番号キャッシュクリア対応版）
  * =====================================================
  */
 
 import { editor } from './globals.js';
 import { t } from './locales.js';
 import { closeAllMenus } from './menu-controller.js';
-import { updateFontSizeDisplay } from './ui-updater.js';
+import { updateFontSizeDisplay, clearLineNumberCache, updateLineNumbers } from './ui-updater.js';
 
 // フォント設定の管理
 let fontSettings = {
@@ -91,6 +91,13 @@ export function applyFontSettings() {
     statusBarElements.forEach(element => {
         element.style.fontFamily = fontSettings.fontFamily;
     });
+    
+    // フォント設定が変わったので行番号のキャッシュをクリア
+    console.log('📝 Clearing line number cache due to font change');
+    clearLineNumberCache();
+    
+    // 行番号を再計算
+    updateLineNumbers();
     
     // ステータスバーのフォントサイズ表示を更新
     updateFontSizeDisplay();

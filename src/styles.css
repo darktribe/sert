@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Sert Editor - スタイルシート（タイプライターモード対応版）
+ * Sert Editor - スタイルシート（行番号同期強化・タイプライターモード対応版）
  * =====================================================
  */
 
@@ -143,6 +143,9 @@ body, html {
   background-color: #1e1e1e;
 }
 
+/* =====================================================
+ 行番号（正しい表示位置対応強化版）
+ ===================================================== */
 .line-numbers {
   background-color: #252526;
   color: #858585;
@@ -153,15 +156,48 @@ body, html {
   text-align: right;
   user-select: none;
   border-right: 1px solid #3e3e40;
-  white-space: pre;
+  white-space: pre-line; /* 改行を保持しつつ空白は折りたたみ */
   overflow: hidden;
   min-width: 50px;
   max-width: 80px;
   flex-shrink: 0;
+  
+  /* タイプライターモード用の同期強化 */
+  scroll-behavior: auto; /* JavaScriptで制御するためautoに設定 */
+  will-change: scroll-position; /* スクロールアニメーションの最適化 */
+  
+  /* スクロールバーを非表示にして見た目を統一 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  
+  /* 行番号の表示を最適化 */
+  word-wrap: normal;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+.line-numbers::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
+/* タイプライターモード時の行番号ハイライト */
+.typewriter-mode .line-numbers {
+  position: relative;
+}
+
+.typewriter-mode .line-numbers::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1.5em; /* line-heightと同じ */
+  background-color: rgba(0, 122, 204, 0.1);
+  pointer-events: none;
+  /* JavaScriptで動的に位置を調整 */
 }
 
 /* =====================================================
- エディタテキストエリア - Tab入力対応
+ エディタテキストエリア - ワードラップ＆タイプライター対応
  ===================================================== */
 .editor-textarea {
   flex: 1;
@@ -175,10 +211,14 @@ body, html {
   padding: 10px;
   resize: none;
   
-  /* 表示折り返しの設定 */
+  /* ワードラップ設定の最適化 */
   white-space: pre-wrap;
   overflow-wrap: break-word;
   word-wrap: break-word;
+  word-break: normal; /* 単語境界を尊重 */
+  hyphens: none; /* ハイフネーションを無効化 */
+  
+  /* スクロール設定 */
   overflow-x: hidden;
   overflow-y: auto;
   
@@ -189,6 +229,13 @@ body, html {
   
   /* タイプライターモード用のスムーススクロール */
   scroll-behavior: auto; /* JavaScriptで制御するためautoに設定 */
+  will-change: scroll-position; /* スクロールアニメーションの最適化 */
+  
+  /* レンダリング最適化 */
+  contain: layout style; /* レイアウトと描画の最適化 */
+  
+  /* タイプライターモード時の追加スタイル */
+  transition: padding 0.2s ease-out; /* パディング変更のスムーズ化 */
 }
 
 .editor-textarea::placeholder {
@@ -197,6 +244,31 @@ body, html {
 
 .editor-textarea:focus {
   outline: none;
+}
+
+/* タイプライターモード有効時のスタイル調整 */
+.typewriter-mode .editor-textarea {
+  /* より滑らかなスクロール体験 */
+  -webkit-transform: translate3d(0, 0, 0); /* GPU加速を有効化 */
+  transform: translate3d(0, 0, 0);
+}
+
+/* スクロールバーのカスタマイズ */
+.editor-textarea::-webkit-scrollbar {
+  width: 12px;
+}
+
+.editor-textarea::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.editor-textarea::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 6px;
+}
+
+.editor-textarea::-webkit-scrollbar-thumb:hover {
+  background: #4f4f4f;
 }
 
 /* =====================================================
@@ -773,6 +845,27 @@ body, html {
 }
 
 /* =====================================================
+ デバッグ用スタイル（開発時のみ表示）
+ ===================================================== */
+.debug-scroll-info {
+  position: fixed;
+  top: 40px;
+  left: 10px;
+  background-color: rgba(255, 0, 0, 0.8);
+  color: white;
+  padding: 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+  z-index: 9999;
+  display: none; /* デフォルトは非表示 */
+}
+
+.debug-mode .debug-scroll-info {
+  display: block;
+}
+
+/* =====================================================
  レスポンシブ対応
  ===================================================== */
 @media (max-width: 768px) {
@@ -842,5 +935,12 @@ body, html {
     right: 10px;
     max-width: calc(100vw - 20px);
     font-size: 12px;
+  }
+  
+  /* モバイルでの行番号幅調整 */
+  .line-numbers {
+    min-width: 40px;
+    max-width: 60px;
+    padding: 10px 6px;
   }
 }
