@@ -285,45 +285,82 @@ function calculateCurrentLinePosition() {
 /**
  * 現在行ハイライトを更新
  */
+/**
+ * 現在行ハイライトを更新
+ */
+/**
+ * 現在行ハイライトを更新
+ */
+/**
+ * 現在行ハイライトを更新
+ */
 export function updateCurrentLineHighlight() {
     if (!currentLineHighlight.enabled || !editor) return;
     
-    const position = calculateCurrentLinePosition();
-    if (!position) return;
-    
-    // 前回と同じ行の場合は位置更新のみ
-    const currentLogicalLine = position.logicalLine;
-    const isSameLine = currentLogicalLine === currentLineHighlight.lastHighlightedLine;
-    
-    currentLineHighlight.lastHighlightedLine = currentLogicalLine;
-    
-    // ハイライト要素が存在しない場合は作成
+    // ハイライト要素作成
     if (!currentLineHighlight.highlightElement || !currentLineHighlight.highlightElementNumbers) {
         createHighlightElements();
     }
     
-    // エディタのハイライト要素を更新
+    // タイプライターモードチェック
+    let isTypewriterEnabled = false;
+    try {
+        isTypewriterEnabled = isTypewriterModeEnabled && isTypewriterModeEnabled();
+    } catch (e) {}
+    
+    if (isTypewriterEnabled) {
+        // タイプライターモード：完全固定位置
+        const editorHeight = editor.clientHeight;
+        const lineHeight = parseFloat(getComputedStyle(editor).lineHeight) || 20;
+        
+        let centerPosition = 0.5;
+        try {
+            if (getCurrentTypewriterSettings) {
+                centerPosition = getCurrentTypewriterSettings().centerPosition || 0.5;
+            }
+        } catch (e) {}
+        
+        // 画面の固定位置（一切の調整なし）
+        const fixedTop = editorHeight * centerPosition;
+        
+        if (currentLineHighlight.highlightElement) {
+            currentLineHighlight.highlightElement.style.display = 'block';
+            currentLineHighlight.highlightElement.style.top = `${fixedTop}px`;
+            currentLineHighlight.highlightElement.style.height = `${lineHeight}px`;
+            currentLineHighlight.highlightElement.style.left = '0';
+            currentLineHighlight.highlightElement.style.right = '0';
+        }
+        
+        if (currentLineHighlight.highlightElementNumbers) {
+            currentLineHighlight.highlightElementNumbers.style.display = 'block';
+            currentLineHighlight.highlightElementNumbers.style.top = `${fixedTop}px`;
+            currentLineHighlight.highlightElementNumbers.style.height = `${lineHeight}px`;
+            currentLineHighlight.highlightElementNumbers.style.left = '0';
+            currentLineHighlight.highlightElementNumbers.style.right = '0';
+        }
+        return;
+    }
+    
+    // 通常モード（変更なし）
+    const position = calculateCurrentLinePosition();
+    if (!position) return;
+    
+    currentLineHighlight.lastHighlightedLine = position.logicalLine;
+    
     if (currentLineHighlight.highlightElement) {
-        const element = currentLineHighlight.highlightElement;
-        element.style.display = 'block';
-        element.style.top = `${position.top}px`;
-        element.style.height = `${position.height}px`;
-        element.style.left = '0';
-        element.style.right = '0';
+        currentLineHighlight.highlightElement.style.display = 'block';
+        currentLineHighlight.highlightElement.style.top = `${position.top}px`;
+        currentLineHighlight.highlightElement.style.height = `${position.height}px`;
+        currentLineHighlight.highlightElement.style.left = '0';
+        currentLineHighlight.highlightElement.style.right = '0';
     }
     
-    // 行番号のハイライト要素を更新
     if (currentLineHighlight.highlightElementNumbers) {
-        const element = currentLineHighlight.highlightElementNumbers;
-        element.style.display = 'block';
-        element.style.top = `${position.top}px`;
-        element.style.height = `${position.height}px`;
-        element.style.left = '0';
-        element.style.right = '0';
-    }
-    
-    if (!isSameLine) {
-        console.log(`🎨 Current line highlight updated to line ${currentLogicalLine} (visual lines: ${position.currentLineVisualLines})`);
+        currentLineHighlight.highlightElementNumbers.style.display = 'block';
+        currentLineHighlight.highlightElementNumbers.style.top = `${position.top}px`;
+        currentLineHighlight.highlightElementNumbers.style.height = `${position.height}px`;
+        currentLineHighlight.highlightElementNumbers.style.left = '0';
+        currentLineHighlight.highlightElementNumbers.style.right = '0';
     }
 }
 

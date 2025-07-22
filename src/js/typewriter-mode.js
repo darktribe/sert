@@ -224,6 +224,20 @@ export function toggleTypewriterMode() {
     showTypewriterStatus(status);
     
     closeAllMenus();
+    
+    // 修正：行ハイライトの強制更新（正しい構文）
+    setTimeout(() => {
+        try {
+            import('./ui-updater.js').then(module => {
+                if (module.updateCurrentLineHighlight) {
+                    module.updateCurrentLineHighlight();
+                    console.log('🎨 Line highlight forced update completed');
+                }
+            });
+        } catch (e) {
+            console.warn('Could not update line highlight:', e);
+        }
+    }, 200);
 }
 
 /**
@@ -254,9 +268,29 @@ function applyTypewriterMode() {
         updateMeasureDivWidth();
         
         centerCurrentLine();
+        
+        // 修正：タイプライターモード適用時に行ハイライトを更新
+        setTimeout(() => {
+            if (typeof updateCurrentLineHighlight === 'function') {
+                updateCurrentLineHighlight();
+            } else if (window.updateCurrentLineHighlight) {
+                window.updateCurrentLineHighlight();
+            }
+            console.log('🎨 Line highlight updated after typewriter mode applied');
+        }, 150);
     } else {
         console.log('📝 Typewriter mode disabled');
         removeDynamicPadding();
+        
+        // 修正：タイプライターモード無効時も行ハイライトを更新
+        setTimeout(() => {
+            if (typeof updateCurrentLineHighlight === 'function') {
+                updateCurrentLineHighlight();
+            } else if (window.updateCurrentLineHighlight) {
+                window.updateCurrentLineHighlight();
+            }
+            console.log('🎨 Line highlight updated after typewriter mode disabled');
+        }, 100);
     }
 }
 
@@ -316,34 +350,27 @@ export function centerCurrentLine() {
     const cursorPosition = editor.selectionStart;
     const currentVisualLine = getPreciseVisualLineNumber(cursorPosition);
     
-    // エディタの高さ変化をチェック
-    const currentTextAreaHeight = editor.scrollHeight;
-    const textAreaHeightChanged = currentTextAreaHeight !== lastTextAreaHeight;
-    lastTextAreaHeight = currentTextAreaHeight;
+    // 修正：スクロール判定を簡素化
+    let shouldScroll = false;
     
-    // スクロール高さの変化をチェック（ワードラップによる行の増加を検出）
-    const currentScrollHeight = editor.scrollHeight;
-    const scrollHeightChanged = currentScrollHeight !== lastScrollHeight;
-    lastScrollHeight = currentScrollHeight;
-    
-    console.log('📝 Center current line check:', {
-        cursorPosition,
-        currentVisualLine,
-        lastVisualLineNumber,
-        scrollHeightChanged,
-        textAreaHeightChanged
-    });
-    
-    // 前回と同じ視覚的行で、変化がない場合はスクロールしない
-    if (currentVisualLine === lastVisualLineNumber && 
-        !shouldScrollOnInput(cursorPosition) && 
-        !scrollHeightChanged &&
-        !textAreaHeightChanged) {
-        return;
+    // 視覚的行が変わった場合
+    if (currentVisualLine !== lastVisualLineNumber) {
+        shouldScroll = true;
+    }
+    // カーソル位置が大きく変わった場合
+    else if (Math.abs(cursorPosition - lastCursorPosition) > 10) {
+        shouldScroll = true;
+    }
+    // 改行が追加・削除された場合
+    else if (cursorPosition !== lastCursorPosition) {
+        const currentLines = editor.value.substring(0, cursorPosition).split('\n').length;
+        const lastLines = editor.value.substring(0, lastCursorPosition).split('\n').length;
+        if (currentLines !== lastLines) {
+            shouldScroll = true;
+        }
     }
     
-    // スクロールを実行すべき条件をチェック
-    if (shouldPerformScroll(currentVisualLine, cursorPosition, scrollHeightChanged, textAreaHeightChanged)) {
+    if (shouldScroll) {
         performTypewriterScroll(currentVisualLine);
     }
     
