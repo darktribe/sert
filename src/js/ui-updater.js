@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - UI更新機能（論理行ベース行番号修正版）
+ * Vinsert Editor - UI更新機能（精密な現在行ハイライト対応）
  * =====================================================
  */
 
@@ -9,10 +9,341 @@ import { getCurrentFontSettings } from './font-settings.js';
 import { centerCurrentLine, isTypewriterModeEnabled, onWindowResize } from './typewriter-mode.js';
 import { t } from './locales.js';
 
+// デバウンス用のタイマー
+let highlightUpdateTimer = null;
+
 /**
- * 行番号の更新（論理行ベース完全修正版）
- * 物理行（改行文字による行）の最初の表示行にのみ行番号を表示し、
- * ワードラップされた行は空白にする
+ * 行番号の幅を行数に応じて自動調整
+ */
+function adjustLineNumberWidth(lineCount) {
+    const lineNumbers = document.getElementById('line-numbers');
+    if (!lineNumbers) return;
+    
+    let width;
+    let className = '';
+    
+    if (lineCount >= 100000) {
+        width = '95px';
+        className = 'width-100000';
+    } else if (lineCount >= 10000) {
+        width = '80px';
+        className = 'width-10000';
+    } else if (lineCount >= 1000) {
+        width = '65px';
+        className = 'width-1000';
+    } else {
+        width = '50px';
+    }
+    
+    // 既存のwidth-*クラスを削除
+    lineNumbers.classList.remove('width-1000', 'width-10000', 'width-100000');
+    
+    if (className) {
+        lineNumbers.classList.add(className);
+    }
+    
+    if (lineNumbers.style.width !== width) {
+        lineNumbers.style.width = width;
+        lineNumbers.style.minWidth = width;
+        lineNumbers.style.maxWidth = width;
+        console.log(`📏 Line number width adjusted to ${width} for ${lineCount} lines`);
+    }
+}
+
+/**
+ * 現在行ハイライトの設定管理
+ */
+let currentLineHighlight = {
+    enabled: true,
+    lastHighlightedLine: -1,
+    highlightElement: null,
+    highlightElementNumbers: null
+};
+
+/**
+ * 現在行ハイライト設定をローカルストレージから読み込み
+ */
+export function loadLineHighlightSettings() {
+    try {
+        const saved = localStorage.getItem('sert-line-highlight-settings');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            currentLineHighlight = { ...currentLineHighlight, ...parsed };
+            console.log('🎨 Line highlight settings loaded:', currentLineHighlight);
+        }
+    } catch (error) {
+        console.warn('⚠️ Could not load line highlight settings:', error);
+    }
+    
+    // 設定を適用
+    applyLineHighlightSettings();
+}
+
+/**
+ * 現在行ハイライト設定をローカルストレージに保存
+ */
+export function saveLineHighlightSettings() {
+    try {
+        const settingsToSave = {
+            enabled: currentLineHighlight.enabled,
+            lastHighlightedLine: currentLineHighlight.lastHighlightedLine
+        };
+        localStorage.setItem('sert-line-highlight-settings', JSON.stringify(settingsToSave));
+        console.log('💾 Line highlight settings saved:', settingsToSave);
+    } catch (error) {
+        console.warn('⚠️ Could not save line highlight settings:', error);
+    }
+}
+
+/**
+ * ハイライト要素を作成
+ */
+function createHighlightElements() {
+    const editorContainer = document.querySelector('.editor-container');
+    const lineNumbers = document.getElementById('line-numbers');
+    
+    if (!editorContainer || !lineNumbers) return;
+    
+    // エディタ用ハイライト要素
+    if (!currentLineHighlight.highlightElement) {
+        currentLineHighlight.highlightElement = document.createElement('div');
+        currentLineHighlight.highlightElement.className = 'current-line-highlight';
+        currentLineHighlight.highlightElement.style.display = 'none';
+        editorContainer.appendChild(currentLineHighlight.highlightElement);
+    }
+    
+    // 行番号用ハイライト要素
+    if (!currentLineHighlight.highlightElementNumbers) {
+        currentLineHighlight.highlightElementNumbers = document.createElement('div');
+        currentLineHighlight.highlightElementNumbers.className = 'current-line-highlight-numbers';
+        currentLineHighlight.highlightElementNumbers.style.display = 'none';
+        lineNumbers.appendChild(currentLineHighlight.highlightElementNumbers);
+    }
+}
+
+/**
+ * ハイライト要素を削除
+ */
+function removeHighlightElements() {
+    if (currentLineHighlight.highlightElement) {
+        currentLineHighlight.highlightElement.remove();
+        currentLineHighlight.highlightElement = null;
+    }
+    
+    if (currentLineHighlight.highlightElementNumbers) {
+        currentLineHighlight.highlightElementNumbers.remove();
+        currentLineHighlight.highlightElementNumbers = null;
+    }
+}
+
+/**
+ * 現在行ハイライト設定を適用
+ */
+export function applyLineHighlightSettings() {
+    const editorContainer = document.querySelector('.editor-container');
+    if (!editorContainer) return;
+    
+    if (currentLineHighlight.enabled) {
+        editorContainer.classList.add('line-highlight-enabled');
+        createHighlightElements();
+        updateCurrentLineHighlight();
+    } else {
+        editorContainer.classList.remove('line-highlight-enabled');
+        clearCurrentLineHighlight();
+        removeHighlightElements();
+    }
+}
+
+/**
+ * 現在行ハイライトのオン/オフ切り替え
+ */
+export function toggleLineHighlight() {
+    currentLineHighlight.enabled = !currentLineHighlight.enabled;
+    applyLineHighlightSettings();
+    saveLineHighlightSettings();
+    
+    const status = currentLineHighlight.enabled ? t('lineHighlight.enabled') : t('lineHighlight.disabled');
+    console.log(`🎨 Line highlight: ${status}`);
+    
+    // ステータスメッセージを表示
+    showLineHighlightStatus(status);
+}
+
+/**
+ * 現在行ハイライトの状態を取得
+ */
+export function isLineHighlightEnabled() {
+    return currentLineHighlight.enabled;
+}
+
+/**
+ * 現在のカーソル行の正確な位置を計算
+ */
+function calculateCurrentLinePosition() {
+    if (!editor) return null;
+    
+    try {
+        const cursorPosition = editor.selectionStart;
+        const text = editor.value;
+        
+        // 現在の論理行の開始位置と終了位置を特定
+        const textBeforeCursor = text.substring(0, cursorPosition);
+        const textAfterCursor = text.substring(cursorPosition);
+        
+        const lastNewlineIndex = textBeforeCursor.lastIndexOf('\n');
+        const nextNewlineIndex = textAfterCursor.indexOf('\n');
+        
+        const lineStart = lastNewlineIndex + 1;
+        const lineEnd = nextNewlineIndex === -1 ? text.length : cursorPosition + nextNewlineIndex;
+        
+        const currentLineText = text.substring(lineStart, lineEnd);
+        const logicalLineNumber = textBeforeCursor.split('\n').length;
+        
+        // エディタのスタイル情報を取得
+        const editorStyle = getComputedStyle(editor);
+        const fontSize = parseFloat(editorStyle.fontSize);
+        let lineHeightValue = parseFloat(editorStyle.lineHeight);
+        
+        if (lineHeightValue < 10) {
+            lineHeightValue = fontSize * lineHeightValue;
+        }
+        
+        // エディタの実効幅を計算
+        const editorPadding = parseFloat(editorStyle.paddingLeft) + parseFloat(editorStyle.paddingRight);
+        const editorBorder = parseFloat(editorStyle.borderLeftWidth) + parseFloat(editorStyle.borderRightWidth);
+        const editorWidth = editor.clientWidth - editorPadding - editorBorder;
+        
+        // カーソル行より前の行数を計算（ワードラップ考慮）
+        let visualLinesBefore = 0;
+        const lines = text.split('\n');
+        
+        // 測定用要素を作成
+        const measureDiv = document.createElement('div');
+        measureDiv.style.cssText = `
+            position: absolute;
+            visibility: hidden;
+            top: -9999px;
+            left: -9999px;
+            font-family: ${editorStyle.fontFamily};
+            font-size: ${editorStyle.fontSize};
+            line-height: ${editorStyle.lineHeight};
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            word-break: normal;
+            hyphens: none;
+            width: ${editorWidth}px;
+            padding: 0;
+            margin: 0;
+            border: none;
+            box-sizing: border-box;
+        `;
+        document.body.appendChild(measureDiv);
+        
+        // 現在行より前の行の視覚的行数を計算
+        for (let i = 0; i < logicalLineNumber - 1; i++) {
+            const lineText = lines[i];
+            if (lineText === '') {
+                visualLinesBefore += 1;
+            } else {
+                measureDiv.textContent = lineText;
+                const height = measureDiv.offsetHeight;
+                const displayLines = Math.max(1, Math.round(height / lineHeightValue));
+                visualLinesBefore += displayLines;
+            }
+        }
+        
+        // 現在行の視覚的行数を計算
+        let currentLineVisualLines = 1;
+        if (currentLineText !== '') {
+            measureDiv.textContent = currentLineText;
+            const height = measureDiv.offsetHeight;
+            currentLineVisualLines = Math.max(1, Math.round(height / lineHeightValue));
+        }
+        
+        document.body.removeChild(measureDiv);
+        
+        // ハイライト表示位置を計算
+        const paddingTop = parseFloat(editorStyle.paddingTop);
+        const highlightTop = paddingTop + (visualLinesBefore * lineHeightValue);
+        const highlightHeight = currentLineVisualLines * lineHeightValue;
+        
+        return {
+            top: highlightTop,
+            height: highlightHeight,
+            logicalLine: logicalLineNumber,
+            visualLinesBefore: visualLinesBefore,
+            currentLineVisualLines: currentLineVisualLines
+        };
+        
+    } catch (error) {
+        console.warn('Failed to calculate current line position:', error);
+        return null;
+    }
+}
+
+/**
+ * 現在行ハイライトを更新
+ */
+export function updateCurrentLineHighlight() {
+    if (!currentLineHighlight.enabled || !editor) return;
+    
+    const position = calculateCurrentLinePosition();
+    if (!position) return;
+    
+    // 前回と同じ行の場合は位置更新のみ
+    const currentLogicalLine = position.logicalLine;
+    const isSameLine = currentLogicalLine === currentLineHighlight.lastHighlightedLine;
+    
+    currentLineHighlight.lastHighlightedLine = currentLogicalLine;
+    
+    // ハイライト要素が存在しない場合は作成
+    if (!currentLineHighlight.highlightElement || !currentLineHighlight.highlightElementNumbers) {
+        createHighlightElements();
+    }
+    
+    // エディタのハイライト要素を更新
+    if (currentLineHighlight.highlightElement) {
+        const element = currentLineHighlight.highlightElement;
+        element.style.display = 'block';
+        element.style.top = `${position.top}px`;
+        element.style.height = `${position.height}px`;
+        element.style.left = '0';
+        element.style.right = '0';
+    }
+    
+    // 行番号のハイライト要素を更新
+    if (currentLineHighlight.highlightElementNumbers) {
+        const element = currentLineHighlight.highlightElementNumbers;
+        element.style.display = 'block';
+        element.style.top = `${position.top}px`;
+        element.style.height = `${position.height}px`;
+        element.style.left = '0';
+        element.style.right = '0';
+    }
+    
+    if (!isSameLine) {
+        console.log(`🎨 Current line highlight updated to line ${currentLogicalLine} (visual lines: ${position.currentLineVisualLines})`);
+    }
+}
+
+/**
+ * 現在行ハイライトをクリア
+ */
+export function clearCurrentLineHighlight() {
+    if (currentLineHighlight.highlightElement) {
+        currentLineHighlight.highlightElement.style.display = 'none';
+    }
+    
+    if (currentLineHighlight.highlightElementNumbers) {
+        currentLineHighlight.highlightElementNumbers.style.display = 'none';
+    }
+    
+    currentLineHighlight.lastHighlightedLine = -1;
+}
+
+/**
+ * 行番号の更新（大量行数対応・ハイライト対応版）
  */
 export function updateLineNumbers() {
     const lineNumbers = document.getElementById('line-numbers');
@@ -27,6 +358,10 @@ export function updateLineNumbers() {
         
         // 物理行（改行文字による実際の行）で分割
         const physicalLines = editor.value.split('\n');
+        const lineCount = physicalLines.length;
+        
+        // 行番号幅を自動調整
+        adjustLineNumberWidth(lineCount);
         
         // エディタの実効幅を正確に計算
         const editorPadding = parseFloat(editorStyle.paddingLeft) + parseFloat(editorStyle.paddingRight);
@@ -38,16 +373,9 @@ export function updateLineNumbers() {
         let lineHeightValue = parseFloat(editorStyle.lineHeight);
         
         // line-heightが相対値（1.5など）の場合は絶対値に変換
-        if (lineHeightValue < 10) { // 相対値と判定
+        if (lineHeightValue < 10) {
             lineHeightValue = fontSize * lineHeightValue;
         }
-        
-        console.log('📊 Line height calculation:', {
-            fontSize,
-            lineHeightFromStyle: editorStyle.lineHeight,
-            calculatedLineHeight: lineHeightValue,
-            editorWidth
-        });
         
         // 測定用要素を作成（エディタと完全に同じ設定）
         const measureDiv = document.createElement('div');
@@ -90,14 +418,23 @@ export function updateLineNumbers() {
             const actualHeight = measureDiv.offsetHeight;
             const displayLines = Math.max(1, Math.round(actualHeight / lineHeightValue));
             
-            console.log(`📊 Line ${lineNumber}: "${physicalLine.substring(0, 30)}..." -> ${displayLines} display lines`);
+            // 最初の表示行に行番号を表示（桁数に応じたフォーマット）
+            let formattedLineNumber;
+            if (lineCount >= 100000) {
+                formattedLineNumber = lineNumber.toString().padStart(6, ' ');
+            } else if (lineCount >= 10000) {
+                formattedLineNumber = lineNumber.toString().padStart(5, ' ');
+            } else if (lineCount >= 1000) {
+                formattedLineNumber = lineNumber.toString().padStart(4, ' ');
+            } else {
+                formattedLineNumber = lineNumber.toString();
+            }
             
-            // 最初の表示行に行番号を表示
-            lineNumberParts.push(lineNumber.toString());
+            lineNumberParts.push(formattedLineNumber);
             
             // 残りの表示行（ワードラップされた行）は空白
             for (let j = 1; j < displayLines; j++) {
-                lineNumberParts.push(' ');
+                lineNumberParts.push(' '.repeat(formattedLineNumber.length));
             }
         }
         
@@ -107,122 +444,34 @@ export function updateLineNumbers() {
         // 行番号を設定
         lineNumbers.textContent = lineNumberParts.join('\n');
         
-        console.log(`📊 Final result: ${physicalLines.length} physical lines -> ${lineNumberParts.length} display lines`);
-        console.log('📊 Line numbers preview:', lineNumberParts.slice(0, 10).join('|'));
+        // パフォーマンス情報をログ出力（大量行数の場合のみ）
+        if (lineCount >= 1000) {
+            console.log(`📊 Large file: ${lineCount} physical lines -> ${lineNumberParts.length} display lines`);
+        }
         
         // スクロール同期
         lineNumbers.scrollTop = editor.scrollTop;
+        
+        // 現在行ハイライトを更新
+        if (currentLineHighlight.enabled) {
+            setTimeout(() => {
+                updateCurrentLineHighlight();
+            }, 10);
+        }
         
     } catch (error) {
         console.error('❌ Line numbers calculation failed:', error);
         
         // フォールバック: シンプルな論理行番号
         const physicalLines = editor.value.split('\n');
+        const lineCount = physicalLines.length;
+        
+        // 幅調整だけは実行
+        adjustLineNumberWidth(lineCount);
+        
         const simpleLineNumbers = physicalLines.map((_, i) => (i + 1).toString()).join('\n');
         lineNumbers.textContent = simpleLineNumbers;
         lineNumbers.scrollTop = editor.scrollTop;
-    }
-}
-
-/**
- * より正確な行番号更新（デバッグ強化版）
- */
-export function updateLineNumbersWithDebug() {
-    console.log('🐛 DEBUG: Starting line numbers update...');
-    
-    const lineNumbers = document.getElementById('line-numbers');
-    if (!lineNumbers || !editor) {
-        console.log('🐛 DEBUG: Missing elements');
-        return;
-    }
-    
-    try {
-        const editorStyle = getComputedStyle(editor);
-        const physicalLines = editor.value.split('\n');
-        
-        console.log('🐛 DEBUG: Physical lines:', physicalLines.length);
-        console.log('🐛 DEBUG: First few lines:', physicalLines.slice(0, 3).map((line, i) => `${i+1}: "${line}"`));
-        
-        // エディタの設定を詳細に取得
-        const fontSize = parseFloat(editorStyle.fontSize);
-        const lineHeightStr = editorStyle.lineHeight;
-        let lineHeightValue = parseFloat(lineHeightStr);
-        
-        if (lineHeightValue < 10) {
-            lineHeightValue = fontSize * lineHeightValue;
-        }
-        
-        const editorRect = editor.getBoundingClientRect();
-        const editorPadding = parseFloat(editorStyle.paddingLeft) + parseFloat(editorStyle.paddingRight);
-        const editorBorder = parseFloat(editorStyle.borderLeftWidth) + parseFloat(editorStyle.borderRightWidth);
-        const editorWidth = editor.clientWidth - editorPadding - editorBorder;
-        
-        console.log('🐛 DEBUG: Editor metrics:', {
-            fontSize,
-            lineHeightStr,
-            lineHeightValue,
-            editorWidth,
-            clientWidth: editor.clientWidth,
-            padding: editorPadding,
-            border: editorBorder
-        });
-        
-        // 実際の測定テスト
-        const testDiv = document.createElement('div');
-        testDiv.style.cssText = `
-            position: absolute;
-            visibility: hidden;
-            top: -9999px;
-            left: -9999px;
-            font-family: ${editorStyle.fontFamily};
-            font-size: ${fontSize}px;
-            line-height: ${lineHeightValue}px;
-            white-space: pre-wrap;
-            overflow-wrap: break-word;
-            word-wrap: break-word;
-            word-break: normal;
-            width: ${editorWidth}px;
-            padding: 0;
-            margin: 0;
-            border: none;
-        `;
-        document.body.appendChild(testDiv);
-        
-        const lineNumberParts = [];
-        
-        for (let i = 0; i < physicalLines.length; i++) {
-            const line = physicalLines[i];
-            const lineNum = i + 1;
-            
-            if (line === '') {
-                console.log(`🐛 DEBUG: Line ${lineNum}: EMPTY -> 1 display line`);
-                lineNumberParts.push(lineNum.toString());
-                continue;
-            }
-            
-            testDiv.textContent = line;
-            const height = testDiv.offsetHeight;
-            const displayLines = Math.max(1, Math.round(height / lineHeightValue));
-            
-            console.log(`🐛 DEBUG: Line ${lineNum}: "${line.substring(0, 20)}..." (${line.length} chars) -> height: ${height}px, lines: ${displayLines}`);
-            
-            lineNumberParts.push(lineNum.toString());
-            for (let j = 1; j < displayLines; j++) {
-                lineNumberParts.push(' ');
-            }
-        }
-        
-        document.body.removeChild(testDiv);
-        
-        console.log('🐛 DEBUG: Final line number parts:', lineNumberParts.slice(0, 10));
-        
-        lineNumbers.textContent = lineNumberParts.join('\n');
-        lineNumbers.scrollTop = editor.scrollTop;
-        
-        console.log('🐛 DEBUG: Line numbers update complete');
-        
-    } catch (error) {
-        console.error('🐛 DEBUG: Error in line numbers update:', error);
     }
 }
 
@@ -264,6 +513,13 @@ export function syncScroll() {
     const lineNumbers = document.getElementById('line-numbers');
     if (lineNumbers && editor) {
         lineNumbers.scrollTop = editor.scrollTop;
+        
+        // スクロール時にハイライト位置も更新
+        if (currentLineHighlight.enabled) {
+            setTimeout(() => {
+                updateCurrentLineHighlight();
+            }, 10);
+        }
     }
 }
 
@@ -280,11 +536,18 @@ export function forceSyncLineNumbers() {
 }
 
 /**
- * ステータスバー更新
+ * ステータスバー更新（ハイライト対応）
  */
 export function updateStatus() {
     updateStatusElements();
     syncScroll();
+    
+    // 現在行ハイライトを更新
+    if (currentLineHighlight.enabled) {
+        setTimeout(() => {
+            updateCurrentLineHighlight();
+        }, 10);
+    }
     
     if (isTypewriterModeEnabled()) {
         setTimeout(() => centerCurrentLine(), 10);
@@ -292,11 +555,16 @@ export function updateStatus() {
 }
 
 /**
- * タイプライターモード付きステータス更新
+ * タイプライターモード付きステータス更新（ハイライト対応）
  */
 export function updateStatusWithTypewriter() {
     updateStatusElements();
     syncScroll();
+    
+    // 現在行ハイライトを更新
+    if (currentLineHighlight.enabled) {
+        updateCurrentLineHighlight();
+    }
     
     if (isTypewriterModeEnabled()) {
         centerCurrentLine();
@@ -324,7 +592,8 @@ function updateStatusElements() {
         }
         
         if (charCount && editor) {
-            charCount.textContent = `${t('statusBar.charCount')}: ${editor.value.length}`;
+            const totalLines = editor.value.split('\n').length;
+            charCount.textContent = `${t('statusBar.charCount')}: ${editor.value.length} | ${t('statusBar.lineCount')}: ${totalLines}`;
         }
         
         if (fontSizeDisplay) {
@@ -439,13 +708,41 @@ export function updateFontSizeDisplay() {
  * 初期化時の行番号設定
  */
 export function initializeLineNumbers() {
-    console.log('📊 Initializing line numbers...');
+    console.log('📊 Initializing line numbers with highlight support...');
+    
+    // ハイライト設定を読み込み
+    loadLineHighlightSettings();
     
     // 少し遅延させてDOM要素が確実に存在することを保証
     setTimeout(() => {
         updateLineNumbers();
         updateStatus();
+        console.log('🎨 Line highlight initialized:', currentLineHighlight.enabled);
     }, 100);
+}
+
+/**
+ * ハイライトステータスメッセージを表示
+ */
+function showLineHighlightStatus(message) {
+    // 既存のメッセージがあれば削除
+    const existingStatus = document.querySelector('.line-highlight-status-message');
+    if (existingStatus) {
+        existingStatus.remove();
+    }
+    
+    const statusMessage = document.createElement('div');
+    statusMessage.className = 'line-highlight-status-message';
+    statusMessage.textContent = message;
+    
+    document.body.appendChild(statusMessage);
+    
+    // 3秒後に自動で削除
+    setTimeout(() => {
+        if (statusMessage.parentNode) {
+            statusMessage.remove();
+        }
+    }, 3000);
 }
 
 /**
@@ -454,27 +751,20 @@ export function initializeLineNumbers() {
 export function debugScrollSync() {
     const lineNumbers = document.getElementById('line-numbers');
     if (lineNumbers && editor) {
+        const totalLines = editor.value.split('\n').length;
+        const position = calculateCurrentLinePosition();
+        
         console.log('🐛 Debug info:', {
             editorScrollTop: editor.scrollTop,
             lineNumbersScrollTop: lineNumbers.scrollTop,
             difference: Math.abs(editor.scrollTop - lineNumbers.scrollTop),
-            logicalLineCount: editor.value.split('\n').length,
+            logicalLineCount: totalLines,
             currentLine: getCurrentLogicalLineNumber(),
-            currentColumn: getCurrentColumnNumber()
+            currentColumn: getCurrentColumnNumber(),
+            lineNumberWidth: lineNumbers.style.width,
+            highlightEnabled: currentLineHighlight.enabled,
+            highlightedLine: currentLineHighlight.lastHighlightedLine,
+            highlightPosition: position
         });
     }
-}
-
-/**
- * 行番号計算のテスト関数（デバッグ用）
- */
-export function testLineNumberCalculation() {
-    console.log('🧪 Testing line number calculation...');
-    updateLineNumbersWithDebug();
-}
-
-// デバッグ用にグローバルに公開
-if (typeof window !== 'undefined') {
-    window.testLineNumberCalculation = testLineNumberCalculation;
-    window.updateLineNumbersWithDebug = updateLineNumbersWithDebug;
 }

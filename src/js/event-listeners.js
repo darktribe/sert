@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - イベントリスナー設定（行番号同期強化・ワードラップ対応版）
+ * Vinsert Editor - イベントリスナー設定（現在行ハイライト対応版）
  * =====================================================
  */
 
@@ -14,7 +14,9 @@ import {
     handleScrollEvent,
     handleEditorResize,
     forceSyncLineNumbers,
-    clearLineNumberCache
+    clearLineNumberCache,
+    updateCurrentLineHighlight,
+    isLineHighlightEnabled
 } from './ui-updater.js';
 import { handleCompositionStart, handleCompositionEnd, handleCompositionUpdate } from './ime-handler.js';
 import { handleGlobalClick, handleMenuEscape } from './menu-controller.js';
@@ -23,16 +25,35 @@ import { onKeyEvent, centerCurrentLine, isTypewriterModeEnabled, onWindowResize 
 // デバウンス用のタイマー
 let resizeTimer = null;
 let scrollTimer = null;
+let highlightTimer = null;
+
+/**
+ * デバウンス付きハイライト更新
+ */
+function updateHighlightDebounced(delay = 10) {
+    if (!isLineHighlightEnabled()) return;
+    
+    if (highlightTimer) {
+        clearTimeout(highlightTimer);
+    }
+    
+    highlightTimer = setTimeout(() => {
+        updateCurrentLineHighlight();
+    }, delay);
+}
 
 /**
  * エディタのイベントリスナーを設定
  */
 export function setupEventListeners() {
-    console.log('Setting up event listeners with enhanced scroll sync...');
+    console.log('Setting up event listeners with line highlight support...');
     
-    // テキスト入力関連（より詳細な監視）
+    // テキスト入力関連（ハイライト対応）
     editor.addEventListener('input', (e) => {
         handleInput(e);
+        
+        // 現在行ハイライトを更新
+        updateHighlightDebounced(15);
         
         // タイプライターモードのための追加監視
         if (isTypewriterModeEnabled()) {
@@ -53,19 +74,56 @@ export function setupEventListeners() {
         }
     });
     
-    // キーボード入力関連（タイプライターモード対応）
+    // キーボード入力関連（ハイライト対応）
     editor.addEventListener('keydown', (e) => {
         // 通常のキーダウン処理
         handleKeydown(e);
+        
+        // ナビゲーションキーの場合はハイライトを即座に更新
+        const navigationKeys = [
+            'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+            'Home', 'End', 'PageUp', 'PageDown'
+        ];
+        
+        if (navigationKeys.includes(e.key)) {
+            updateHighlightDebounced(5); // 高速更新
+        }
         
         // タイプライターモード用のキーイベント処理
         onKeyEvent(e);
     });
     
-    // スクロール関連（強化版）
+    // キーアップイベント（ナビゲーション後のハイライト更新）
+    editor.addEventListener('keyup', (e) => {
+        // 矢印キー、Page Up/Down、Home/Endなどのナビゲーションキーの場合
+        const navigationKeys = [
+            'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+            'Home', 'End', 'PageUp', 'PageDown'
+        ];
+        
+        if (navigationKeys.includes(e.key)) {
+            updateStatusWithTypewriter();
+            updateHighlightDebounced(5); // 即座にハイライト更新
+            
+            // ナビゲーションキーでのタイプライターモード適用
+            if (isTypewriterModeEnabled()) {
+                setTimeout(() => {
+                    centerCurrentLine();
+                }, 10);
+            }
+        } else {
+            updateStatus();
+            updateHighlightDebounced(10);
+        }
+    });
+    
+    // スクロール関連（ハイライト同期対応）
     editor.addEventListener('scroll', (e) => {
         // 即座に行番号同期
         syncScroll();
+        
+        // ハイライト位置更新
+        updateHighlightDebounced(20);
         
         // デバウンス処理でタイプライターモードの調整
         if (scrollTimer) {
@@ -77,9 +135,12 @@ export function setupEventListeners() {
         }, 50);
     });
     
-    // カーソル移動関連（タイプライターモード対応強化）
+    // カーソル移動関連（ハイライト対応強化）
     editor.addEventListener('click', (e) => {
         updateStatusWithTypewriter();
+        
+        // クリック後にハイライト更新
+        updateHighlightDebounced(5);
         
         // クリック後にタイプライターモード適用
         if (isTypewriterModeEnabled()) {
@@ -89,30 +150,12 @@ export function setupEventListeners() {
         }
     });
     
-    editor.addEventListener('keyup', (e) => {
-        // 矢印キー、Page Up/Down、Home/Endなどのナビゲーションキーの場合
-        const navigationKeys = [
-            'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-            'Home', 'End', 'PageUp', 'PageDown'
-        ];
-        
-        if (navigationKeys.includes(e.key)) {
-            updateStatusWithTypewriter();
-            
-            // ナビゲーションキーでのタイプライターモード適用
-            if (isTypewriterModeEnabled()) {
-                setTimeout(() => {
-                    centerCurrentLine();
-                }, 10);
-            }
-        } else {
-            updateStatus();
-        }
-    });
-    
-    // マウス操作関連
+    // マウス操作関連（ハイライト対応）
     editor.addEventListener('mouseup', (e) => {
         updateStatusWithTypewriter();
+        
+        // マウス選択終了後にハイライト更新
+        updateHighlightDebounced(5);
         
         // マウス選択終了後にタイプライターモード適用
         if (isTypewriterModeEnabled()) {
@@ -122,27 +165,58 @@ export function setupEventListeners() {
         }
     });
     
-    // ドラッグ終了時
+    // ドラッグ終了時（ハイライト対応）
     editor.addEventListener('dragend', (e) => {
         setTimeout(() => {
             updateStatusWithTypewriter();
+            updateHighlightDebounced(10);
+            
             if (isTypewriterModeEnabled()) {
                 centerCurrentLine();
             }
         }, 50);
     });
     
-    // フォーカス取得時
+    // フォーカス取得時（ハイライト対応）
     editor.addEventListener('focus', () => {
         setTimeout(() => {
             updateStatusWithTypewriter();
+            updateHighlightDebounced(10);
+            
             if (isTypewriterModeEnabled()) {
                 centerCurrentLine();
             }
         }, 10);
     });
     
-    // 選択範囲変更時（独自実装）
+    // フォーカス失去時（ハイライト非表示）
+    editor.addEventListener('blur', () => {
+        // フォーカスを失った時はハイライトを一時的に薄くする
+        const highlightElement = document.querySelector('.current-line-highlight');
+        const highlightNumbers = document.querySelector('.current-line-highlight-numbers');
+        
+        if (highlightElement) {
+            highlightElement.style.opacity = '0.3';
+        }
+        if (highlightNumbers) {
+            highlightNumbers.style.opacity = '0.3';
+        }
+    });
+    
+    // フォーカス再取得時（ハイライト復活）
+    editor.addEventListener('focus', () => {
+        const highlightElement = document.querySelector('.current-line-highlight');
+        const highlightNumbers = document.querySelector('.current-line-highlight-numbers');
+        
+        if (highlightElement) {
+            highlightElement.style.opacity = '1';
+        }
+        if (highlightNumbers) {
+            highlightNumbers.style.opacity = '1';
+        }
+    });
+    
+    // 選択範囲変更時の詳細監視（ハイライト対応強化）
     let lastSelectionStart = 0;
     let lastSelectionEnd = 0;
     
@@ -150,6 +224,9 @@ export function setupEventListeners() {
         if (editor.selectionStart !== lastSelectionStart || editor.selectionEnd !== lastSelectionEnd) {
             lastSelectionStart = editor.selectionStart;
             lastSelectionEnd = editor.selectionEnd;
+            
+            // 選択範囲が変わった場合のハイライト更新
+            updateHighlightDebounced(5);
             
             // 選択範囲が変わった場合のタイプライターモード適用
             if (isTypewriterModeEnabled()) {
@@ -169,16 +246,27 @@ export function setupEventListeners() {
         checkSelectionChange();
     });
     
-    // IME（日本語入力）関連
-    editor.addEventListener('compositionstart', handleCompositionStart);
-    editor.addEventListener('compositionend', handleCompositionEnd);
+    // IME（日本語入力）関連（ハイライト対応）
+    editor.addEventListener('compositionstart', (e) => {
+        handleCompositionStart(e);
+        // IME開始時はハイライト更新を一時停止
+    });
+    
+    editor.addEventListener('compositionend', (e) => {
+        handleCompositionEnd(e);
+        // IME終了時にハイライト更新
+        setTimeout(() => {
+            updateHighlightDebounced(10);
+        }, 15);
+    });
+    
     editor.addEventListener('compositionupdate', handleCompositionUpdate);
     
     // メニュー制御
     document.addEventListener('click', handleGlobalClick);
     document.addEventListener('keydown', handleMenuEscape);
     
-    // ウィンドウリサイズイベント（エディタのサイズ変更対応）
+    // ウィンドウリサイズイベント（ハイライト再計算対応）
     window.addEventListener('resize', () => {
         // デバウンス処理
         if (resizeTimer) {
@@ -189,14 +277,21 @@ export function setupEventListeners() {
             console.log('🔄 Window resized, updating editor layout...');
             handleEditorResize();
             
-            // タイプライターモード用のリサイズ処理を追加
+            // ハイライト位置を再計算
+            if (isLineHighlightEnabled()) {
+                setTimeout(() => {
+                    updateCurrentLineHighlight();
+                }, 100);
+            }
+            
+            // タイプライターモード用のリサイズ処理
             if (isTypewriterModeEnabled()) {
                 onWindowResize();
             }
         }, 250);
     });
     
-    // ResizeObserver でエディタコンテナのサイズ変更を監視
+    // ResizeObserver でエディタコンテナのサイズ変更を監視（ハイライト対応）
     if (window.ResizeObserver) {
         const editorContainer = document.querySelector('.editor-container');
         if (editorContainer) {
@@ -212,7 +307,14 @@ export function setupEventListeners() {
                     resizeTimer = setTimeout(() => {
                         handleEditorResize();
                         
-                        // タイプライターモード用のリサイズ処理を追加
+                        // ハイライト位置を再計算
+                        if (isLineHighlightEnabled()) {
+                            setTimeout(() => {
+                                updateCurrentLineHighlight();
+                            }, 50);
+                        }
+                        
+                        // タイプライターモード用のリサイズ処理
                         if (isTypewriterModeEnabled()) {
                             onWindowResize();
                         }
@@ -225,7 +327,7 @@ export function setupEventListeners() {
         }
     }
     
-    // MutationObserver でエディタのスタイル変更を監視（フォント変更など）
+    // MutationObserver でエディタのスタイル変更を監視（ハイライト対応）
     if (window.MutationObserver) {
         const mutationObserver = new MutationObserver((mutations) => {
             let shouldUpdate = false;
@@ -240,6 +342,12 @@ export function setupEventListeners() {
             if (shouldUpdate) {
                 setTimeout(() => {
                     forceSyncLineNumbers();
+                    
+                    // スタイル変更時にハイライト位置も再計算
+                    if (isLineHighlightEnabled()) {
+                        updateCurrentLineHighlight();
+                    }
+                    
                     if (isTypewriterModeEnabled()) {
                         centerCurrentLine();
                     }
@@ -259,7 +367,13 @@ export function setupEventListeners() {
     setTimeout(() => {
         syncScroll();
         updateStatus();
-        console.log('🔗 Initial scroll sync completed');
+        
+        // 初期ハイライト設定
+        if (isLineHighlightEnabled()) {
+            updateCurrentLineHighlight();
+        }
+        
+        console.log('🔗 Initial sync completed with line highlight support');
     }, 100);
     
     // デバッグ用：定期的なスクロール同期チェック（開発時のみ）
@@ -272,6 +386,12 @@ export function setupEventListeners() {
                 if (diff > 2) { // 2px以上のずれがある場合
                     console.warn('⚠️ Scroll sync drift detected:', diff);
                     syncScroll();
+                }
+                
+                // ハイライトのデバッグ情報も表示
+                if (isLineHighlightEnabled() && diff > 5) {
+                    console.log('🎨 Highlight update triggered by scroll drift');
+                    updateCurrentLineHighlight();
                 }
                 
                 // タイプライターモードのデバッグ情報も表示
@@ -291,7 +411,7 @@ export function setupEventListeners() {
         });
     }
     
-    console.log('✅ Event listeners set up successfully with enhanced typewriter mode support');
+    console.log('✅ Event listeners set up successfully with line highlight and typewriter mode support');
 }
 
 /**
@@ -300,6 +420,11 @@ export function setupEventListeners() {
 export function forceScrollSync() {
     console.log('🚨 Force scroll sync requested');
     syncScroll();
+    
+    // ハイライト位置も強制更新
+    if (isLineHighlightEnabled()) {
+        updateCurrentLineHighlight();
+    }
     
     if (isTypewriterModeEnabled()) {
         setTimeout(() => {
@@ -315,6 +440,7 @@ export function debugEventListeners() {
     console.log('🐛 Event listeners debug info:');
     console.log('- Editor:', editor ? 'Found' : 'Not found');
     console.log('- Line numbers element:', document.getElementById('line-numbers') ? 'Found' : 'Not found');
+    console.log('- Line highlight enabled:', isLineHighlightEnabled());
     console.log('- Typewriter mode enabled:', isTypewriterModeEnabled());
     console.log('- Current scroll position:', editor ? editor.scrollTop : 'N/A');
     
@@ -328,5 +454,21 @@ export function debugEventListeners() {
             console.warn('⚠️ Large scroll sync difference detected!');
             forceScrollSync();
         }
+    }
+    
+    // ハイライト要素の状態をチェック
+    const highlightElement = document.querySelector('.current-line-highlight');
+    const highlightNumbers = document.querySelector('.current-line-highlight-numbers');
+    
+    console.log('- Highlight element:', highlightElement ? 'Found' : 'Not found');
+    console.log('- Highlight numbers element:', highlightNumbers ? 'Found' : 'Not found');
+    
+    if (highlightElement) {
+        console.log('- Highlight element style:', {
+            display: highlightElement.style.display,
+            top: highlightElement.style.top,
+            height: highlightElement.style.height,
+            opacity: highlightElement.style.opacity
+        });
     }
 }

@@ -26,7 +26,9 @@
     "increaseFontSize": "フォントサイズを大きく",
     "decreaseFontSize": "フォントサイズを小さく",
     "typewriterMode": "タイプライターモード",
-    "typewriterSettings": "タイプライター設定"
+    "typewriterSettings": "タイプライター設定",
+    "lineHighlight": "現在行ハイライト",
+    "lineHighlightSettings": "ハイライト設定"
   },
   "searchMenu": {
     "find": "検索",
@@ -40,7 +42,26 @@
     "column": "列",
     "encoding": "UTF-8",
     "fontSize": "フォント",
-    "charCount": "総文字数"
+    "charCount": "総文字数",
+    "lineCount": "総行数"
+  },
+  "lineHighlight": {
+    "title": "現在行ハイライト設定",
+    "enabled": "現在行ハイライトが有効になりました",
+    "disabled": "現在行ハイライトが無効になりました",
+    "enableHighlight": "現在行をハイライト表示",
+    "highlightStyle": "ハイライトスタイル",
+    "styleSubtle": "控えめ",
+    "styleNormal": "標準", 
+    "styleBold": "強調",
+    "buttons": {
+      "apply": "適用",
+      "reset": "リセット",
+      "cancel": "キャンセル"
+    },
+    "messages": {
+      "resetConfirm": "ハイライト設定をデフォルトに戻しますか？"
+    }
   },
   "fonts": {
     "title": "フォント設定",
@@ -176,5 +197,10 @@
       "shiftTab": "Shift+Tab: インデント削除",
       "info": "エディタ内でTabキーを押すとインデント（タブ文字）が挿入されます。Shift+Tabでインデントを削除できます。"
     }
+  },
+  "performance": {
+    "largeFile": "大きなファイル（{lines}行）を読み込んでいます...",
+    "optimizing": "表示を最適化中...",
+    "ready": "準備完了"
   }
 }

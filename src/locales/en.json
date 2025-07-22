@@ -26,7 +26,9 @@
     "increaseFontSize": "Increase Font Size",
     "decreaseFontSize": "Decrease Font Size",
     "typewriterMode": "Typewriter Mode",
-    "typewriterSettings": "Typewriter Settings"
+    "typewriterSettings": "Typewriter Settings",
+    "lineHighlight": "Current Line Highlight",
+    "lineHighlightSettings": "Highlight Settings"
   },
   "searchMenu": {
     "find": "Find",
@@ -40,7 +42,26 @@
     "column": "Column",
     "encoding": "UTF-8",
     "fontSize": "Font",
-    "charCount": "Character count"
+    "charCount": "Character count",
+    "lineCount": "Line count"
+  },
+  "lineHighlight": {
+    "title": "Current Line Highlight Settings",
+    "enabled": "Current line highlight enabled",
+    "disabled": "Current line highlight disabled",
+    "enableHighlight": "Highlight current line",
+    "highlightStyle": "Highlight Style",
+    "styleSubtle": "Subtle",
+    "styleNormal": "Normal", 
+    "styleBold": "Bold",
+    "buttons": {
+      "apply": "Apply",
+      "reset": "Reset",
+      "cancel": "Cancel"
+    },
+    "messages": {
+      "resetConfirm": "Reset highlight settings to default?"
+    }
   },
   "fonts": {
     "title": "Font Settings",
@@ -176,5 +197,10 @@
       "shiftTab": "Shift+Tab: Remove indent",
       "info": "Press Tab in the editor to insert indentation (tab character). Use Shift+Tab to remove indentation."
     }
+  },
+  "performance": {
+    "largeFile": "Loading large file ({lines} lines)...",
+    "optimizing": "Optimizing display...",
+    "ready": "Ready"
   }
 }
