@@ -6,7 +6,7 @@
 
 import { setEditor, setCurrentContent, setTauriInvoke } from './globals.js';
 import { initializeUndoStack } from './undo-redo.js';
-import { updateLineNumbers, updateStatus, updateWindowTitle, updateFontSizeDisplay, getCurrentLogicalLineNumber, getCurrentColumnNumber } from './ui-updater.js';
+import { updateLineNumbers, updateStatus, updateWindowTitle, updateFontSizeDisplay, getCurrentLogicalLineNumber, getCurrentColumnNumber, initializeLineNumbers } from './ui-updater.js';
 import { setupEventListeners } from './event-listeners.js';
 import { exitApp } from './app-exit.js';
 import { initializeI18n, t, updateElementText } from './locales.js';
@@ -190,6 +190,7 @@ export async function initializeApp() {
     createLanguageSwitcher();
     
     // 初期UI更新
+    console.log('📊 Updating initial UI...');
     updateLineNumbers();
     updateStatus();
     
@@ -200,6 +201,10 @@ export async function initializeApp() {
     // 初期タイトル設定を追加
     console.log('🏷️ Setting initial window title...');
     await updateWindowTitle();
+    
+    // 【重要】行番号の初期化を確実に実行
+    console.log('📊 Initializing line numbers...');
+    initializeLineNumbers();
     
     // カーソルを1行目1列目に設定
     editorElement.setSelectionRange(0, 0);
@@ -215,6 +220,28 @@ export async function initializeApp() {
     console.log('  ⌨️  Tab機能: Tab（インデント追加）、Shift+Tab（インデント削除）');
     console.log('  🎨 フォント機能: サイズ変更・直接入力・ステータス表示');
     console.log('  📝 タイプライターモード: 視覚行でスクロール、論理行で行番号表示');
+    
+    // 初期化完了後の確認
+    setTimeout(() => {
+        console.log('🔍 Post-initialization check...');
+        const lineNumbersElement = document.getElementById('line-numbers');
+        const editorElement = document.getElementById('editor');
+        
+        if (lineNumbersElement && editorElement) {
+            console.log('✅ Line numbers element found');
+            console.log('✅ Editor element found');
+            console.log(`📊 Current line numbers content: "${lineNumbersElement.textContent}"`);
+            console.log(`📊 Editor content lines: ${editorElement.value.split('\n').length}`);
+            
+            // 行番号が正しく表示されているか最終確認
+            if (lineNumbersElement.textContent.trim() === '') {
+                console.warn('⚠️ Line numbers are empty, forcing update...');
+                updateLineNumbers();
+            }
+        } else {
+            console.error('❌ Required elements not found');
+        }
+    }, 500);
 }
 
 /**

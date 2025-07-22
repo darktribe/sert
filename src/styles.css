@@ -144,7 +144,7 @@ body, html {
 }
 
 /* =====================================================
- 行番号（正しい表示位置対応強化版）
+ 行番号（完全修正版）
  ===================================================== */
 .line-numbers {
   background-color: #252526;
@@ -156,7 +156,13 @@ body, html {
   text-align: right;
   user-select: none;
   border-right: 1px solid #3e3e40;
-  white-space: pre-line; /* 改行を保持しつつ空白は折りたたみ */
+  
+  /* 重要：ワードラップを完全に無効化 */
+  white-space: pre;
+  overflow-wrap: normal;
+  word-wrap: normal;
+  word-break: normal;
+  
   overflow: hidden;
   min-width: 50px;
   max-width: 80px;
@@ -169,11 +175,6 @@ body, html {
   /* スクロールバーを非表示にして見た目を統一 */
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* Internet Explorer 10+ */
-  
-  /* 行番号の表示を最適化 */
-  word-wrap: normal;
-  word-break: keep-all;
-  overflow-wrap: normal;
 }
 
 .line-numbers::-webkit-scrollbar {
