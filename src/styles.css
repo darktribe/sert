@@ -144,14 +144,14 @@ body, html {
 }
 
 /* =====================================================
- 行番号（完全修正版）
+ 行番号（論理行ベース完全修正版）
  ===================================================== */
-.line-numbers {
+ .line-numbers {
   background-color: #252526;
   color: #858585;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.5; /* エディタと完全に一致させる */
   padding: 10px 8px;
   text-align: right;
   user-select: none;
@@ -162,39 +162,150 @@ body, html {
   overflow-wrap: normal;
   word-wrap: normal;
   word-break: normal;
+  hyphens: none;
   
   overflow: hidden;
   min-width: 50px;
   max-width: 80px;
   flex-shrink: 0;
   
-  /* タイプライターモード用の同期強化 */
-  scroll-behavior: auto; /* JavaScriptで制御するためautoに設定 */
-  will-change: scroll-position; /* スクロールアニメーションの最適化 */
+  /* スクロール同期の最適化 */
+  scroll-behavior: auto;
+  will-change: scroll-position;
   
-  /* スクロールバーを非表示にして見た目を統一 */
+  /* スクロールバーを非表示 */
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* Internet Explorer 10+ */
+  
+  /* レンダリング最適化 */
+  contain: layout style;
+  
+  /* フォント設定の強制統一 */
+  font-weight: normal;
+  font-style: normal;
+  text-decoration: none;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-transform: none;
+  text-indent: 0;
+  text-shadow: none;
+  
+  /* ボックスモデルの統一 */
+  box-sizing: border-box;
+  margin: 0;
+  border-left: none;
+  border-top: none;
+  border-bottom: none;
 }
 
 .line-numbers::-webkit-scrollbar {
   display: none; /* WebKit */
 }
 
-/* タイプライターモード時の行番号ハイライト */
-.typewriter-mode .line-numbers {
-  position: relative;
+/* =====================================================
+ エディタテキストエリア - 行番号との完全同期
+ ===================================================== */
+.editor-textarea {
+  flex: 1;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  border: none;
+  outline: none;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5; /* 行番号と完全に一致させる */
+  padding: 10px; /* 行番号と同じパディング */
+  resize: none;
+  
+  /* ワードラップ設定 */
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+  
+  /* スクロール設定 */
+  overflow-x: hidden;
+  overflow-y: auto;
+  
+  /* Tab文字のサイズ設定 */
+  tab-size: 4;
+  -moz-tab-size: 4;
+  -webkit-tab-size: 4;
+  
+  /* スクロール最適化 */
+  scroll-behavior: auto;
+  will-change: scroll-position;
+  
+  /* レンダリング最適化 */
+  contain: layout style;
+  
+  /* フォント設定の強制統一（行番号と一致） */
+  font-weight: normal;
+  font-style: normal;
+  text-decoration: none;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-transform: none;
+  text-indent: 0;
+  text-shadow: none;
+  
+  /* ボックスモデルの統一 */
+  box-sizing: border-box;
+  margin: 0;
+  border: none;
 }
 
-.typewriter-mode .line-numbers::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 1.5em; /* line-heightと同じ */
-  background-color: rgba(0, 122, 204, 0.1);
-  pointer-events: none;
-  /* JavaScriptで動的に位置を調整 */
+.editor-textarea::placeholder {
+  color: #6a6a6a;
+}
+
+.editor-textarea:focus {
+  outline: none;
+}
+
+/* エディタコンテナでの設定統一 */
+.editor-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  background-color: #1e1e1e;
+  
+  /* すべての子要素のフォント設定を統一 */
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* デバッグ用のスタイル（開発時に一時的に有効化可能） */
+.debug-line-numbers .line-numbers {
+  border: 2px solid red !important;
+  background-color: rgba(255, 0, 0, 0.1) !important;
+}
+
+.debug-line-numbers .editor-textarea {
+  border: 2px solid blue !important;
+  background-color: rgba(0, 0, 255, 0.1) !important;
+}
+
+/* 行番号の各行のハイライト（デバッグ用） */
+.debug-line-highlight .line-numbers {
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent calc(1.5em - 1px),
+    rgba(255, 255, 0, 0.3) calc(1.5em - 1px),
+    rgba(255, 255, 0, 0.3) 1.5em
+  );
+}
+
+/* エディタの各行のハイライト（デバッグ用） */
+.debug-line-highlight .editor-textarea {
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent calc(1.5em - 1px),
+    rgba(0, 255, 255, 0.2) calc(1.5em - 1px),
+    rgba(0, 255, 255, 0.2) 1.5em
+  );
 }
 
 /* =====================================================

@@ -289,3 +289,146 @@ setTimeout(() => {
     console.log('✅ Fallback registration complete - window.showTypewriterSettingsDialog:', typeof window.showTypewriterSettingsDialog);
     console.log('✅ Fallback registration complete - window.changeLanguage:', typeof window.changeLanguage);
 }, 1000);
+
+// ======================================================
+// 行番号デバッグ関数（main.jsに追加するコード）
+// ======================================================
+
+// デバッグ用関数をインポート
+import { testLineNumberCalculation, updateLineNumbersWithDebug, debugScrollSync } from './js/ui-updater.js';
+
+// デバッグ関数をグローバルに登録
+window.testLineNumbers = function() {
+    console.log('🧪 Testing line number display...');
+    
+    const editor = document.getElementById('editor');
+    if (!editor) {
+        console.error('❌ Editor not found');
+        return;
+    }
+    
+    console.log('📊 Current editor content:');
+    console.log('Text length:', editor.value.length);
+    console.log('Physical lines:', editor.value.split('\n').length);
+    console.log('Content preview:', JSON.stringify(editor.value.substring(0, 100)) + '...');
+    
+    // 詳細なデバッグ実行
+    testLineNumberCalculation();
+};
+
+window.debugLineNumbers = function() {
+    console.log('🐛 Debugging line numbers...');
+    updateLineNumbersWithDebug();
+};
+
+window.toggleDebugMode = function() {
+    const container = document.querySelector('.editor-container');
+    if (container) {
+        container.classList.toggle('debug-line-numbers');
+        container.classList.toggle('debug-line-highlight');
+        console.log('🐛 Debug mode toggled');
+    }
+};
+
+window.testLongLine = function() {
+    console.log('🧪 Testing with long line...');
+    const editor = document.getElementById('editor');
+    if (editor) {
+        // 長い行を作成してテスト
+        const longText = 'This is a very long line that should wrap multiple times when the window is not wide enough to display it all in one line. '.repeat(5);
+        editor.value = `First line\n${longText}\nThird line\nFourth line`;
+        
+        // 行番号を更新
+        setTimeout(() => {
+            updateLineNumbersWithDebug();
+        }, 100);
+    }
+};
+
+window.testMultipleWraps = function() {
+    console.log('🧪 Testing multiple wrapping lines...');
+    const editor = document.getElementById('editor');
+    if (editor) {
+        const shortLine = 'Short line';
+        const mediumLine = 'This is a medium length line that might wrap once or twice depending on window size.';
+        const longLine = 'This is a very very very long line that will definitely wrap multiple times when displayed in the editor window, creating several visual lines from one logical line.';
+        const veryLongLine = 'Extremely long line: ' + 'word '.repeat(50);
+        
+        editor.value = [
+            shortLine,
+            mediumLine,
+            longLine,
+            shortLine,
+            veryLongLine,
+            shortLine,
+            'Final line'
+        ].join('\n');
+        
+        // カーソルを先頭に配置
+        editor.setSelectionRange(0, 0);
+        editor.focus();
+        
+        // 行番号を更新
+        setTimeout(() => {
+            updateLineNumbersWithDebug();
+            debugScrollSync();
+        }, 100);
+    }
+};
+
+window.measureLineHeight = function() {
+    console.log('📏 Measuring line height...');
+    const editor = document.getElementById('editor');
+    const lineNumbers = document.getElementById('line-numbers');
+    
+    if (editor && lineNumbers) {
+        const editorStyle = getComputedStyle(editor);
+        const lineNumberStyle = getComputedStyle(lineNumbers);
+        
+        console.log('📊 Editor measurements:', {
+            fontSize: editorStyle.fontSize,
+            lineHeight: editorStyle.lineHeight,
+            fontFamily: editorStyle.fontFamily,
+            clientWidth: editor.clientWidth,
+            scrollWidth: editor.scrollWidth,
+            paddingLeft: editorStyle.paddingLeft,
+            paddingRight: editorStyle.paddingRight
+        });
+        
+        console.log('📊 Line numbers measurements:', {
+            fontSize: lineNumberStyle.fontSize,
+            lineHeight: lineNumberStyle.lineHeight,
+            fontFamily: lineNumberStyle.fontFamily,
+            width: lineNumbers.offsetWidth
+        });
+        
+        // 実際の行の高さを測定
+        const testDiv = document.createElement('div');
+        testDiv.style.cssText = `
+            position: absolute;
+            visibility: hidden;
+            top: -9999px;
+            left: -9999px;
+            font-family: ${editorStyle.fontFamily};
+            font-size: ${editorStyle.fontSize};
+            line-height: ${editorStyle.lineHeight};
+            white-space: pre;
+        `;
+        testDiv.textContent = 'Test line';
+        document.body.appendChild(testDiv);
+        
+        const measuredHeight = testDiv.offsetHeight;
+        document.body.removeChild(testDiv);
+        
+        console.log('📊 Measured single line height:', measuredHeight + 'px');
+    }
+};
+
+// 使用方法をコンソールに表示
+console.log('🔧 Line number debug functions available:');
+console.log('- window.testLineNumbers() : 基本的なテスト');
+console.log('- window.debugLineNumbers() : 詳細デバッグ');
+console.log('- window.toggleDebugMode() : デバッグ表示のON/OFF');
+console.log('- window.testLongLine() : 長い行でのテスト');
+console.log('- window.testMultipleWraps() : 複数の折り返し行でのテスト');
+console.log('- window.measureLineHeight() : 行の高さ測定');
