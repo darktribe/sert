@@ -24,7 +24,8 @@
     "fontSettings": "フォント設定",
     "fontSizeInput": "フォントサイズ指定",
     "increaseFontSize": "フォントサイズを大きく",
-    "decreaseFontSize": "フォントサイズを小さく"
+    "decreaseFontSize": "フォントサイズを小さく",
+    "lineHighlight": "行ハイライト"
   },
   "searchMenu": {
     "find": "検索",

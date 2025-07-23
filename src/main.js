@@ -14,6 +14,8 @@ import { showFontSettingsDialog, showFontSizeInputDialog, increaseFontSize, decr
 import { exitApp } from './js/app-exit.js';
 import { createLanguageSwitcher, removeLanguageSwitcher, reinitializeLanguageSwitcher } from './js/language-switcher.js';
 import { changeLanguage, getCurrentLanguage, getAvailableLanguages } from './js/locales.js';
+import { toggleLineHighlight } from './js/line-highlight.js';
+
 
 // グローバル関数をウィンドウオブジェクトに登録（HTMLから呼び出せるようにするため）
 console.log('🔧 Registering global functions...');
@@ -33,6 +35,8 @@ window.selectAll = selectAll;
 window.showSearchDialog = showSearchDialog;
 window.showReplaceDialog = showReplaceDialog;
 window.exitApp = exitApp;
+window.toggleLineHighlight = toggleLineHighlight;
+
 
 // フォント設定機能（新機能追加）
 window.showFontSettingsDialog = showFontSettingsDialog;

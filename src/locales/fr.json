@@ -24,7 +24,8 @@
     "fontSettings": "Paramètres de police",
     "fontSizeInput": "Saisie de taille de police",
     "increaseFontSize": "Augmenter la taille de police",
-    "decreaseFontSize": "Diminuer la taille de police"
+    "decreaseFontSize": "Diminuer la taille de police",
+    "lineHighlight": "Surbrillance de ligne"
   },
   "searchMenu": {
     "find": "Rechercher",

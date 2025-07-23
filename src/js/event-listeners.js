@@ -7,7 +7,7 @@
 import { editor } from './globals.js';
 import { handleInput } from './input-handler.js';
 import { handleKeydown } from './keyboard-shortcuts.js';
-import { syncScroll, updateStatus } from './ui-updater.js';
+import { syncScroll, updateStatus, updateLineHighlight } from './ui-updater.js';
 import { handleCompositionStart, handleCompositionEnd, handleCompositionUpdate } from './ime-handler.js';
 import { handleGlobalClick, handleMenuEscape } from './menu-controller.js';
 
@@ -22,7 +22,11 @@ export function setupEventListeners() {
     editor.addEventListener('keydown', handleKeydown);
     
     // スクロール・フォーカス関連
-    editor.addEventListener('scroll', syncScroll);
+    editor.addEventListener('scroll', () => {
+        syncScroll();
+        // スクロール時にハイライトの位置も更新
+        updateLineHighlight();
+    });
     editor.addEventListener('click', updateStatus);
     editor.addEventListener('keyup', updateStatus);
     

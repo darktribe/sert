@@ -41,7 +41,7 @@
                 </div>
             </div>
 
-            <!-- 表示メニュー（フォントサイズ直接指定を追加） -->
+            <!-- 表示メニュー（行ハイライト機能を追加） -->
             <div class="menu-item" onclick="toggleMenu('view-menu')">
                 <span data-i18n="menu.view">View</span>
                 <div class="dropdown-menu" id="view-menu">
@@ -50,6 +50,11 @@
                     <div class="menu-separator"></div>
                     <div class="menu-option" onclick="increaseFontSize()" data-i18n="viewMenu.increaseFontSize">Increase Font Size</div>
                     <div class="menu-option" onclick="decreaseFontSize()" data-i18n="viewMenu.decreaseFontSize">Decrease Font Size</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option menu-option-checkbox" id="line-highlight-menu-option" onclick="toggleLineHighlight()">
+                        <span class="menu-checkmark">✓</span>
+                        <span data-i18n="viewMenu.lineHighlight">Line Highlight</span>
+                    </div>
                 </div>
             </div>
 

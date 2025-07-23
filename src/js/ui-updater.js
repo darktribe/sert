@@ -4,7 +4,7 @@
  * =====================================================
  */
 
-import { editor, currentFilePath, tauriInvoke } from './globals.js';
+import { editor, currentFilePath, tauriInvoke, isLineHighlightEnabled, currentHighlightedLine, setCurrentHighlightedLine } from './globals.js';
 import { getCurrentFontSettings } from './font-settings.js';
 import { t } from './locales.js';
 
@@ -73,6 +73,84 @@ export function syncScroll() {
 }
 
 /**
+ * 現在の論理行をハイライト
+ */
+export function updateLineHighlight() {
+    if (!editor || !isLineHighlightEnabled) {
+        // ハイライトが無効な場合は既存のハイライトを削除
+        const existingHighlight = document.querySelector('.line-highlight-overlay');
+        if (existingHighlight) {
+            existingHighlight.remove();
+        }
+        return;
+    }
+    
+    const cursorPos = editor.selectionStart;
+    const textBeforeCursor = editor.value.substring(0, cursorPos);
+    const currentLine = textBeforeCursor.split('\n').length;
+    
+    // 行が変わっていない場合でも、スクロール時のために位置を更新
+    setCurrentHighlightedLine(currentLine);
+    
+    // 既存のハイライトを削除
+    const existingHighlight = document.querySelector('.line-highlight-overlay');
+    if (existingHighlight) {
+        existingHighlight.remove();
+    }
+    
+    // 新しいハイライトを作成
+    const lines = editor.value.split('\n');
+    const computedStyle = window.getComputedStyle(editor);
+    const lineHeight = parseFloat(computedStyle.lineHeight);
+    const paddingTop = parseFloat(computedStyle.paddingTop);
+    const editorWidth = editor.clientWidth - 
+                        parseFloat(computedStyle.paddingLeft) - 
+                        parseFloat(computedStyle.paddingRight);
+    
+    // キャンバスを使って各行の高さを計算
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    context.font = computedStyle.font;
+    
+    let topPosition = paddingTop;
+    let highlightHeight = lineHeight;
+    
+    // 現在の行までの高さを計算
+    for (let i = 0; i < currentLine - 1; i++) {
+        const lineText = lines[i] || '';
+        if (lineText === '') {
+            topPosition += lineHeight;
+        } else {
+            const textWidth = context.measureText(lineText).width;
+            const wrappedLines = Math.max(1, Math.ceil(textWidth / editorWidth));
+            topPosition += wrappedLines * lineHeight;
+        }
+    }
+    
+    // 現在の論理行の高さを計算（折り返しも考慮）
+    const currentLineText = lines[currentLine - 1] || '';
+    if (currentLineText !== '') {
+        const textWidth = context.measureText(currentLineText).width;
+        const wrappedLines = Math.max(1, Math.ceil(textWidth / editorWidth));
+        highlightHeight = wrappedLines * lineHeight;
+    }
+    
+    // ハイライト要素を作成
+    const highlight = document.createElement('div');
+    highlight.className = 'line-highlight-overlay';
+    highlight.style.top = (topPosition - editor.scrollTop) + 'px';
+    highlight.style.height = highlightHeight + 'px';
+    highlight.style.width = editor.clientWidth + 'px';
+    highlight.style.left = '0';
+    
+    // エディタコンテナに追加
+    const editorContainer = document.querySelector('.editor-container');
+    if (editorContainer) {
+        editorContainer.appendChild(highlight);
+    }
+}
+
+/**
  * ステータスバーの更新（多言語化対応）
  */
 export function updateStatus() {
@@ -104,6 +182,9 @@ export function updateStatus() {
         const fontSettings = getCurrentFontSettings();
         fontSizeDisplay.textContent = `${t('statusBar.fontSize')}: ${fontSettings.fontSize}px`;
     }
+    
+    // 行ハイライトも更新
+    updateLineHighlight();
 }
 
 /**

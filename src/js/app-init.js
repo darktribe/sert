@@ -12,6 +12,8 @@ import { exitApp } from './app-exit.js';
 import { initializeI18n, t, updateElementText } from './locales.js';
 import { createLanguageSwitcher } from './language-switcher.js';
 import { loadFontSettings } from './font-settings.js';
+import { loadLineHighlightSetting } from './globals.js';
+import { initializeLineHighlight } from './line-highlight.js';
 
 /**
  * Tauri APIの初期化
@@ -169,6 +171,11 @@ export async function initializeApp() {
     // フォント設定の初期化
     console.log('🎨 Initializing font settings...');
     loadFontSettings();
+    
+    // 行ハイライト設定の初期化
+    console.log('🎨 Initializing line highlight settings...');
+    loadLineHighlightSetting();
+    initializeLineHighlight();
     
     // イベントリスナーを設定
     setupEventListeners();

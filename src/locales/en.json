@@ -24,7 +24,8 @@
     "fontSettings": "Font Settings",
     "fontSizeInput": "Font Size Input",
     "increaseFontSize": "Increase Font Size",
-    "decreaseFontSize": "Decrease Font Size"
+    "decreaseFontSize": "Decrease Font Size",
+    "lineHighlight": "Line Highlight"
   },
   "searchMenu": {
     "find": "Find",

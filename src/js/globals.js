@@ -79,3 +79,33 @@ export let tauriInvoke = null;
 export function setTauriInvoke(invoke) {
     tauriInvoke = invoke;
 }
+
+// 行ハイライト機能関連
+export let isLineHighlightEnabled = true;  // デフォルトで有効
+export let currentHighlightedLine = -1;
+
+export function setIsLineHighlightEnabled(enabled) {
+    isLineHighlightEnabled = enabled;
+    // ローカルストレージに保存
+    try {
+        localStorage.setItem('sert-line-highlight', enabled ? 'true' : 'false');
+    } catch (error) {
+        console.warn('Could not save line highlight setting:', error);
+    }
+}
+
+export function setCurrentHighlightedLine(lineNumber) {
+    currentHighlightedLine = lineNumber;
+}
+
+// 行ハイライト設定を読み込む関数
+export function loadLineHighlightSetting() {
+    try {
+        const saved = localStorage.getItem('sert-line-highlight');
+        if (saved !== null) {
+            isLineHighlightEnabled = saved === 'true';
+        }
+    } catch (error) {
+        console.warn('Could not load line highlight setting:', error);
+    }
+}
