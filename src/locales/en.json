@@ -40,7 +40,6 @@
     "line": "Line",
     "column": "Column",
     "encoding": "UTF-8",
-<<<<<<< HEAD
     "fontSize": "Font",
     "charCount": "Character count",
     "lineCount": "Line count"
@@ -62,9 +61,7 @@
     "messages": {
       "resetConfirm": "Reset highlight settings to default?"
     }
-=======
     "charCount": "Character count"
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
   },
   "fonts": {
     "title": "Font Settings",
@@ -186,7 +183,6 @@
   "window": {
     "defaultTitle": "Vinsert - Untitled",
     "titleFormat": "Vinsert - {filename}"
-<<<<<<< HEAD
   },
   "keyboard": {
     "shortcuts": {
@@ -199,7 +195,5 @@
     "largeFile": "Loading large file ({lines} lines)...",
     "optimizing": "Optimizing display...",
     "ready": "Ready"
-=======
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
   }
 }

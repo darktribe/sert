@@ -40,7 +40,6 @@
     "line": "行",
     "column": "列",
     "encoding": "UTF-8",
-<<<<<<< HEAD
     "fontSize": "フォント",
     "charCount": "総文字数",
     "lineCount": "総行数"
@@ -62,9 +61,7 @@
     "messages": {
       "resetConfirm": "ハイライト設定をデフォルトに戻しますか？"
     }
-=======
     "charCount": "総文字数"
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
   },
   "fonts": {
     "title": "フォント設定",
@@ -186,7 +183,6 @@
   "window": {
     "defaultTitle": "Vinsert - 名前なし",
     "titleFormat": "Vinsert - {filename}"
-<<<<<<< HEAD
   },
   "keyboard": {
     "shortcuts": {
@@ -199,7 +195,5 @@
     "largeFile": "大きなファイル（{lines}行）を読み込んでいます...",
     "optimizing": "表示を最適化中...",
     "ready": "準備完了"
-=======
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
   }
 }

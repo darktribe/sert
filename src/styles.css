@@ -1,10 +1,6 @@
 /*
  * =====================================================
-<<<<<<< HEAD
- * 現在行ハイライト機能（修正版 - 現在行のみ）
-=======
  * Sert Editor - スタイルシート（表示折り返し対応版）
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
  * =====================================================
  */
 
@@ -375,10 +371,7 @@ body, html {
 }
 
 /* =====================================================
-<<<<<<< HEAD
  ステータスバー（行数表示対応）
-=======
- 言語切り替えUI
  ===================================================== */
 .language-switcher {
   margin-left: auto;
@@ -496,7 +489,6 @@ body, html {
 
 /* =====================================================
  ステータスバー
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
  ===================================================== */
 .status-bar {
   background-color: var(--accent-color);
@@ -519,7 +511,6 @@ body, html {
   text-align: center;
 }
 
-<<<<<<< HEAD
 #font-size-display {
   margin: 0 8px;
   padding: 0 8px;
@@ -534,8 +525,6 @@ body, html {
   opacity: 0.9;
 }
 
-=======
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
 /* =====================================================
  言語切り替えUI
  ===================================================== */
@@ -613,8 +602,6 @@ body, html {
   animation: searchDialogSlideIn 0.2s ease-out;
 }
 
-<<<<<<< HEAD
-=======
 .replace-dialog {
   min-width: 520px;
 }
@@ -624,7 +611,6 @@ body, html {
   max-width: 480px;
 }
 
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
 @keyframes searchDialogSlideIn {
   from {
     transform: translateY(-20px);
@@ -637,18 +623,13 @@ body, html {
 }
 
 /* =====================================================
-<<<<<<< HEAD
  デバッグ用スタイル
-=======
- フォント設定ダイアログ（新規追加）
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
  ===================================================== */
 .debug-line-numbers .line-numbers {
   border: 2px solid red !important;
   background-color: rgba(255, 0, 0, 0.1) !important;
 }
 
-<<<<<<< HEAD
 .debug-line-numbers .editor-textarea {
   border: 2px solid blue !important;
   background-color: rgba(0, 0, 255, 0.1) !important;
@@ -774,4 +755,4 @@ body, html {
   appearance: none;
   width: 18px;
   height: 1
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
+}

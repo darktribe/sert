@@ -1,20 +1,13 @@
 /*
  * =====================================================
-<<<<<<< HEAD
- * Vinsert Editor - フォント設定機能（行番号キャッシュクリア対応版）
-=======
  * Vinsert Editor - フォント設定機能（多言語化対応版）
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
  * =====================================================
  */
 
 import { editor } from './globals.js';
 import { t } from './locales.js';
 import { closeAllMenus } from './menu-controller.js';
-<<<<<<< HEAD
 import { updateFontSizeDisplay, clearLineNumberCache, updateLineNumbers } from './ui-updater.js';
-=======
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
 
 // フォント設定の管理
 let fontSettings = {
@@ -39,7 +32,7 @@ const availableFonts = [
 // フォントサイズの範囲
 const fontSizeRange = {
     min: 8,
-    max: 32,
+    max: 64,
     step: 1
 };
 
@@ -99,7 +92,6 @@ export function applyFontSettings() {
         element.style.fontFamily = fontSettings.fontFamily;
     });
     
-<<<<<<< HEAD
     // フォント設定が変わったので行番号のキャッシュをクリア
     console.log('📝 Clearing line number cache due to font change');
     clearLineNumberCache();
@@ -110,8 +102,6 @@ export function applyFontSettings() {
     // ステータスバーのフォントサイズ表示を更新
     updateFontSizeDisplay();
     
-=======
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
     console.log('✅ Font settings applied successfully');
 }
 

@@ -1,20 +1,12 @@
 /*
  * =====================================================
-<<<<<<< HEAD
- * Vinsert Editor - アプリケーション初期化（正しい行番号表示対応版）
-=======
  * Vinsert Editor - アプリケーション初期化（多言語化対応版）
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
  * =====================================================
  */
 
 import { setEditor, setCurrentContent, setTauriInvoke } from './globals.js';
 import { initializeUndoStack } from './undo-redo.js';
-<<<<<<< HEAD
-import { updateLineNumbers, updateStatus, updateWindowTitle, updateFontSizeDisplay, getCurrentLogicalLineNumber, getCurrentColumnNumber, initializeLineNumbers } from './ui-updater.js';
-=======
 import { updateLineNumbers, updateStatus, updateWindowTitle } from './ui-updater.js';
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
 import { setupEventListeners } from './event-listeners.js';
 import { exitApp } from './app-exit.js';
 import { initializeI18n, t, updateElementText } from './locales.js';
@@ -108,11 +100,7 @@ function applyI18nToUI() {
 }
 
 /**
-<<<<<<< HEAD
- * ステータスバーの多言語化（論理行・列番号対応）
-=======
  * ステータスバーの多言語化
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
  */
 function updateStatusBarI18n() {
     const cursorPosition = document.getElementById('cursor-position');
@@ -210,7 +198,6 @@ export async function initializeApp() {
     editorElement.focus();
     
     console.log('App initialization completed');
-<<<<<<< HEAD
     
     // 機能の説明をコンソールに表示
     console.log('🔧 機能が正常に初期化されました:');
@@ -242,8 +229,6 @@ export async function initializeApp() {
             console.error('❌ Required elements not found');
         }
     }, 500);
-=======
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
 }
 
 /**

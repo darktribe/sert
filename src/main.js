@@ -1,10 +1,6 @@
 /*
  * =====================================================
-<<<<<<< HEAD
- * Vinsert Editor - メインエントリーポイント（行ハイライト・大量行数対応版）
-=======
  * Vinsert Editor - メインエントリーポイント
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
  * =====================================================
  */
 
@@ -14,7 +10,6 @@ import { newFile, openFile, saveFile, saveAsFile } from './js/file-operations.js
 import { undo, redo } from './js/undo-redo.js';
 import { copy, cut, paste, selectAll } from './js/edit-operations.js';
 import { showSearchDialog, showReplaceDialog, findNext, findPrevious } from './js/search-replace.js';
-<<<<<<< HEAD
 import { showFontSettingsDialog, showFontSizeInputDialog, increaseFontSize, decreaseFontSize } from './js/font-settings.js';
 import { toggleTypewriterMode, showTypewriterSettingsDialog, centerCurrentLine, onWindowResize, debugTypewriterState } from './js/typewriter-mode.js';
 import { 
@@ -24,9 +19,8 @@ import {
     debugScrollSync 
 } from './js/ui-updater.js';
 
-=======
 import { showFontSettingsDialog, increaseFontSize, decreaseFontSize } from './js/font-settings.js';
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
+import { showFontSettingsDialog, increaseFontSize, decreaseFontSize } from './js/font-settings.js';
 import { exitApp } from './js/app-exit.js';
 import { createLanguageSwitcher, removeLanguageSwitcher, reinitializeLanguageSwitcher } from './js/language-switcher.js';
 import { changeLanguage, getCurrentLanguage, getAvailableLanguages } from './js/locales.js';
@@ -50,14 +44,13 @@ window.showSearchDialog = showSearchDialog;
 window.showReplaceDialog = showReplaceDialog;
 window.exitApp = exitApp;
 
-<<<<<<< HEAD
 // フォント設定機能
 window.showFontSettingsDialog = showFontSettingsDialog;
 window.showFontSizeInputDialog = showFontSizeInputDialog;
-=======
 // フォント設定機能（新規追加）
 window.showFontSettingsDialog = showFontSettingsDialog;
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
+// フォント設定機能（新規追加）
+window.showFontSettingsDialog = showFontSettingsDialog;
 window.increaseFontSize = increaseFontSize;
 window.decreaseFontSize = decreaseFontSize;
 
@@ -89,7 +82,6 @@ console.log('window.openFile:', typeof window.openFile);
 // フォント設定関数
 console.log('🎨 Font functions:');
 console.log('window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
-<<<<<<< HEAD
 console.log('window.showFontSizeInputDialog:', typeof window.showFontSizeInputDialog);
 
 // 行ハイライト機能（新機能ログ）
@@ -101,17 +93,14 @@ console.log('window.isLineHighlightEnabled:', typeof window.isLineHighlightEnabl
 console.log('📝 Typewriter mode functions:');
 console.log('window.toggleTypewriterMode:', typeof window.toggleTypewriterMode);
 console.log('window.showTypewriterSettingsDialog:', typeof window.showTypewriterSettingsDialog);
-=======
 console.log('window.increaseFontSize:', typeof window.increaseFontSize);
 console.log('window.decreaseFontSize:', typeof window.decreaseFontSize);
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
 
 // 言語切り替え関数
 console.log('🌐 Language functions:');
 console.log('window.createLanguageSwitcher:', typeof window.createLanguageSwitcher);
 console.log('window.changeLanguage:', typeof window.changeLanguage);
 
-<<<<<<< HEAD
 // ======================================================
 // 新機能のテスト用デバッグ関数
 // ======================================================
@@ -381,12 +370,10 @@ window.testFontSizeInput = function() {
 
 window.testTypewriterMode = function() {
     console.log('🧪 Testing typewriter mode...');
-=======
 // 保存機能のテスト用デバッグ関数を追加
 window.testSaveFile = async function() {
     console.log('🧪 Testing saveFile function...');
     console.log('saveFile function:', window.saveFile);
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
     try {
         console.log('📝 Testing toggle...');
         window.toggleTypewriterMode();
@@ -406,7 +393,6 @@ window.testSaveFile = async function() {
  * ページ読み込み時の初期化処理
  */
 document.addEventListener('DOMContentLoaded', async () => {
-<<<<<<< HEAD
     console.log('📄 DOM loaded, starting enhanced initialization...');
     
     await initializeApp();
@@ -434,7 +420,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('  - ワードラップした行全体をカバー');
     console.log('  - 設定は自動保存される');
     console.log('  - テーマ対応（CSS変数で色を制御）');
-=======
     console.log('📄 DOM loaded, starting initialization...');
     
     // グローバル関数が正しく登録されているかさらに確認
@@ -455,7 +440,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('- window.changeLanguage():', typeof window.changeLanguage);
     console.log('- window.testLanguageSwitching():', typeof window.testLanguageSwitching);
     console.log('- window.testFontSettings():', typeof window.testFontSettings);
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
 });
 
 /**
@@ -463,25 +447,9 @@ document.addEventListener('DOMContentLoaded', async () => {
  */
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', async () => {
-<<<<<<< HEAD
         await initializeApp();
     });
 } else {
-=======
-        console.log('📄 DOM loaded via readyState check...');
-        console.log('🔍 Backup check - window.saveFile:', typeof window.saveFile);
-        console.log('🔍 Backup check - window.showSearchDialog:', typeof window.showSearchDialog);
-        console.log('🔍 Backup check - window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
-        console.log('🔍 Backup check - window.changeLanguage:', typeof window.changeLanguage);
-        await initializeApp();
-    });
-} else {
-    console.log('📄 DOM already loaded, initializing immediately...');
-    console.log('🔍 Immediate check - window.saveFile:', typeof window.saveFile);
-    console.log('🔍 Immediate check - window.showSearchDialog:', typeof window.showSearchDialog);
-    console.log('🔍 Immediate check - window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
-    console.log('🔍 Immediate check - window.changeLanguage:', typeof window.changeLanguage);
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
     initializeApp();
 }
 
@@ -499,10 +467,7 @@ setTimeout(() => {
     
     // フォント機能
     window.showFontSettingsDialog = showFontSettingsDialog;
-<<<<<<< HEAD
     window.showFontSizeInputDialog = showFontSizeInputDialog;
-=======
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
     window.increaseFontSize = increaseFontSize;
     window.decreaseFontSize = decreaseFontSize;
     
@@ -519,13 +484,6 @@ setTimeout(() => {
     window.changeLanguage = changeLanguage;
     window.createLanguageSwitcher = createLanguageSwitcher;
     
-<<<<<<< HEAD
     console.log('✅ Enhanced fallback registration complete');
     console.log('✅ All features ready including line highlight and large file support');
-=======
-    console.log('✅ Fallback registration complete - window.saveFile:', typeof window.saveFile);
-    console.log('✅ Fallback registration complete - window.showSearchDialog:', typeof window.showSearchDialog);
-    console.log('✅ Fallback registration complete - window.showFontSettingsDialog:', typeof window.showFontSettingsDialog);
-    console.log('✅ Fallback registration complete - window.changeLanguage:', typeof window.changeLanguage);
->>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
 }, 1000);
