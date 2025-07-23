@@ -22,7 +22,6 @@
   },
   "viewMenu": {
     "fontSettings": "Paramètres de police",
-    "fontSizeInput": "Saisie de taille de police",
     "increaseFontSize": "Augmenter la taille de police",
     "decreaseFontSize": "Diminuer la taille de police",
     "typewriterMode": "Mode Machine à écrire",
@@ -39,7 +38,6 @@
     "line": "Ligne",
     "column": "Colonne",
     "encoding": "UTF-8",
-    "fontSize": "Police",
     "charCount": "Nombre de caractères"
   },
   "fonts": {
@@ -48,13 +46,6 @@
     "fontSize": "Taille de police",
     "preview": "Aperçu",
     "previewText": "function exemple() {\n    // Commentaire français\n    console.log('Bonjour, le monde!');\n    return 42;\n}",
-    "sizeInput": {
-      "title": "Saisie de taille de police",
-      "label": "Taille de police",
-      "placeholder": "Saisir taille 8-32",
-      "rangeInfo": "Plage valide : {min}px - {max}px",
-      "invalidRange": "La taille de police doit être entre {min}px et {max}px"
-    },
     "buttons": {
       "apply": "Appliquer",
       "reset": "Réinitialiser",
@@ -169,12 +160,5 @@
   "window": {
     "defaultTitle": "Vinsert - Sans titre",
     "titleFormat": "Vinsert - {filename}"
-  },
-  "keyboard": {
-    "shortcuts": {
-      "tab": "Tab : Ajouter une indentation",
-      "shiftTab": "Shift+Tab : Supprimer l'indentation",
-      "info": "Appuyez sur Tab dans l'éditeur pour insérer une indentation (caractère de tabulation). Utilisez Shift+Tab pour supprimer l'indentation."
-    }
   }
 }

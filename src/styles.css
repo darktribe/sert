@@ -1,6 +1,10 @@
 /*
  * =====================================================
+<<<<<<< HEAD
  * 現在行ハイライト機能（修正版 - 現在行のみ）
+=======
+ * Sert Editor - スタイルシート（表示折り返し対応版）
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
  * =====================================================
  */
 
@@ -371,7 +375,128 @@ body, html {
 }
 
 /* =====================================================
+<<<<<<< HEAD
  ステータスバー（行数表示対応）
+=======
+ 言語切り替えUI
+ ===================================================== */
+.language-switcher {
+  margin-left: auto;
+  margin-right: 10px;
+  display: flex;
+  gap: 2px;
+  background-color: #37373d;
+  border-radius: 4px;
+  padding: 2px;
+  align-items: center;
+}
+
+.language-btn {
+  background-color: transparent;
+  border: none;
+  color: #d4d4d4;
+  padding: 4px 8px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  transition: background-color 0.2s, color 0.2s;
+  min-width: 28px;
+  font-weight: 500;
+}
+
+.language-btn:hover:not(:disabled) {
+  background-color: #4a4a4a;
+  color: #ffffff;
+}
+
+.language-btn.active {
+  background-color: #007acc;
+  color: white;
+  font-weight: bold;
+}
+
+.language-btn:focus {
+  outline: 1px solid #007acc;
+  outline-offset: 1px;
+}
+
+.language-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =====================================================
+ エディタエリア
+ ===================================================== */
+.editor-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  background-color: #1e1e1e;
+}
+
+.line-numbers {
+  background-color: #252526;
+  color: #858585;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 10px 8px;
+  text-align: right;
+  user-select: none;
+  border-right: 1px solid #3e3e40;
+  white-space: pre;
+  overflow: hidden;
+  min-width: 50px;
+  max-width: 80px;
+  flex-shrink: 0;
+}
+
+/* =====================================================
+ エディタテキストエリア - 表示折り返し対応
+ ===================================================== */
+.editor-textarea {
+  flex: 1;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  border: none;
+  outline: none;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 10px;
+  resize: none;
+  
+  /* 🔧 修正箇所: 表示折り返しの設定 */
+  white-space: pre-wrap;        /* pre から pre-wrap に変更: 改行を保持しつつ画面端で折り返し */
+  overflow-wrap: break-word;    /* normal から break-word に変更: 長い単語も折り返し */
+  word-wrap: break-word;        /* 互換性のため追加 */
+  overflow-x: hidden;           /* auto から hidden に変更: 横スクロールバーを非表示 */
+  overflow-y: auto;             /* 縦スクロールは維持 */
+  
+  tab-size: 4;
+}
+
+/* 将来の設定用: 横スクロールモード（現在は未使用） */
+.editor-textarea.horizontal-scroll {
+  white-space: pre;
+  overflow-wrap: normal;
+  word-wrap: normal;
+  overflow-x: auto;
+}
+
+.editor-textarea::placeholder {
+  color: #6a6a6a;
+}
+
+.editor-textarea:focus {
+  outline: none;
+}
+
+/* =====================================================
+ ステータスバー
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
  ===================================================== */
 .status-bar {
   background-color: var(--accent-color);
@@ -385,9 +510,8 @@ body, html {
   height: 24px;
 }
 
-#cursor-position, #file-encoding, #font-size-display, #char-count {
+#cursor-position, #file-encoding, #char-count {
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  white-space: nowrap;
 }
 
 #file-encoding {
@@ -395,6 +519,7 @@ body, html {
   text-align: center;
 }
 
+<<<<<<< HEAD
 #font-size-display {
   margin: 0 8px;
   padding: 0 8px;
@@ -409,6 +534,8 @@ body, html {
   opacity: 0.9;
 }
 
+=======
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
 /* =====================================================
  言語切り替えUI
  ===================================================== */
@@ -486,6 +613,18 @@ body, html {
   animation: searchDialogSlideIn 0.2s ease-out;
 }
 
+<<<<<<< HEAD
+=======
+.replace-dialog {
+  min-width: 520px;
+}
+
+.message-dialog {
+  min-width: 360px;
+  max-width: 480px;
+}
+
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
 @keyframes searchDialogSlideIn {
   from {
     transform: translateY(-20px);
@@ -498,13 +637,18 @@ body, html {
 }
 
 /* =====================================================
+<<<<<<< HEAD
  デバッグ用スタイル
+=======
+ フォント設定ダイアログ（新規追加）
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
  ===================================================== */
 .debug-line-numbers .line-numbers {
   border: 2px solid red !important;
   background-color: rgba(255, 0, 0, 0.1) !important;
 }
 
+<<<<<<< HEAD
 .debug-line-numbers .editor-textarea {
   border: 2px solid blue !important;
   background-color: rgba(0, 0, 255, 0.1) !important;
@@ -573,3 +717,61 @@ body, html {
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
 }
+=======
+.font-settings-dialog {
+  min-width: 520px;
+  max-width: 680px;
+}
+
+.font-settings-section {
+  margin-bottom: 20px;
+}
+
+.font-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #3e3e40;
+  border-radius: 4px;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.font-select:focus {
+  outline: none;
+  border-color: #007acc;
+  box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.3);
+}
+
+.font-select option {
+  background-color: #2d2d30;
+  color: #d4d4d4;
+  padding: 8px;
+}
+
+.font-size-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.font-size-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: #3e3e40;
+  outline: none;
+  cursor: pointer;
+}
+
+.font-size-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 1
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)

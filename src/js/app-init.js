@@ -1,12 +1,20 @@
 /*
  * =====================================================
+<<<<<<< HEAD
  * Vinsert Editor - アプリケーション初期化（正しい行番号表示対応版）
+=======
+ * Vinsert Editor - アプリケーション初期化（多言語化対応版）
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
  * =====================================================
  */
 
 import { setEditor, setCurrentContent, setTauriInvoke } from './globals.js';
 import { initializeUndoStack } from './undo-redo.js';
+<<<<<<< HEAD
 import { updateLineNumbers, updateStatus, updateWindowTitle, updateFontSizeDisplay, getCurrentLogicalLineNumber, getCurrentColumnNumber, initializeLineNumbers } from './ui-updater.js';
+=======
+import { updateLineNumbers, updateStatus, updateWindowTitle } from './ui-updater.js';
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
 import { setupEventListeners } from './event-listeners.js';
 import { exitApp } from './app-exit.js';
 import { initializeI18n, t, updateElementText } from './locales.js';
@@ -100,12 +108,15 @@ function applyI18nToUI() {
 }
 
 /**
+<<<<<<< HEAD
  * ステータスバーの多言語化（論理行・列番号対応）
+=======
+ * ステータスバーの多言語化
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
  */
 function updateStatusBarI18n() {
     const cursorPosition = document.getElementById('cursor-position');
     const charCount = document.getElementById('char-count');
-    const fontSizeDisplay = document.getElementById('font-size-display');
     
     if (cursorPosition) {
         // 論理行・列番号を表示（初期値）
@@ -114,11 +125,6 @@ function updateStatusBarI18n() {
     
     if (charCount) {
         charCount.textContent = `${t('statusBar.charCount')}: 0`;
-    }
-    
-    if (fontSizeDisplay) {
-        // フォントサイズ表示の初期化（loadFontSettings後に正確な値で更新される）
-        fontSizeDisplay.textContent = `${t('statusBar.fontSize')}: 14px`;
     }
 }
 
@@ -134,9 +140,6 @@ function setupLanguageChangeListener() {
         import('./language-switcher.js').then(module => {
             module.updateLanguageSwitcherState();
         });
-        
-        // フォントサイズ表示も更新
-        updateFontSizeDisplay();
     });
 }
 
@@ -168,7 +171,7 @@ export async function initializeApp() {
     setCurrentContent(editorElement.value);
     initializeUndoStack();
     
-    // フォント設定の初期化
+    // フォント設定の初期化（新規追加）
     console.log('🎨 Initializing font settings...');
     loadFontSettings();
     
@@ -194,10 +197,6 @@ export async function initializeApp() {
     updateLineNumbers();
     updateStatus();
     
-    // フォントサイズ表示の初期化
-    console.log('🎨 Initializing font size display...');
-    updateFontSizeDisplay();
-    
     // 初期タイトル設定を追加
     console.log('🏷️ Setting initial window title...');
     await updateWindowTitle();
@@ -211,6 +210,7 @@ export async function initializeApp() {
     editorElement.focus();
     
     console.log('App initialization completed');
+<<<<<<< HEAD
     
     // 機能の説明をコンソールに表示
     console.log('🔧 機能が正常に初期化されました:');
@@ -242,6 +242,8 @@ export async function initializeApp() {
             console.error('❌ Required elements not found');
         }
     }, 500);
+=======
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
 }
 
 /**

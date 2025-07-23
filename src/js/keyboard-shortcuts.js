@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - キーボードショートカット処理（Tab入力対応版）
+ * Vinsert Editor - キーボードショートカット処理
  * =====================================================
  */
 
@@ -18,25 +18,6 @@ import { updateStatus } from './ui-updater.js';
  */
 export async function handleKeydown(e) {
     console.log('Key pressed:', e.key, 'Ctrl:', e.ctrlKey, 'Meta:', e.metaKey);
-    
-    // ===== Tab キー入力処理 =====
-    if (e.key === 'Tab') {
-        e.preventDefault();
-        
-        const start = editor.selectionStart;
-        const end = editor.selectionEnd;
-        const value = editor.value;
-        
-        if (e.shiftKey) {
-            // Shift+Tab: インデント削除（行頭のタブまたは4つのスペースを削除）
-            handleShiftTab(start, end, value);
-        } else {
-            // Tab: タブ文字またはスペース4つを挿入
-            handleTab(start, end, value);
-        }
-        
-        return;
-    }
     
     // アプリ終了ショートカット (Ctrl/Cmd+Q, Ctrl/Cmd+W)
     if ((e.metaKey || e.ctrlKey) && (e.key === 'q' || e.key === 'w')) {
@@ -202,131 +183,4 @@ export async function handleKeydown(e) {
         paste();
         return;
     }
-}
-
-/**
- * Tab キー処理: タブ文字またはスペースを挿入
- */
-function handleTab(start, end, value) {
-    // タブ文字を挿入（スペース4つにしたい場合は '    ' に変更）
-    const tabCharacter = '\t';
-    
-    if (start === end) {
-        // カーソル位置にタブを挿入
-        const newValue = value.substring(0, start) + tabCharacter + value.substring(end);
-        editor.value = newValue;
-        editor.setSelectionRange(start + tabCharacter.length, start + tabCharacter.length);
-    } else {
-        // 選択範囲を削除してタブを挿入
-        const newValue = value.substring(0, start) + tabCharacter + value.substring(end);
-        editor.value = newValue;
-        editor.setSelectionRange(start + tabCharacter.length, start + tabCharacter.length);
-    }
-    
-    // 画面更新（イベントを発火）
-    editor.dispatchEvent(new Event('input', { bubbles: true }));
-}
-
-/**
- * Shift+Tab 処理: インデント削除
- */
-function handleShiftTab(start, end, value) {
-    if (start !== end) {
-        // 複数行が選択されている場合：各行のインデントを削除
-        handleMultiLineUnindent(start, end, value);
-        return;
-    }
-    
-    // 単一行の場合：カーソル位置の前のタブまたはスペースを削除
-    const textBeforeCursor = value.substring(0, start);
-    const lastNewlineIndex = textBeforeCursor.lastIndexOf('\n');
-    const lineStart = lastNewlineIndex + 1;
-    const lineBeforeCursor = textBeforeCursor.substring(lineStart);
-    
-    let charsToRemove = 0;
-    
-    // 直前にタブがある場合
-    if (lineBeforeCursor.endsWith('\t')) {
-        charsToRemove = 1;
-    }
-    // 直前に4つのスペースがある場合
-    else if (lineBeforeCursor.endsWith('    ')) {
-        charsToRemove = 4;
-    }
-    // 直前に1-3つのスペースがある場合（行頭からのスペースのみ）
-    else {
-        const spacesMatch = lineBeforeCursor.match(/^( {1,3})$/);
-        if (spacesMatch) {
-            charsToRemove = spacesMatch[1].length;
-        }
-    }
-    
-    if (charsToRemove > 0) {
-        const newValue = value.substring(0, start - charsToRemove) + value.substring(end);
-        editor.value = newValue;
-        editor.setSelectionRange(start - charsToRemove, start - charsToRemove);
-        
-        // 画面更新（イベントを発火）
-        editor.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-}
-
-/**
- * 複数行のインデント削除処理
- */
-function handleMultiLineUnindent(start, end, value) {
-    const textBeforeStart = value.substring(0, start);
-    const selectedText = value.substring(start, end);
-    const textAfterEnd = value.substring(end);
-    
-    // 選択範囲の最初の行の開始位置を取得
-    const lastNewlineBeforeStart = textBeforeStart.lastIndexOf('\n');
-    const selectionStart = lastNewlineBeforeStart + 1;
-    
-    // 選択範囲を含む全テキストを取得
-    const fullSelectedText = value.substring(selectionStart, end);
-    const lines = fullSelectedText.split('\n');
-    
-    let newLines = [];
-    let totalRemovedChars = 0;
-    
-    lines.forEach((line, index) => {
-        let removedChars = 0;
-        let newLine = line;
-        
-        // 各行の先頭のタブまたはスペースを削除
-        if (line.startsWith('\t')) {
-            newLine = line.substring(1);
-            removedChars = 1;
-        } else if (line.startsWith('    ')) {
-            newLine = line.substring(4);
-            removedChars = 4;
-        } else if (line.match(/^ {1,3}/)) {
-            const spacesMatch = line.match(/^( {1,3})/);
-            if (spacesMatch) {
-                newLine = line.substring(spacesMatch[1].length);
-                removedChars = spacesMatch[1].length;
-            }
-        }
-        
-        newLines.push(newLine);
-        
-        // 最初の行以外の場合、削除された文字数を合計に追加
-        if (index > 0) {
-            totalRemovedChars += removedChars;
-        }
-    });
-    
-    const newSelectedText = newLines.join('\n');
-    const newValue = value.substring(0, selectionStart) + newSelectedText + textAfterEnd;
-    
-    editor.value = newValue;
-    
-    // 選択範囲を更新
-    const newStart = start;
-    const newEnd = end - totalRemovedChars;
-    editor.setSelectionRange(newStart, newEnd);
-    
-    // 画面更新（イベントを発火）
-    editor.dispatchEvent(new Event('input', { bubbles: true }));
 }

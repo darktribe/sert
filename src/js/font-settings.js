@@ -1,13 +1,20 @@
 /*
  * =====================================================
+<<<<<<< HEAD
  * Vinsert Editor - フォント設定機能（行番号キャッシュクリア対応版）
+=======
+ * Vinsert Editor - フォント設定機能（多言語化対応版）
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
  * =====================================================
  */
 
 import { editor } from './globals.js';
 import { t } from './locales.js';
 import { closeAllMenus } from './menu-controller.js';
+<<<<<<< HEAD
 import { updateFontSizeDisplay, clearLineNumberCache, updateLineNumbers } from './ui-updater.js';
+=======
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
 
 // フォント設定の管理
 let fontSettings = {
@@ -92,6 +99,7 @@ export function applyFontSettings() {
         element.style.fontFamily = fontSettings.fontFamily;
     });
     
+<<<<<<< HEAD
     // フォント設定が変わったので行番号のキャッシュをクリア
     console.log('📝 Clearing line number cache due to font change');
     clearLineNumberCache();
@@ -102,6 +110,8 @@ export function applyFontSettings() {
     // ステータスバーのフォントサイズ表示を更新
     updateFontSizeDisplay();
     
+=======
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
     console.log('✅ Font settings applied successfully');
 }
 
@@ -119,190 +129,6 @@ export function showFontSettingsDialog() {
     }
     
     createFontSettingsDialog();
-}
-
-/**
- * フォントサイズ直接指定ダイアログを表示
- */
-export function showFontSizeInputDialog() {
-    console.log('🎨 Opening font size input dialog');
-    closeAllMenus();
-    
-    // 既存のダイアログがあれば削除
-    const existingDialog = document.getElementById('font-size-input-dialog-overlay');
-    if (existingDialog) {
-        document.body.removeChild(existingDialog);
-    }
-    
-    createFontSizeInputDialog();
-}
-
-/**
- * フォントサイズ直接指定ダイアログの作成
- */
-function createFontSizeInputDialog() {
-    const dialogOverlay = document.createElement('div');
-    dialogOverlay.id = 'font-size-input-dialog-overlay';
-    dialogOverlay.className = 'search-dialog-overlay font-size-input-overlay';
-    
-    const dialog = document.createElement('div');
-    dialog.className = 'search-dialog font-size-input-dialog';
-    
-    dialog.innerHTML = `
-        <div class="search-dialog-header">${t('fonts.sizeInput.title')}</div>
-        <div class="search-dialog-content">
-            <div class="search-input-group">
-                <label for="font-size-direct-input">${t('fonts.sizeInput.label')}</label>
-                <div class="font-size-direct-controls">
-                    <input type="number" 
-                           id="font-size-direct-input" 
-                           class="search-input font-size-direct-input"
-                           min="${fontSizeRange.min}" 
-                           max="${fontSizeRange.max}" 
-                           step="${fontSizeRange.step}" 
-                           value="${fontSettings.fontSize}"
-                           placeholder="${t('fonts.sizeInput.placeholder')}">
-                    <span class="font-size-unit">px</span>
-                </div>
-                <div class="font-size-range-info">
-                    ${t('fonts.sizeInput.rangeInfo', { min: fontSizeRange.min, max: fontSizeRange.max })}
-                </div>
-            </div>
-            
-            <div class="font-preview-section">
-                <label>${t('fonts.preview')}</label>
-                <div id="font-size-preview" class="font-preview">
-                    ${t('fonts.previewText')}
-                </div>
-            </div>
-            
-            <div class="search-button-group">
-                <button id="font-size-apply-btn" class="search-button search-button-primary">${t('fonts.buttons.apply')}</button>
-                <button id="font-size-cancel-btn" class="search-button search-button-cancel">${t('fonts.buttons.cancel')}</button>
-            </div>
-        </div>
-    `;
-    
-    dialogOverlay.appendChild(dialog);
-    document.body.appendChild(dialogOverlay);
-    
-    setupFontSizeInputDialogEvents(dialogOverlay);
-    updateFontSizePreview();
-    
-    // 数値入力フィールドにフォーカスを設定
-    setTimeout(() => {
-        const fontSizeInput = document.getElementById('font-size-direct-input');
-        if (fontSizeInput) {
-            fontSizeInput.focus();
-            fontSizeInput.select();
-        }
-    }, 100);
-}
-
-/**
- * フォントサイズ直接入力ダイアログのイベント設定
- */
-function setupFontSizeInputDialogEvents(dialogOverlay) {
-    const fontSizeInput = document.getElementById('font-size-direct-input');
-    const applyBtn = document.getElementById('font-size-apply-btn');
-    const cancelBtn = document.getElementById('font-size-cancel-btn');
-    
-    // 一時的な設定を保存（キャンセル時の復元用）
-    const originalSettings = { ...fontSettings };
-    
-    // フォントサイズ変更時のプレビュー更新
-    fontSizeInput.addEventListener('input', () => {
-        const size = parseInt(fontSizeInput.value);
-        if (size >= fontSizeRange.min && size <= fontSizeRange.max) {
-            fontSettings.fontSize = size;
-            updateFontSizePreview();
-        }
-    });
-    
-    // 適用ボタン
-    applyBtn.addEventListener('click', () => {
-        const size = parseInt(fontSizeInput.value);
-        if (size >= fontSizeRange.min && size <= fontSizeRange.max) {
-            fontSettings.fontSize = size;
-            applyFontSettings();
-            saveFontSettings();
-            closeFontSizeInputDialog(dialogOverlay);
-            console.log('✅ Font size applied:', size);
-        } else {
-            alert(t('fonts.sizeInput.invalidRange', { min: fontSizeRange.min, max: fontSizeRange.max }));
-        }
-    });
-    
-    // キャンセルボタン
-    cancelBtn.addEventListener('click', () => {
-        // 元の設定に戻す
-        fontSettings = originalSettings;
-        closeFontSizeInputDialog(dialogOverlay);
-        console.log('❌ Font size input cancelled');
-    });
-    
-    // Enterキーで適用
-    fontSizeInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            applyBtn.click();
-        } else if (e.key === 'Escape') {
-            e.preventDefault();
-            cancelBtn.click();
-        }
-    });
-    
-    // ESCキーでキャンセル
-    function handleKeyDown(e) {
-        if (e.key === 'Escape') {
-            fontSettings = originalSettings;
-            closeFontSizeInputDialog(dialogOverlay);
-        }
-    }
-    
-    document.addEventListener('keydown', handleKeyDown);
-    
-    // オーバーレイクリックでキャンセル
-    dialogOverlay.addEventListener('click', (e) => {
-        if (e.target === dialogOverlay) {
-            fontSettings = originalSettings;
-            closeFontSizeInputDialog(dialogOverlay);
-        }
-    });
-    
-    // ダイアログクリーンアップ時にイベントリスナーを削除
-    dialogOverlay.addEventListener('remove', () => {
-        document.removeEventListener('keydown', handleKeyDown);
-    });
-}
-
-/**
- * フォントサイズプレビューを更新
- */
-function updateFontSizePreview() {
-    const preview = document.getElementById('font-size-preview');
-    if (preview) {
-        preview.style.fontFamily = fontSettings.fontFamily;
-        preview.style.fontSize = `${fontSettings.fontSize}px`;
-    }
-}
-
-/**
- * フォントサイズ入力ダイアログを閉じる
- */
-function closeFontSizeInputDialog(dialogOverlay) {
-    try {
-        document.body.removeChild(dialogOverlay);
-        
-        // エディタにフォーカスを戻す
-        setTimeout(() => {
-            if (editor && editor.focus) {
-                editor.focus();
-            }
-        }, 100);
-    } catch (error) {
-        console.warn('⚠️ Error closing font size input dialog:', error);
-    }
 }
 
 /**

@@ -22,7 +22,6 @@
   },
   "viewMenu": {
     "fontSettings": "フォント設定",
-    "fontSizeInput": "フォントサイズ指定",
     "increaseFontSize": "フォントサイズを大きく",
     "decreaseFontSize": "フォントサイズを小さく",
     "typewriterMode": "タイプライターモード",
@@ -41,6 +40,7 @@
     "line": "行",
     "column": "列",
     "encoding": "UTF-8",
+<<<<<<< HEAD
     "fontSize": "フォント",
     "charCount": "総文字数",
     "lineCount": "総行数"
@@ -62,6 +62,9 @@
     "messages": {
       "resetConfirm": "ハイライト設定をデフォルトに戻しますか？"
     }
+=======
+    "charCount": "総文字数"
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
   },
   "fonts": {
     "title": "フォント設定",
@@ -69,13 +72,6 @@
     "fontSize": "フォントサイズ",
     "preview": "プレビュー",
     "previewText": "function example() {\n    // 日本語のコメント\n    console.log('Hello, World!');\n    return 42;\n}",
-    "sizeInput": {
-      "title": "フォントサイズ指定",
-      "label": "フォントサイズ",
-      "placeholder": "8-32の数値を入力",
-      "rangeInfo": "指定可能範囲: {min}px ～ {max}px",
-      "invalidRange": "フォントサイズは{min}px～{max}pxの範囲で指定してください"
-    },
     "buttons": {
       "apply": "適用",
       "reset": "リセット",
@@ -190,6 +186,7 @@
   "window": {
     "defaultTitle": "Vinsert - 名前なし",
     "titleFormat": "Vinsert - {filename}"
+<<<<<<< HEAD
   },
   "keyboard": {
     "shortcuts": {
@@ -202,5 +199,7 @@
     "largeFile": "大きなファイル（{lines}行）を読み込んでいます...",
     "optimizing": "表示を最適化中...",
     "ready": "準備完了"
+=======
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
   }
 }

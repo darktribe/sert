@@ -5,8 +5,11 @@
  */
 
 import { editor, currentFilePath, tauriInvoke } from './globals.js';
+<<<<<<< HEAD
 import { getCurrentFontSettings } from './font-settings.js';
 import { centerCurrentLine, isTypewriterModeEnabled, onWindowResize } from './typewriter-mode.js';
+=======
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
 import { t } from './locales.js';
 
 // デバウンス用のタイマー
@@ -567,8 +570,15 @@ export function updateLineNumbers() {
 /**
  * 現在のカーソル位置の論理行番号を取得
  */
+<<<<<<< HEAD
 export function getCurrentLogicalLineNumber() {
     if (!editor) return 1;
+=======
+export function updateStatus() {
+    const cursorPosition = document.getElementById('cursor-position');
+    const charCount = document.getElementById('char-count');
+    const fileEncoding = document.getElementById('file-encoding');
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
     
     const cursorPosition = editor.selectionStart;
     const textBeforeCursor = editor.value.substring(0, cursorPosition);
@@ -603,12 +613,24 @@ export function syncScroll() {
     if (lineNumbers && editor) {
         lineNumbers.scrollTop = editor.scrollTop;
         
+<<<<<<< HEAD
         // スクロール時にハイライト位置も更新
         if (currentLineHighlight.enabled) {
             setTimeout(() => {
                 updateCurrentLineHighlight();
             }, 10);
         }
+=======
+        cursorPosition.textContent = `${t('statusBar.line')}: ${line}, ${t('statusBar.column')}: ${column}`;
+    }
+    
+    if (fileEncoding) {
+        fileEncoding.textContent = t('statusBar.encoding');
+    }
+    
+    if (charCount) {
+        charCount.textContent = `${t('statusBar.charCount')}: ${editor.value.length}`;
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
     }
 }
 
@@ -776,6 +798,7 @@ export async function updateWindowTitle() {
             `Vinsert - ${getFileNameFromPath(currentFilePath)}` : 
             'Vinsert - Untitled';
     }
+<<<<<<< HEAD
 }
 
 /**
@@ -856,4 +879,6 @@ export function debugScrollSync() {
             highlightPosition: position
         });
     }
+=======
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
 }

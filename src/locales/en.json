@@ -22,7 +22,6 @@
   },
   "viewMenu": {
     "fontSettings": "Font Settings",
-    "fontSizeInput": "Font Size Input",
     "increaseFontSize": "Increase Font Size",
     "decreaseFontSize": "Decrease Font Size",
     "typewriterMode": "Typewriter Mode",
@@ -41,6 +40,7 @@
     "line": "Line",
     "column": "Column",
     "encoding": "UTF-8",
+<<<<<<< HEAD
     "fontSize": "Font",
     "charCount": "Character count",
     "lineCount": "Line count"
@@ -62,6 +62,9 @@
     "messages": {
       "resetConfirm": "Reset highlight settings to default?"
     }
+=======
+    "charCount": "Character count"
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
   },
   "fonts": {
     "title": "Font Settings",
@@ -69,13 +72,6 @@
     "fontSize": "Font Size",
     "preview": "Preview",
     "previewText": "function example() {\n    // English comment\n    console.log('Hello, World!');\n    return 42;\n}",
-    "sizeInput": {
-      "title": "Font Size Input",
-      "label": "Font Size",
-      "placeholder": "Enter size 8-32",
-      "rangeInfo": "Valid range: {min}px - {max}px",
-      "invalidRange": "Font size must be between {min}px and {max}px"
-    },
     "buttons": {
       "apply": "Apply",
       "reset": "Reset",
@@ -190,6 +186,7 @@
   "window": {
     "defaultTitle": "Vinsert - Untitled",
     "titleFormat": "Vinsert - {filename}"
+<<<<<<< HEAD
   },
   "keyboard": {
     "shortcuts": {
@@ -202,5 +199,7 @@
     "largeFile": "Loading large file ({lines} lines)...",
     "optimizing": "Optimizing display...",
     "ready": "Ready"
+=======
+>>>>>>> parent of 45241dc (フォントサイズ指定・Tab入力機能追加)
   }
 }
