@@ -309,9 +309,11 @@ export function updateCurrentLineHighlight() {
     } catch (e) {}
     
     if (isTypewriterEnabled) {
-        // タイプライターモード：完全固定位置
+        // タイプライターモード：論理行全体をハイライト
+        const editorStyle = getComputedStyle(editor);
         const editorHeight = editor.clientHeight;
-        const lineHeight = parseFloat(getComputedStyle(editor).lineHeight) || 20;
+        const lineHeight = parseFloat(editorStyle.lineHeight) || 20;
+        const paddingTop = parseFloat(editorStyle.paddingTop) || 0;
         
         let centerPosition = 0.5;
         try {
@@ -320,24 +322,74 @@ export function updateCurrentLineHighlight() {
             }
         } catch (e) {}
         
-        // 画面の固定位置（一切の調整なし）
-        const fixedTop = editorHeight * centerPosition;
+        // 現在のカーソル位置から論理行を計算
+        const cursorPosition = editor.selectionStart;
+        const text = editor.value;
+        const textBeforeCursor = text.substring(0, cursorPosition);
+        const textAfterCursor = text.substring(cursorPosition);
+        
+        // 現在の論理行の開始と終了を特定
+        const lastNewlineIndex = textBeforeCursor.lastIndexOf('\n');
+        const nextNewlineIndex = textAfterCursor.indexOf('\n');
+        const lineStart = lastNewlineIndex + 1;
+        const lineEnd = nextNewlineIndex === -1 ? text.length : cursorPosition + nextNewlineIndex;
+        const currentLineText = text.substring(lineStart, lineEnd);
+        
+        // 論理行が視覚的に何行になるかを計算
+        let visualLineHeight = lineHeight;
+        if (currentLineText !== '') {
+            // 測定用要素で実際の高さを計算
+            const measureDiv = document.createElement('div');
+            measureDiv.style.cssText = `
+                position: absolute;
+                visibility: hidden;
+                top: -9999px;
+                left: -9999px;
+                font-family: ${editorStyle.fontFamily};
+                font-size: ${editorStyle.fontSize};
+                line-height: ${editorStyle.lineHeight};
+                white-space: pre-wrap;
+                overflow-wrap: break-word;
+                word-wrap: break-word;
+                word-break: normal;
+                width: ${editor.clientWidth - parseFloat(editorStyle.paddingLeft) - parseFloat(editorStyle.paddingRight)}px;
+                padding: 0;
+                margin: 0;
+                border: none;
+                box-sizing: border-box;
+            `;
+            measureDiv.textContent = currentLineText;
+            document.body.appendChild(measureDiv);
+            
+            const actualHeight = measureDiv.offsetHeight;
+            visualLineHeight = Math.max(lineHeight, actualHeight);
+            
+            document.body.removeChild(measureDiv);
+        }
+        
+        // タイプライターモードでの中央位置を計算
+        const centerOffset = editorHeight * centerPosition;
+        
+        // ハイライトの表示位置（パディングを考慮）
+        const highlightTop = centerOffset - paddingTop;
         
         if (currentLineHighlight.highlightElement) {
             currentLineHighlight.highlightElement.style.display = 'block';
-            currentLineHighlight.highlightElement.style.top = `${fixedTop}px`;
-            currentLineHighlight.highlightElement.style.height = `${lineHeight}px`;
+            currentLineHighlight.highlightElement.style.top = `${highlightTop}px`;
+            currentLineHighlight.highlightElement.style.height = `${visualLineHeight}px`;
             currentLineHighlight.highlightElement.style.left = '0';
             currentLineHighlight.highlightElement.style.right = '0';
         }
         
         if (currentLineHighlight.highlightElementNumbers) {
             currentLineHighlight.highlightElementNumbers.style.display = 'block';
-            currentLineHighlight.highlightElementNumbers.style.top = `${fixedTop}px`;
-            currentLineHighlight.highlightElementNumbers.style.height = `${lineHeight}px`;
+            currentLineHighlight.highlightElementNumbers.style.top = `${highlightTop}px`;
+            currentLineHighlight.highlightElementNumbers.style.height = `${visualLineHeight}px`;
             currentLineHighlight.highlightElementNumbers.style.left = '0';
             currentLineHighlight.highlightElementNumbers.style.right = '0';
         }
+        
+        currentLineHighlight.lastHighlightedLine = textBeforeCursor.split('\n').length;
         return;
     }
     
