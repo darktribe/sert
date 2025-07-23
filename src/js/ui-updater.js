@@ -5,25 +5,61 @@
  */
 
 import { editor, currentFilePath, tauriInvoke } from './globals.js';
-import { getCurrentFontSettings } from './font-settings.js';  // ← この行を追加
+import { getCurrentFontSettings } from './font-settings.js';
 import { t } from './locales.js';
 
 /**
- * 行番号の更新
+ * 行番号の更新（論理行対応版・行番号は論理行の先頭に表示）
  */
 export function updateLineNumbers() {
     const lineNumbers = document.getElementById('line-numbers');
-    if (!lineNumbers) return;
+    if (!lineNumbers || !editor) return;
     
     const lines = editor.value.split('\n');
     const lineCount = lines.length;
     
-    let lineNumbersContent = '';
-    for (let i = 1; i <= lineCount; i++) {
-        lineNumbersContent += i + '\n';
+    // 各論理行の物理的な高さを計算するための準備
+    const computedStyle = window.getComputedStyle(editor);
+    const lineHeight = parseFloat(computedStyle.lineHeight);
+    const editorWidth = editor.clientWidth - 
+                        parseFloat(computedStyle.paddingLeft) - 
+                        parseFloat(computedStyle.paddingRight);
+    
+    // フォントメトリクスを取得するための一時的なキャンバス
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    context.font = computedStyle.font;
+    
+    // 各行の行番号と高さを計算
+    let lineNumbersHTML = '';
+    let totalHeight = 0;
+    
+    for (let i = 0; i < lineCount; i++) {
+        const lineNumber = i + 1;
+        const lineText = lines[i];
+        
+        // 空行の場合は1行分の高さ
+        if (lineText === '') {
+            lineNumbersHTML += `<div class="line-number" style="height: ${lineHeight}px; line-height: ${lineHeight}px;">${lineNumber}</div>`;
+            totalHeight += lineHeight;
+            continue;
+        }
+        
+        // テキストの幅を計算して何行分になるか判定
+        const textWidth = context.measureText(lineText).width;
+        const wrappedLines = Math.max(1, Math.ceil(textWidth / editorWidth));
+        const lineBlockHeight = wrappedLines * lineHeight;
+        
+        // 行番号要素を作成（行番号は論理行の先頭に配置）
+        lineNumbersHTML += `<div class="line-number" style="height: ${lineBlockHeight}px; line-height: ${lineHeight}px;">${lineNumber}</div>`;
+        totalHeight += lineBlockHeight;
     }
     
-    lineNumbers.textContent = lineNumbersContent;
+    // 行番号をHTMLとして設定
+    lineNumbers.innerHTML = lineNumbersHTML;
+    
+    // スクロール位置を同期
+    syncScroll();
 }
 
 /**
@@ -31,7 +67,7 @@ export function updateLineNumbers() {
  */
 export function syncScroll() {
     const lineNumbers = document.getElementById('line-numbers');
-    if (lineNumbers) {
+    if (lineNumbers && editor) {
         lineNumbers.scrollTop = editor.scrollTop;
     }
 }
@@ -39,12 +75,11 @@ export function syncScroll() {
 /**
  * ステータスバーの更新（多言語化対応）
  */
-// 変更後の updateStatus 関数（フォントサイズ表示を追加）
 export function updateStatus() {
     const cursorPosition = document.getElementById('cursor-position');
     const charCount = document.getElementById('char-count');
     const fileEncoding = document.getElementById('file-encoding');
-    const fontSizeDisplay = document.getElementById('font-size-display');  // ← 追加
+    const fontSizeDisplay = document.getElementById('font-size-display');
     
     if (cursorPosition) {
         const cursorPos = editor.selectionStart;
@@ -64,7 +99,7 @@ export function updateStatus() {
         charCount.textContent = `${t('statusBar.charCount')}: ${editor.value.length}`;
     }
     
-    // フォントサイズ表示の更新（新規追加）
+    // フォントサイズ表示の更新
     if (fontSizeDisplay) {
         const fontSettings = getCurrentFontSettings();
         fontSizeDisplay.textContent = `${t('statusBar.fontSize')}: ${fontSettings.fontSize}px`;

@@ -143,6 +143,7 @@ body, html {
   background-color: #1e1e1e;
 }
 
+/* 行番号表示（論理行対応） */
 .line-numbers {
   background-color: #252526;
   color: #858585;
@@ -153,11 +154,29 @@ body, html {
   text-align: right;
   user-select: none;
   border-right: 1px solid #3e3e40;
-  white-space: pre;
-  overflow: hidden;
+  overflow-y: hidden;
+  overflow-x: hidden;
   min-width: 50px;
   max-width: 80px;
   flex-shrink: 0;
+  
+  /* スクロールバーを非表示にしつつスクロール可能にする */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+/* Webkit系ブラウザのスクロールバー非表示 */
+.line-numbers::-webkit-scrollbar {
+  display: none;
+}
+
+/* 個別の行番号スタイル */
+.line-number {
+  display: block;
+  box-sizing: border-box;
+  text-align: right;
+  padding-right: 8px;
+  vertical-align: top;
 }
 
 /* =====================================================
