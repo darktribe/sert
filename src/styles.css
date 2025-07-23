@@ -1,59 +1,10 @@
 /*
  * =====================================================
- * Sert Editor - スタイルシート（表示折り返し対応版）
+ * Sert Editor - スタイルシート（新機能対応版）
  * =====================================================
  */
 
- :root {
-  /* 基本色 */
-  --bg-primary: #1e1e1e;
-  --bg-secondary: #252526;
-  --bg-tertiary: #2d2d30;
-  --border-color: #3e3e40;
-  --text-primary: #d4d4d4;
-  --text-secondary: #cccccc;
-  --text-muted: #858585;
-  --accent-color: #007acc;
-  
-  /* 現在行ハイライト色（テーマ対応） */
-  --line-highlight-bg: rgba(255, 255, 255, 0.06);
-  --line-highlight-border: rgba(255, 255, 255, 0.12);
-  
-  /* 代替テーマ色（将来のテーマ機能用） */
-  --line-highlight-bg-alt: rgba(0, 122, 204, 0.1);
-  --line-highlight-border-alt: rgba(0, 122, 204, 0.2);
-}
-
-/* ダークテーマ（デフォルト） */
-[data-theme="dark"] {
-  --line-highlight-bg: rgba(255, 255, 255, 0.06);
-  --line-highlight-border: rgba(255, 255, 255, 0.12);
-}
-
-/* ライトテーマ（将来対応） */
-[data-theme="light"] {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f8f8;
-  --bg-tertiary: #f0f0f0;
-  --border-color: #e0e0e0;
-  --text-primary: #333333;
-  --text-secondary: #555555;
-  --text-muted: #777777;
-  --accent-color: #0078d4;
-  
-  --line-highlight-bg: rgba(0, 0, 0, 0.05);
-  --line-highlight-border: rgba(0, 0, 0, 0.1);
-}
-
-/* ブルーテーマ（将来対応） */
-[data-theme="blue"] {
-  --line-highlight-bg: rgba(0, 122, 204, 0.1);
-  --line-highlight-border: rgba(0, 122, 204, 0.2);
-}
-
-/* =====================================================
- 基本設定
- ===================================================== */
+/* 基本設定 */
 * {
   margin: 0;
   padding: 0;
@@ -63,249 +14,12 @@
 body, html {
   height: 100%;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
+  background-color: #1e1e1e;
+  color: #d4d4d4;
   overflow: hidden;
 }
 
-/* =====================================================
- エディタコンテナ
- ===================================================== */
-.editor-container {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  background-color: var(--bg-primary);
-  position: relative;
-  
-  /* すべての子要素のフォント設定を統一 */
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-/* =====================================================
- 行番号（大量行数対応）
- ===================================================== */
-.line-numbers {
-  background-color: var(--bg-secondary);
-  color: var(--text-muted);
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  padding: 10px 8px;
-  text-align: right;
-  user-select: none;
-  border-right: 1px solid var(--border-color);
-  
-  /* 動的幅設定（JavaScriptで制御） */
-  width: 50px;
-  min-width: 50px;
-  max-width: 50px;
-  
-  /* ワードラップを完全に無効化 */
-  white-space: pre;
-  overflow-wrap: normal;
-  word-wrap: normal;
-  word-break: normal;
-  hyphens: none;
-  
-  overflow: hidden;
-  flex-shrink: 0;
-  position: relative;
-  
-  /* スクロール同期の最適化 */
-  scroll-behavior: auto;
-  will-change: scroll-position;
-  
-  /* スクロールバーを非表示 */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
-  
-  /* レンダリング最適化 */
-  contain: layout style;
-  
-  /* フォント設定の強制統一 */
-  font-weight: normal;
-  font-style: normal;
-  text-decoration: none;
-  letter-spacing: normal;
-  word-spacing: normal;
-  text-transform: none;
-  text-indent: 0;
-  text-shadow: none;
-  
-  /* ボックスモデルの統一 */
-  box-sizing: border-box;
-  margin: 0;
-  border-left: none;
-  border-top: none;
-  border-bottom: none;
-  
-  /* パフォーマンス用の変換設定 */
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-}
-
-.line-numbers::-webkit-scrollbar {
-  display: none; /* WebKit */
-}
-
-/* 大量行数対応の幅クラス */
-.line-numbers.width-1000 {
-  width: 65px;
-  min-width: 65px;
-  max-width: 65px;
-}
-
-.line-numbers.width-10000 {
-  width: 80px;
-  min-width: 80px;
-  max-width: 80px;
-}
-
-.line-numbers.width-100000 {
-  width: 95px;
-  min-width: 95px;
-  max-width: 95px;
-}
-
-/* =====================================================
- エディタテキストエリア
- ===================================================== */
-.editor-textarea {
-  flex: 1;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  border: none;
-  outline: none;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  padding: 10px;
-  resize: none;
-  position: relative;
-  
-  /* ワードラップ設定 */
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  word-break: normal;
-  hyphens: none;
-  
-  /* スクロール設定 */
-  overflow-x: hidden;
-  overflow-y: auto;
-  
-  /* Tab文字のサイズ設定 */
-  tab-size: 4;
-  -moz-tab-size: 4;
-  -webkit-tab-size: 4;
-  
-  /* スクロール最適化 */
-  scroll-behavior: auto;
-  will-change: scroll-position;
-  
-  /* レンダリング最適化 */
-  contain: layout style;
-  
-  /* フォント設定の強制統一 */
-  font-weight: normal;
-  font-style: normal;
-  text-decoration: none;
-  letter-spacing: normal;
-  word-spacing: normal;
-  text-transform: none;
-  text-indent: 0;
-  text-shadow: none;
-  
-  /* ボックスモデルの統一 */
-  box-sizing: border-box;
-  margin: 0;
-  border: none;
-  
-  /* パフォーマンス向上 */
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-}
-
-.editor-textarea::placeholder {
-  color: #6a6a6a;
-}
-
-.editor-textarea:focus {
-  outline: none;
-}
-
-/* =====================================================
- 現在行ハイライト機能（JavaScriptで制御される要素）
- ===================================================== */
-
-/* 現在行ハイライト用のオーバーレイ要素 */
-.current-line-highlight {
-  position: absolute;
-  left: 0;
-  right: 0;
-  background-color: var(--line-highlight-bg);
-  border-left: 3px solid var(--line-highlight-border);
-  pointer-events: none;
-  z-index: 1;
-  transition: top 0.15s ease-out, height 0.1s ease-out;
-  border-radius: 0 2px 2px 0;
-}
-
-/* 行番号側のハイライト */
-.current-line-highlight-numbers {
-  position: absolute;
-  left: 0;
-  right: 0;
-  background-color: var(--line-highlight-bg);
-  border-left: 2px solid var(--line-highlight-border);
-  pointer-events: none;
-  z-index: 1;
-  transition: top 0.15s ease-out, height 0.1s ease-out;
-}
-
-/* ハイライト有効時のコンテナスタイル */
-.line-highlight-enabled .editor-container {
-  /* ハイライト表示の準備 */
-}
-
-/* =====================================================
- 現在行ハイライトステータス表示
- ===================================================== */
-.line-highlight-status-message {
-  position: fixed;
-  top: 50px;
-  right: 20px;
-  background-color: var(--accent-color);
-  color: white;
-  padding: 12px 20px;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 14px;
-  font-weight: bold;
-  z-index: 10004;
-  animation: lineHighlightStatusSlideIn 0.3s ease-out;
-  max-width: 300px;
-  word-wrap: break-word;
-}
-
-@keyframes lineHighlightStatusSlideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-/* =====================================================
- メインコンテナ
- ===================================================== */
+/* メインコンテナ */
 .container {
   display: flex;
   flex-direction: column;
@@ -317,8 +31,8 @@ body, html {
  メニューバー
  ===================================================== */
 .menu-bar {
-  background-color: var(--bg-tertiary);
-  border-bottom: 1px solid var(--border-color);
+  background-color: #2d2d30;
+  border-bottom: 1px solid #3e3e40;
   padding: 0;
   display: flex;
   user-select: none;
@@ -331,7 +45,7 @@ body, html {
   padding: 6px 12px;
   cursor: pointer;
   font-size: 14px;
-  color: var(--text-primary);
+  color: #d4d4d4;
   transition: background-color 0.2s;
 }
 
@@ -344,8 +58,8 @@ body, html {
   position: absolute;
   top: 100%;
   left: 0;
-  background-color: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
+  background-color: #2d2d30;
+  border: 1px solid #3e3e40;
   border-top: none;
   min-width: 160px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
@@ -356,7 +70,7 @@ body, html {
   padding: 8px 12px;
   cursor: pointer;
   font-size: 14px;
-  color: var(--text-primary);
+  color: #d4d4d4;
   transition: background-color 0.2s;
 }
 
@@ -366,12 +80,12 @@ body, html {
 
 .menu-separator {
   height: 1px;
-  background-color: var(--border-color);
+  background-color: #3e3e40;
   margin: 4px 0;
 }
 
 /* =====================================================
- ステータスバー（行数表示対応）
+ 言語切り替えUI
  ===================================================== */
 .language-switcher {
   margin-left: auto;
@@ -447,7 +161,7 @@ body, html {
 }
 
 /* =====================================================
- エディタテキストエリア - 表示折り返し対応
+ エディタテキストエリア - Tab入力対応
  ===================================================== */
 .editor-textarea {
   flex: 1;
@@ -461,22 +175,17 @@ body, html {
   padding: 10px;
   resize: none;
   
-  /* 🔧 修正箇所: 表示折り返しの設定 */
-  white-space: pre-wrap;        /* pre から pre-wrap に変更: 改行を保持しつつ画面端で折り返し */
-  overflow-wrap: break-word;    /* normal から break-word に変更: 長い単語も折り返し */
-  word-wrap: break-word;        /* 互換性のため追加 */
-  overflow-x: hidden;           /* auto から hidden に変更: 横スクロールバーを非表示 */
-  overflow-y: auto;             /* 縦スクロールは維持 */
+  /* 表示折り返しの設定 */
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  overflow-x: hidden;
+  overflow-y: auto;
   
+  /* Tab文字のサイズ設定 */
   tab-size: 4;
-}
-
-/* 将来の設定用: 横スクロールモード（現在は未使用） */
-.editor-textarea.horizontal-scroll {
-  white-space: pre;
-  overflow-wrap: normal;
-  word-wrap: normal;
-  overflow-x: auto;
+  -moz-tab-size: 4;
+  -webkit-tab-size: 4;
 }
 
 .editor-textarea::placeholder {
@@ -488,10 +197,10 @@ body, html {
 }
 
 /* =====================================================
- ステータスバー
+ ステータスバー（フォントサイズ表示対応）
  ===================================================== */
 .status-bar {
-  background-color: var(--accent-color);
+  background-color: #007acc;
   color: white;
   padding: 4px 12px;
   font-size: 12px;
@@ -502,8 +211,9 @@ body, html {
   height: 24px;
 }
 
-#cursor-position, #file-encoding, #char-count {
+#cursor-position, #file-encoding, #font-size-display, #char-count {
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  white-space: nowrap;
 }
 
 #file-encoding {
@@ -519,63 +229,8 @@ body, html {
   font-weight: bold;
 }
 
-/* 大量行数表示時の文字数・行数情報 */
-#char-count {
-  font-size: 11px;
-  opacity: 0.9;
-}
-
 /* =====================================================
- 言語切り替えUI
- ===================================================== */
-.language-switcher {
-  margin-left: auto;
-  margin-right: 10px;
-  display: flex;
-  gap: 2px;
-  background-color: #37373d;
-  border-radius: 4px;
-  padding: 2px;
-  align-items: center;
-}
-
-.language-btn {
-  background-color: transparent;
-  border: none;
-  color: var(--text-primary);
-  padding: 4px 8px;
-  border-radius: 2px;
-  cursor: pointer;
-  font-size: 11px;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  transition: background-color 0.2s, color 0.2s;
-  min-width: 28px;
-  font-weight: 500;
-}
-
-.language-btn:hover:not(:disabled) {
-  background-color: #4a4a4a;
-  color: #ffffff;
-}
-
-.language-btn.active {
-  background-color: var(--accent-color);
-  color: white;
-  font-weight: bold;
-}
-
-.language-btn:focus {
-  outline: 1px solid var(--accent-color);
-  outline-offset: 1px;
-}
-
-.language-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* =====================================================
- 検索・置換・その他ダイアログのスタイル
+ 検索・置換ダイアログ
  ===================================================== */
 .search-dialog-overlay {
   position: fixed;
@@ -592,13 +247,13 @@ body, html {
 }
 
 .search-dialog {
-  background-color: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
+  background-color: #2d2d30;
+  border: 1px solid #3e3e40;
   border-radius: 8px;
   min-width: 480px;
   max-width: 600px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  color: var(--text-primary);
+  color: #d4d4d4;
   animation: searchDialogSlideIn 0.2s ease-out;
 }
 
@@ -609,6 +264,16 @@ body, html {
 .message-dialog {
   min-width: 360px;
   max-width: 480px;
+}
+
+/* フォントサイズ入力ダイアログ（新機能） */
+.font-size-input-dialog {
+  min-width: 420px;
+  max-width: 500px;
+}
+
+.font-size-input-overlay {
+  z-index: 10002;
 }
 
 @keyframes searchDialogSlideIn {
@@ -622,83 +287,176 @@ body, html {
   }
 }
 
+.search-dialog-header {
+  background-color: #37373d;
+  padding: 12px 16px;
+  font-size: 16px;
+  font-weight: bold;
+  border-bottom: 1px solid #3e3e40;
+  border-radius: 8px 8px 0 0;
+}
+
+.search-dialog-content {
+  padding: 20px;
+}
+
+.search-input-group {
+  margin-bottom: 16px;
+}
+
+.search-input-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #cccccc;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #3e3e40;
+  border-radius: 4px;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #007acc;
+  box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.3);
+}
+
+.search-input::placeholder {
+  color: #6a6a6a;
+}
+
+.search-checkbox-group {
+  margin-bottom: 16px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.search-checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: #cccccc;
+  white-space: nowrap;
+}
+
+.search-checkbox-label input[type="checkbox"] {
+  margin-right: 8px;
+  width: 16px;
+  height: 16px;
+  accent-color: #007acc;
+}
+
+.search-result-display {
+  background-color: #37373d;
+  border: 1px solid #3e3e40;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #cccccc;
+  margin-bottom: 20px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+.search-button-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.search-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  transition: background-color 0.2s, transform 0.1s;
+  min-width: 80px;
+}
+
+.search-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.search-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.search-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.search-button-primary {
+  background-color: #007acc;
+  color: white;
+}
+
+.search-button-primary:hover:not(:disabled) {
+  background-color: #005a9e;
+}
+
+.search-button-warning {
+  background-color: #ff8c00;
+  color: white;
+}
+
+.search-button-warning:hover:not(:disabled) {
+  background-color: #e67c00;
+}
+
+.search-button-danger {
+  background-color: #d14949;
+  color: white;
+}
+
+.search-button-danger:hover:not(:disabled) {
+  background-color: #b13e3e;
+}
+
+.search-button-cancel {
+  background-color: #5a5a5a;
+  color: white;
+}
+
+.search-button-cancel:hover:not(:disabled) {
+  background-color: #4a4a4a;
+}
+
+.search-button:not(.search-button-primary):not(.search-button-warning):not(.search-button-danger):not(.search-button-cancel) {
+  background-color: #3c3c3c;
+  color: #d4d4d4;
+}
+
+.search-button:not(.search-button-primary):not(.search-button-warning):not(.search-button-danger):not(.search-button-cancel):hover:not(:disabled) {
+  background-color: #4a4a4a;
+}
+
+.message-text {
+  margin-bottom: 20px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #d4d4d4;
+}
+
 /* =====================================================
- デバッグ用スタイル
+ フォント設定ダイアログ
  ===================================================== */
-.debug-line-numbers .line-numbers {
-  border: 2px solid red !important;
-  background-color: rgba(255, 0, 0, 0.1) !important;
+.font-settings-overlay {
+  z-index: 10001;
 }
 
-.debug-line-numbers .editor-textarea {
-  border: 2px solid blue !important;
-  background-color: rgba(0, 0, 255, 0.1) !important;
-}
-
-/* =====================================================
- レスポンシブ対応
- ===================================================== */
-@media (max-width: 768px) {
-  .line-numbers {
-    min-width: 40px;
-    padding: 10px 6px;
-  }
-  
-  .line-numbers.width-1000 {
-    width: 55px;
-    min-width: 55px;
-    max-width: 55px;
-  }
-  
-  .line-numbers.width-10000 {
-    width: 70px;
-    min-width: 70px;
-    max-width: 70px;
-  }
-  
-  .line-numbers.width-100000 {
-    width: 85px;
-    min-width: 85px;
-    max-width: 85px;
-  }
-  
-  .menu-bar {
-    flex-wrap: wrap;
-    height: auto;
-    min-height: 30px;
-  }
-  
-  .language-switcher {
-    margin-left: auto;
-    margin-right: 5px;
-  }
-  
-  .line-highlight-status-message {
-    right: 10px;
-    max-width: calc(100vw - 20px);
-    font-size: 12px;
-  }
-}
-
-/* =====================================================
- パフォーマンス最適化（大量行数対応）
- ===================================================== */
-@media (min-height: 1000px) {
-  /* 大きな画面での最適化 */
-  .line-numbers, .editor-textarea {
-    will-change: scroll-position, transform;
-  }
-}
-
-/* 100,000行以上のファイル用の特別最適化 */
-.large-file .line-numbers,
-.large-file .editor-textarea {
-  contain: strict;
-  will-change: scroll-position;
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-}
-=======
 .font-settings-dialog {
   min-width: 520px;
   max-width: 680px;
@@ -754,5 +512,147 @@ body, html {
   -webkit-appearance: none;
   appearance: none;
   width: 18px;
-  height: 1
+  height: 18px;
+  border-radius: 50%;
+  background: #007acc;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.font-size-slider::-webkit-slider-thumb:hover {
+  background: #005a9e;
+}
+
+.font-size-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #007acc;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s;
+}
+
+.font-size-slider::-moz-range-thumb:hover {
+  background: #005a9e;
+}
+
+.font-size-number {
+  width: 80px;
+  padding: 6px 8px;
+  border: 1px solid #3e3e40;
+  border-radius: 4px;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  text-align: center;
+}
+
+.font-size-number:focus {
+  outline: none;
+  border-color: #007acc;
+  box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.3);
+}
+
+.font-size-unit {
+  color: #cccccc;
+  font-size: 14px;
+  min-width: 20px;
+}
+
+/* フォントサイズ直接入力専用（新機能） */
+.font-size-direct-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.font-size-direct-input {
+  width: 120px !important;
+  text-align: center;
+}
+
+.font-size-range-info {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #888888;
+  font-style: italic;
+}
+
+.font-preview-section {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.font-preview-section label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #cccccc;
+}
+
+.font-preview {
+  background-color: #1e1e1e;
+  border: 1px solid #3e3e40;
+  border-radius: 4px;
+  padding: 12px;
+  min-height: 80px;
+  white-space: pre-wrap;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow: auto;
+}
+
+/* =====================================================
+ レスポンシブ対応
+ ===================================================== */
+@media (max-width: 768px) {
+  .search-dialog {
+    min-width: 90vw;
+    max-width: 95vw;
+    margin: 10px;
+  }
+  
+  .font-settings-dialog {
+    min-width: 90vw;
+    max-width: 95vw;
+  }
+  
+  .font-size-input-dialog {
+    min-width: 90vw;
+    max-width: 95vw;
+  }
+  
+  .font-size-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .font-size-direct-controls {
+    justify-content: center;
+  }
+  
+  .search-button-group {
+    justify-content: center;
+  }
+  
+  .search-checkbox-group {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .menu-bar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 30px;
+  }
+  
+  .language-switcher {
+    margin-left: auto;
+    margin-right: 5px;
+  }
 }

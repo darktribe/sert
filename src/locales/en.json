@@ -22,12 +22,9 @@
   },
   "viewMenu": {
     "fontSettings": "Font Settings",
+    "fontSizeInput": "Font Size Input",
     "increaseFontSize": "Increase Font Size",
-    "decreaseFontSize": "Decrease Font Size",
-    "typewriterMode": "Typewriter Mode",
-    "typewriterSettings": "Typewriter Settings",
-    "lineHighlight": "Current Line Highlight",
-    "lineHighlightSettings": "Highlight Settings"
+    "decreaseFontSize": "Decrease Font Size"
   },
   "searchMenu": {
     "find": "Find",
@@ -41,26 +38,6 @@
     "column": "Column",
     "encoding": "UTF-8",
     "fontSize": "Font",
-    "charCount": "Character count",
-    "lineCount": "Line count"
-  },
-  "lineHighlight": {
-    "title": "Current Line Highlight Settings",
-    "enabled": "Current line highlight enabled",
-    "disabled": "Current line highlight disabled",
-    "enableHighlight": "Highlight current line",
-    "highlightStyle": "Highlight Style",
-    "styleSubtle": "Subtle",
-    "styleNormal": "Normal", 
-    "styleBold": "Bold",
-    "buttons": {
-      "apply": "Apply",
-      "reset": "Reset",
-      "cancel": "Cancel"
-    },
-    "messages": {
-      "resetConfirm": "Reset highlight settings to default?"
-    }
     "charCount": "Character count"
   },
   "fonts": {
@@ -69,6 +46,13 @@
     "fontSize": "Font Size",
     "preview": "Preview",
     "previewText": "function example() {\n    // English comment\n    console.log('Hello, World!');\n    return 42;\n}",
+    "sizeInput": {
+      "title": "Font Size Input",
+      "label": "Font Size",
+      "placeholder": "Enter size 8-32",
+      "rangeInfo": "Valid range: {min}px - {max}px",
+      "invalidRange": "Font size must be between {min}px and {max}px"
+    },
     "buttons": {
       "apply": "Apply",
       "reset": "Reset",
@@ -76,27 +60,6 @@
     },
     "messages": {
       "resetConfirm": "Reset font settings to default?"
-    }
-  },
-  "typewriter": {
-    "settingsTitle": "Typewriter Settings",
-    "enableMode": "Enable Typewriter Mode",
-    "centerPosition": "Cursor Line Position",
-    "positionInfo": "20% = Near top, 50% = Center, 80% = Near bottom",
-    "smoothScroll": "Use Smooth Scroll",
-    "dynamicPadding": "Show Virtual Blank Lines",
-    "scrollOnTyping": "Scroll When Typing",
-    "scrollOnLineChange": "Scroll When Line Changes",
-    "enabled": "Enabled",
-    "disabled": "Disabled",
-    "settingsApplied": "Settings Applied",
-    "testMode": "Test Mode (2 seconds)",
-    "resetConfirm": "Reset typewriter settings to default?",
-    "buttons": {
-      "apply": "Apply",
-      "test": "Test",
-      "reset": "Reset",
-      "cancel": "Cancel"
     }
   },
   "dialogs": {
@@ -190,10 +153,5 @@
       "shiftTab": "Shift+Tab: Remove indent",
       "info": "Press Tab in the editor to insert indentation (tab character). Use Shift+Tab to remove indentation."
     }
-  },
-  "performance": {
-    "largeFile": "Loading large file ({lines} lines)...",
-    "optimizing": "Optimizing display...",
-    "ready": "Ready"
   }
 }

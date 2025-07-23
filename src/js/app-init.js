@@ -1,18 +1,17 @@
 /*
  * =====================================================
- * Vinsert Editor - アプリケーション初期化（多言語化対応版）
+ * Vinsert Editor - アプリケーション初期化（フォントサイズ表示対応版）
  * =====================================================
  */
 
 import { setEditor, setCurrentContent, setTauriInvoke } from './globals.js';
 import { initializeUndoStack } from './undo-redo.js';
-import { updateLineNumbers, updateStatus, updateWindowTitle } from './ui-updater.js';
+import { updateLineNumbers, updateStatus, updateWindowTitle, updateFontSizeDisplay } from './ui-updater.js';
 import { setupEventListeners } from './event-listeners.js';
 import { exitApp } from './app-exit.js';
 import { initializeI18n, t, updateElementText } from './locales.js';
 import { createLanguageSwitcher } from './language-switcher.js';
 import { loadFontSettings } from './font-settings.js';
-import { loadTypewriterSettings } from './typewriter-mode.js';
 
 /**
  * Tauri APIの初期化
@@ -100,19 +99,24 @@ function applyI18nToUI() {
 }
 
 /**
- * ステータスバーの多言語化
+ * ステータスバーの多言語化（フォントサイズ表示対応）
  */
 function updateStatusBarI18n() {
     const cursorPosition = document.getElementById('cursor-position');
     const charCount = document.getElementById('char-count');
+    const fontSizeDisplay = document.getElementById('font-size-display');
     
     if (cursorPosition) {
-        // 論理行・列番号を表示（初期値）
         cursorPosition.textContent = `${t('statusBar.line')}: 1, ${t('statusBar.column')}: 1`;
     }
     
     if (charCount) {
         charCount.textContent = `${t('statusBar.charCount')}: 0`;
+    }
+    
+    if (fontSizeDisplay) {
+        // フォントサイズ表示の初期化（loadFontSettings後に正確な値で更新される）
+        fontSizeDisplay.textContent = `${t('statusBar.fontSize')}: 14px`;
     }
 }
 
@@ -128,6 +132,9 @@ function setupLanguageChangeListener() {
         import('./language-switcher.js').then(module => {
             module.updateLanguageSwitcherState();
         });
+        
+        // フォントサイズ表示も更新
+        updateFontSizeDisplay();
     });
 }
 
@@ -159,13 +166,9 @@ export async function initializeApp() {
     setCurrentContent(editorElement.value);
     initializeUndoStack();
     
-    // フォント設定の初期化（新規追加）
+    // フォント設定の初期化
     console.log('🎨 Initializing font settings...');
     loadFontSettings();
-    
-    // タイプライターモード設定の初期化（新機能）
-    console.log('📝 Initializing typewriter mode settings...');
-    loadTypewriterSettings();
     
     // イベントリスナーを設定
     setupEventListeners();
@@ -181,17 +184,16 @@ export async function initializeApp() {
     createLanguageSwitcher();
     
     // 初期UI更新
-    console.log('📊 Updating initial UI...');
     updateLineNumbers();
     updateStatus();
+    
+    // フォントサイズ表示の初期化
+    console.log('🎨 Initializing font size display...');
+    updateFontSizeDisplay();
     
     // 初期タイトル設定を追加
     console.log('🏷️ Setting initial window title...');
     await updateWindowTitle();
-    
-    // 【重要】行番号の初期化を確実に実行
-    console.log('📊 Initializing line numbers...');
-    initializeLineNumbers();
     
     // カーソルを1行目1列目に設定
     editorElement.setSelectionRange(0, 0);
@@ -199,64 +201,28 @@ export async function initializeApp() {
     
     console.log('App initialization completed');
     
-    // 機能の説明をコンソールに表示
-    console.log('🔧 機能が正常に初期化されました:');
-    console.log('  📊 行番号: 論理行のみ表示（改行文字でのみ増加）');
-    console.log('  🔤 ワードラップ: 視覚的な折り返しのみ（行番号は増加しない）');
-    console.log('  🔍 ステータスバー: 論理行・列番号を表示');
-    console.log('  ⌨️  Tab機能: Tab（インデント追加）、Shift+Tab（インデント削除）');
-    console.log('  🎨 フォント機能: サイズ変更・直接入力・ステータス表示');
-    console.log('  📝 タイプライターモード: 視覚行でスクロール、論理行で行番号表示');
-    
-    // 初期化完了後の確認
-    setTimeout(() => {
-        console.log('🔍 Post-initialization check...');
-        const lineNumbersElement = document.getElementById('line-numbers');
-        const editorElement = document.getElementById('editor');
-        
-        if (lineNumbersElement && editorElement) {
-            console.log('✅ Line numbers element found');
-            console.log('✅ Editor element found');
-            console.log(`📊 Current line numbers content: "${lineNumbersElement.textContent}"`);
-            console.log(`📊 Editor content lines: ${editorElement.value.split('\n').length}`);
-            
-            // 行番号が正しく表示されているか最終確認
-            if (lineNumbersElement.textContent.trim() === '') {
-                console.warn('⚠️ Line numbers are empty, forcing update...');
-                updateLineNumbers();
-            }
-        } else {
-            console.error('❌ Required elements not found');
-        }
-    }, 500);
+    // Tab機能の使用方法をコンソールに表示
+    console.log('🔧 Tab機能が有効になりました:');
+    console.log('  - Tab: インデント追加（タブ文字挿入）');
+    console.log('  - Shift+Tab: インデント削除');
+    console.log('  - 複数行選択してShift+Tab: 選択行全体のインデント削除');
+    console.log('🎨 フォントサイズ表示機能が有効になりました:');
+    console.log('  - ステータスバーに現在のフォントサイズが表示されます');
+    console.log('  - 表示メニュー > フォントサイズ指定で直接数値入力できます');
 }
 
 /**
- * ステータス更新時の多言語化対応（論理行・列番号版）
+ * ステータス更新時の多言語化対応（他のモジュールから呼び出される）
  */
 export function updateStatusI18n(line, column, charCount) {
     const cursorPosition = document.getElementById('cursor-position');
     const charCountElement = document.getElementById('char-count');
     
     if (cursorPosition) {
-        // 論理行・列番号を表示
         cursorPosition.textContent = `${t('statusBar.line')}: ${line}, ${t('statusBar.column')}: ${column}`;
     }
     
     if (charCountElement) {
         charCountElement.textContent = `${t('statusBar.charCount')}: ${charCount}`;
     }
-}
-
-/**
- * リアルタイムステータス更新（論理行・列番号対応）
- */
-export function updateCurrentStatus() {
-    if (!window.editor) return;
-    
-    const logicalLine = getCurrentLogicalLineNumber();
-    const column = getCurrentColumnNumber();
-    const charCount = window.editor.value.length;
-    
-    updateStatusI18n(logicalLine, column, charCount);
 }

@@ -22,12 +22,9 @@
   },
   "viewMenu": {
     "fontSettings": "フォント設定",
+    "fontSizeInput": "フォントサイズ指定",
     "increaseFontSize": "フォントサイズを大きく",
-    "decreaseFontSize": "フォントサイズを小さく",
-    "typewriterMode": "タイプライターモード",
-    "typewriterSettings": "タイプライター設定",
-    "lineHighlight": "現在行ハイライト",
-    "lineHighlightSettings": "ハイライト設定"
+    "decreaseFontSize": "フォントサイズを小さく"
   },
   "searchMenu": {
     "find": "検索",
@@ -41,26 +38,6 @@
     "column": "列",
     "encoding": "UTF-8",
     "fontSize": "フォント",
-    "charCount": "総文字数",
-    "lineCount": "総行数"
-  },
-  "lineHighlight": {
-    "title": "現在行ハイライト設定",
-    "enabled": "現在行ハイライトが有効になりました",
-    "disabled": "現在行ハイライトが無効になりました",
-    "enableHighlight": "現在行をハイライト表示",
-    "highlightStyle": "ハイライトスタイル",
-    "styleSubtle": "控えめ",
-    "styleNormal": "標準", 
-    "styleBold": "強調",
-    "buttons": {
-      "apply": "適用",
-      "reset": "リセット",
-      "cancel": "キャンセル"
-    },
-    "messages": {
-      "resetConfirm": "ハイライト設定をデフォルトに戻しますか？"
-    }
     "charCount": "総文字数"
   },
   "fonts": {
@@ -69,6 +46,13 @@
     "fontSize": "フォントサイズ",
     "preview": "プレビュー",
     "previewText": "function example() {\n    // 日本語のコメント\n    console.log('Hello, World!');\n    return 42;\n}",
+    "sizeInput": {
+      "title": "フォントサイズ指定",
+      "label": "フォントサイズ",
+      "placeholder": "8-32の数値を入力",
+      "rangeInfo": "指定可能範囲: {min}px ～ {max}px",
+      "invalidRange": "フォントサイズは{min}px～{max}pxの範囲で指定してください"
+    },
     "buttons": {
       "apply": "適用",
       "reset": "リセット",
@@ -76,27 +60,6 @@
     },
     "messages": {
       "resetConfirm": "フォント設定をデフォルトに戻しますか？"
-    }
-  },
-  "typewriter": {
-    "settingsTitle": "タイプライター設定",
-    "enableMode": "タイプライターモードを有効にする",
-    "centerPosition": "カーソル行の位置",
-    "positionInfo": "20% = 上寄り、50% = 中央、80% = 下寄り",
-    "smoothScroll": "スムーススクロールを使用",
-    "dynamicPadding": "見せかけの空行を表示",
-    "scrollOnTyping": "文字入力時にスクロール",
-    "scrollOnLineChange": "行変更時にスクロール",
-    "enabled": "有効",
-    "disabled": "無効",
-    "settingsApplied": "設定を適用しました",
-    "testMode": "テストモード（2秒間）",
-    "resetConfirm": "タイプライター設定をデフォルトに戻しますか？",
-    "buttons": {
-      "apply": "適用",
-      "test": "テスト",
-      "reset": "リセット",
-      "cancel": "キャンセル"
     }
   },
   "dialogs": {
@@ -190,10 +153,5 @@
       "shiftTab": "Shift+Tab: インデント削除",
       "info": "エディタ内でTabキーを押すとインデント（タブ文字）が挿入されます。Shift+Tabでインデントを削除できます。"
     }
-  },
-  "performance": {
-    "largeFile": "大きなファイル（{lines}行）を読み込んでいます...",
-    "optimizing": "表示を最適化中...",
-    "ready": "準備完了"
   }
 }

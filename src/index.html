@@ -41,24 +41,15 @@
                 </div>
             </div>
 
-            <!-- 表示メニュー（新規追加） -->
+            <!-- 表示メニュー（フォントサイズ直接指定を追加） -->
             <div class="menu-item" onclick="toggleMenu('view-menu')">
                 <span data-i18n="menu.view">View</span>
                 <div class="dropdown-menu" id="view-menu">
-                    <!-- フォント設定グループ -->
                     <div class="menu-option" onclick="showFontSettingsDialog()" data-i18n="viewMenu.fontSettings">Font Settings</div>
+                    <div class="menu-option" onclick="showFontSizeInputDialog()" data-i18n="viewMenu.fontSizeInput">Font Size Input</div>
                     <div class="menu-separator"></div>
                     <div class="menu-option" onclick="increaseFontSize()" data-i18n="viewMenu.increaseFontSize">Increase Font Size</div>
                     <div class="menu-option" onclick="decreaseFontSize()" data-i18n="viewMenu.decreaseFontSize">Decrease Font Size</div>
-                    <div class="menu-separator"></div>
-                    
-                    <!-- 行ハイライト機能グループ（新機能） -->
-                    <div class="menu-option" onclick="toggleLineHighlight()" data-i18n="viewMenu.lineHighlight">Current Line Highlight</div>
-                    <div class="menu-separator"></div>
-                    
-                    <!-- タイプライターモードグループ -->
-                    <div class="menu-option" onclick="toggleTypewriterMode()" data-i18n="viewMenu.typewriterMode">Typewriter Mode</div>
-                    <div class="menu-option" onclick="showTypewriterSettingsDialog()" data-i18n="viewMenu.typewriterSettings">Typewriter Settings</div>
                 </div>
             </div>
 
@@ -77,7 +68,7 @@
              行番号とテキスト編集領域を含む
              ===================================================== -->
         <div class="editor-container">
-            <!-- 行番号表示（大量行数対応） -->
+            <!-- 行番号表示 -->
             <div class="line-numbers" id="line-numbers">1</div>
             
             <!-- メインテキストエディタ -->
@@ -91,12 +82,13 @@
         </div>
 
         <!-- =====================================================
-             ステータスバー
-             カーソル位置と文字数を表示
+             ステータスバー（フォントサイズ表示を追加）
+             カーソル位置、フォントサイズ、文字数を表示
              ===================================================== -->
         <div class="status-bar">
             <span id="cursor-position">Line: 1, Column: 1</span>
             <span id="file-encoding" data-i18n="statusBar.encoding">UTF-8</span>
+            <span id="font-size-display">フォント: 14px</span>
             <span id="char-count">Character count: 0</span>
         </div>
     </div>

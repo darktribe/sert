@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - IME（日本語入力）処理（真のタイプライターモード対応版）
+ * Vinsert Editor - IME（日本語入力）処理
  * =====================================================
  */
 
@@ -20,7 +20,6 @@ import {
     setJustFinishedComposition
 } from './globals.js';
 import { updateLineNumbers, updateStatus } from './ui-updater.js';
-import { onCompositionStart, onCompositionEnd, onInputEvent } from './typewriter-mode.js';
 
 /**
  * IME変換開始時の処理
@@ -31,23 +30,13 @@ export function handleCompositionStart(e) {
     
     setCompositionStartContent(editor.value);
     setCompositionStartCursor(editor.selectionStart);
-    
-    // タイプライターモードにIME開始を通知
-    onCompositionStart();
-    
-    console.log('📝 IME composition started at position:', editor.selectionStart);
 }
 
 /**
  * IME変換中の処理
  */
 export function handleCompositionUpdate(e) {
-    console.log('📝 IME composition updating:', e.data);
-    
-    // 変換中でもタイプライターモードを適用（行が変わった場合）
-    setTimeout(() => {
-        onInputEvent();
-    }, 5);
+    // 変換中の表示更新
 }
 
 /**
@@ -56,11 +45,6 @@ export function handleCompositionUpdate(e) {
  */
 export function handleCompositionEnd(e) {
     setIsComposing(false);
-    
-    console.log('📝 IME composition ended with data:', e.data);
-    
-    // タイプライターモードにIME終了を通知
-    onCompositionEnd();
     
     setTimeout(() => {
         const newContent = editor.value;
@@ -101,10 +85,6 @@ export function handleCompositionEnd(e) {
             setTimeout(() => {
                 setJustFinishedComposition(false);
             }, 100);
-            
-            console.log('📝 IME composition confirmed and saved to history');
-        } else {
-            console.log('📝 IME composition cancelled or no change');
         }
     }, 10);
 }

@@ -22,10 +22,9 @@
   },
   "viewMenu": {
     "fontSettings": "Paramètres de police",
+    "fontSizeInput": "Saisie de taille de police",
     "increaseFontSize": "Augmenter la taille de police",
-    "decreaseFontSize": "Diminuer la taille de police",
-    "typewriterMode": "Mode Machine à écrire",
-    "typewriterSettings": "Paramètres Machine à écrire"
+    "decreaseFontSize": "Diminuer la taille de police"
   },
   "searchMenu": {
     "find": "Rechercher",
@@ -38,6 +37,7 @@
     "line": "Ligne",
     "column": "Colonne",
     "encoding": "UTF-8",
+    "fontSize": "Police",
     "charCount": "Nombre de caractères"
   },
   "fonts": {
@@ -46,6 +46,13 @@
     "fontSize": "Taille de police",
     "preview": "Aperçu",
     "previewText": "function exemple() {\n    // Commentaire français\n    console.log('Bonjour, le monde!');\n    return 42;\n}",
+    "sizeInput": {
+      "title": "Saisie de taille de police",
+      "label": "Taille de police",
+      "placeholder": "Saisir taille 8-32",
+      "rangeInfo": "Plage valide : {min}px - {max}px",
+      "invalidRange": "La taille de police doit être entre {min}px et {max}px"
+    },
     "buttons": {
       "apply": "Appliquer",
       "reset": "Réinitialiser",
@@ -53,27 +60,6 @@
     },
     "messages": {
       "resetConfirm": "Réinitialiser les paramètres de police par défaut ?"
-    }
-  },
-  "typewriter": {
-    "settingsTitle": "Paramètres Machine à écrire",
-    "enableMode": "Activer le mode Machine à écrire",
-    "centerPosition": "Position de la ligne du curseur",
-    "positionInfo": "20% = Près du haut, 50% = Centre, 80% = Près du bas",
-    "smoothScroll": "Utiliser le défilement fluide",
-    "dynamicPadding": "Afficher les lignes vides virtuelles",
-    "scrollOnTyping": "Défiler lors de la saisie",
-    "scrollOnLineChange": "Défiler lors du changement de ligne",
-    "enabled": "Activé",
-    "disabled": "Désactivé",
-    "settingsApplied": "Paramètres appliqués",
-    "testMode": "Mode test (2 secondes)",
-    "resetConfirm": "Réinitialiser les paramètres de machine à écrire par défaut ?",
-    "buttons": {
-      "apply": "Appliquer",
-      "test": "Tester",
-      "reset": "Réinitialiser",
-      "cancel": "Annuler"
     }
   },
   "dialogs": {
@@ -160,5 +146,12 @@
   "window": {
     "defaultTitle": "Vinsert - Sans titre",
     "titleFormat": "Vinsert - {filename}"
+  },
+  "keyboard": {
+    "shortcuts": {
+      "tab": "Tab : Ajouter une indentation",
+      "shiftTab": "Shift+Tab : Supprimer l'indentation",
+      "info": "Appuyez sur Tab dans l'éditeur pour insérer une indentation (caractère de tabulation). Utilisez Shift+Tab pour supprimer l'indentation."
+    }
   }
 }
