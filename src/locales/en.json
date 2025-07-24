@@ -25,7 +25,8 @@
     "fontSizeInput": "Font Size Input",
     "increaseFontSize": "Increase Font Size",
     "decreaseFontSize": "Decrease Font Size",
-    "lineHighlight": "Line Highlight"
+    "lineHighlight": "Line Highlight",
+    "typewriterMode": "Typewriter Mode"
   },
   "searchMenu": {
     "find": "Find",

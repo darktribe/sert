@@ -25,7 +25,8 @@
     "fontSizeInput": "フォントサイズ指定",
     "increaseFontSize": "フォントサイズを大きく",
     "decreaseFontSize": "フォントサイズを小さく",
-    "lineHighlight": "行ハイライト"
+    "lineHighlight": "行ハイライト",
+    "typewriterMode": "タイプライターモード"
   },
   "searchMenu": {
     "find": "検索",

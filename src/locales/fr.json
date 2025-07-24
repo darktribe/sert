@@ -25,7 +25,8 @@
     "fontSizeInput": "Saisie de taille de police",
     "increaseFontSize": "Augmenter la taille de police",
     "decreaseFontSize": "Diminuer la taille de police",
-    "lineHighlight": "Surbrillance de ligne"
+    "lineHighlight": "Surbrillance de ligne",
+    "typewriterMode": "Mode machine à écrire"
   },
   "searchMenu": {
     "find": "Rechercher",

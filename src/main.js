@@ -15,6 +15,7 @@ import { exitApp } from './js/app-exit.js';
 import { createLanguageSwitcher, removeLanguageSwitcher, reinitializeLanguageSwitcher } from './js/language-switcher.js';
 import { changeLanguage, getCurrentLanguage, getAvailableLanguages } from './js/locales.js';
 import { toggleLineHighlight } from './js/line-highlight.js';
+import { toggleTypewriterMode, initTypewriterMode } from './js/typewriter-mode.js';
 
 
 // グローバル関数をウィンドウオブジェクトに登録（HTMLから呼び出せるようにするため）
@@ -36,7 +37,7 @@ window.showSearchDialog = showSearchDialog;
 window.showReplaceDialog = showReplaceDialog;
 window.exitApp = exitApp;
 window.toggleLineHighlight = toggleLineHighlight;
-
+window.toggleTypewriterMode = toggleTypewriterMode;
 
 // フォント設定機能（新機能追加）
 window.showFontSettingsDialog = showFontSettingsDialog;
@@ -182,6 +183,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('🔍 Final check - window.changeLanguage:', typeof window.changeLanguage);
     
     await initializeApp();
+    // タイプライターモードの初期化
+    initTypewriterMode();
     
     console.log('🎯 App ready! Global functions available:');
     console.log('- window.saveFile():', typeof window.saveFile);

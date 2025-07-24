@@ -15,6 +15,9 @@ export function updateLineNumbers() {
     const lineNumbers = document.getElementById('line-numbers');
     if (!lineNumbers || !editor) return;
     
+    // グローバルに公開（タイプライターモードから呼び出せるように）
+    window.updateLineNumbers = updateLineNumbers;
+       
     const lines = editor.value.split('\n');
     const lineCount = lines.length;
     
