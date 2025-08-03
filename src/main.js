@@ -12,7 +12,7 @@ import { copy, cut, paste, selectAll } from './js/edit-operations.js';
 import { showSearchDialog, showReplaceDialog, findNext, findPrevious } from './js/search-replace.js';
 import { showFontSettingsDialog, showFontSizeInputDialog, increaseFontSize, decreaseFontSize } from './js/font-settings.js';
 import { exitApp } from './js/app-exit.js';
-import { createLanguageSwitcher, removeLanguageSwitcher, reinitializeLanguageSwitcher } from './js/language-switcher.js';
+import { createLanguageSwitcher, removeLanguageSwitcher, reinitializeLanguageSwitcher, refreshLanguages } from './js/language-switcher.js';
 import { changeLanguage, getCurrentLanguage, getAvailableLanguages } from './js/locales.js';
 import { toggleLineHighlight } from './js/line-highlight.js';
 import { toggleTypewriterMode, initTypewriterMode } from './js/typewriter-mode.js';
@@ -49,6 +49,7 @@ window.decreaseFontSize = decreaseFontSize;
 window.createLanguageSwitcher = createLanguageSwitcher;
 window.removeLanguageSwitcher = removeLanguageSwitcher;
 window.reinitializeLanguageSwitcher = reinitializeLanguageSwitcher;
+window.refreshLanguages = refreshLanguages;
 window.changeLanguage = changeLanguage;
 window.getCurrentLanguage = getCurrentLanguage;
 window.getAvailableLanguages = getAvailableLanguages;
@@ -83,6 +84,109 @@ console.log('window.createLanguageSwitcher:', typeof window.createLanguageSwitch
 console.log('window.changeLanguage:', typeof window.changeLanguage);
 console.log('window.getCurrentLanguage:', typeof window.getCurrentLanguage);
 console.log('window.getAvailableLanguages:', typeof window.getAvailableLanguages);
+
+// 新しい言語システムのテスト用デバッグ関数を追加
+window.testNewLanguageSystem = async function() {
+    console.log('🧪 Testing new language system (fallback mode)...');
+    
+    const { getLocalesDirectoryPath, getAvailableLanguages, getCurrentLanguage, getSystemInfo } = await import('./js/locales.js');
+    
+    const systemInfo = getSystemInfo();
+    console.log('📁 Locales directory:', getLocalesDirectoryPath());
+    console.log('🌐 Available languages:', getAvailableLanguages());
+    console.log('🎯 Current language:', getCurrentLanguage());
+    console.log('🔍 System info:', systemInfo);
+    
+    // 言語切り替えテスト
+    const languages = getAvailableLanguages();
+    for (const lang of languages) {
+        console.log(`🌐 Testing switch to ${lang.nativeName} (${lang.code})`);
+        try {
+            const success = await window.changeLanguage(lang.code);
+            console.log(`✅ Switch to ${lang.code}:`, success);
+            
+            // 少し待機して次の言語へ
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error) {
+            console.error(`❌ Failed to switch to ${lang.code}:`, error);
+        }
+    }
+    
+    console.log('🧪 Language system test completed');
+};
+
+window.refreshLanguageFiles = async function() {
+    console.log('🔄 Refreshing language files (fallback system)...');
+    
+    const { refreshLanguages } = await import('./js/language-switcher.js');
+    await refreshLanguages();
+    
+    console.log('✅ Language files refreshed');
+};
+
+// 言語ファイル管理用デバッグ関数
+window.showLanguageInfo = async function() {
+    const { getLocalesDirectoryPath, getAvailableLanguages, getCurrentLanguage, getSystemInfo } = await import('./js/locales.js');
+    
+    const systemInfo = getSystemInfo();
+    const info = {
+        directory: getLocalesDirectoryPath(),
+        current: getCurrentLanguage(),
+        available: getAvailableLanguages(),
+        count: getAvailableLanguages().length,
+        systemInfo: systemInfo
+    };
+    
+    console.log('🌐 Language System Info:', info);
+    
+    const alertText = `Language System Info:
+Directory: ${info.directory}
+Current: ${info.current}
+Available: ${info.count} languages
+System: ${info.systemInfo.isExternalSystemEnabled ? 'External' : 'Fallback'}
+Language Data: ${info.systemInfo.hasLanguageData ? 'Loaded' : 'Not loaded'}
+
+Languages:
+${info.available.map(l => `- ${l.nativeName} (${l.code})`).join('\n')}
+
+Note: Currently using fallback system with built-in language data.
+External file system will be implemented in future updates.`;
+    
+    alert(alertText);
+    
+    return info;
+};
+
+// フォールバックシステム専用テスト関数
+window.testFallbackLanguageSystem = function() {
+    console.log('🧪 Testing fallback language system...');
+    
+    const currentLang = window.getCurrentLanguage();
+    const availableLanguages = window.getAvailableLanguages();
+    
+    console.log('Current language:', currentLang);
+    console.log('Available languages:', availableLanguages);
+    
+    // 翻訳テスト
+    const testKeys = [
+        'menu.file',
+        'editor.placeholder',
+        'statusBar.line',
+        'window.defaultTitle'
+    ];
+    
+    testKeys.forEach(key => {
+        try {
+            const { t } = require('./js/locales.js');
+            const translation = t(key);
+            console.log(`Translation test: ${key} -> ${translation}`);
+        } catch (error) {
+            console.error(`Translation error for ${key}:`, error);
+        }
+    });
+    
+    console.log('✅ Fallback system test completed');
+};
 
 // 新機能のテスト用デバッグ関数を追加
 window.testFontSizeInput = function() {
@@ -147,28 +251,6 @@ window.testFontSettings = function() {
     }
 };
 
-// 言語切り替えテスト用デバッグ関数を追加
-window.testLanguageSwitching = async function() {
-    console.log('🧪 Testing language switching...');
-    const languages = window.getAvailableLanguages();
-    console.log('Available languages:', languages);
-    
-    for (const lang of languages) {
-        console.log(`🌐 Testing switch to ${lang.name} (${lang.code})`);
-        try {
-            const success = await window.changeLanguage(lang.code);
-            console.log(`✅ Switch to ${lang.code}:`, success);
-            
-            // 少し待機して次の言語へ
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        } catch (error) {
-            console.error(`❌ Failed to switch to ${lang.code}:`, error);
-        }
-    }
-    
-    console.log('🧪 Language switching test completed');
-};
-
 /**
  * ページ読み込み時の初期化処理
  */
@@ -195,10 +277,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('- window.showFontSettingsDialog():', typeof window.showFontSettingsDialog);
     console.log('- window.showFontSizeInputDialog():', typeof window.showFontSizeInputDialog);
     console.log('- window.changeLanguage():', typeof window.changeLanguage);
-    console.log('- window.testLanguageSwitching():', typeof window.testLanguageSwitching);
+    console.log('- window.testNewLanguageSystem():', typeof window.testNewLanguageSystem);
+    console.log('- window.showLanguageInfo():', typeof window.showLanguageInfo);
+    console.log('- window.refreshLanguageFiles():', typeof window.refreshLanguageFiles);
     console.log('- window.testFontSettings():', typeof window.testFontSettings);
     console.log('- window.testFontSizeInput():', typeof window.testFontSizeInput);
     console.log('- window.testTabFeature():', typeof window.testTabFeature);
+    console.log('- window.testFallbackLanguageSystem():', typeof window.testFallbackLanguageSystem);
+    console.log('');
+    console.log('🌐 Language System Status:');
+    console.log('  - Currently using: Fallback system (built-in language data)');
+    console.log('  - Available languages: Japanese (ja), English (en)');
+    console.log('  - External file system: Will be implemented in future updates');
+    console.log('  - To test: window.showLanguageInfo()');
+    console.log('  - To switch language: Use the select box in the top-right corner');
 });
 
 /**
@@ -238,6 +330,7 @@ setTimeout(() => {
     window.showFontSizeInputDialog = showFontSizeInputDialog;  // 新機能
     window.increaseFontSize = increaseFontSize;
     window.decreaseFontSize = decreaseFontSize;
+    window.refreshLanguages = refreshLanguages;
     window.changeLanguage = changeLanguage;
     window.createLanguageSwitcher = createLanguageSwitcher;
     

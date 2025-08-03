@@ -75,19 +75,27 @@ function applyI18nToUI() {
     try {
         // data-i18n属性を持つ要素を更新
         const i18nElements = document.querySelectorAll('[data-i18n]');
+        console.log(`🔍 Found ${i18nElements.length} elements with data-i18n`);
+        
         i18nElements.forEach(element => {
             const key = element.getAttribute('data-i18n');
             if (key) {
-                element.textContent = t(key);
+                const translatedText = t(key);
+                element.textContent = translatedText;
+                console.log(`🌐 Updated element: ${key} -> ${translatedText}`);
             }
         });
         
         // data-i18n-placeholder属性を持つ要素のplaceholderを更新
         const placeholderElements = document.querySelectorAll('[data-i18n-placeholder]');
+        console.log(`🔍 Found ${placeholderElements.length} elements with data-i18n-placeholder`);
+        
         placeholderElements.forEach(element => {
             const key = element.getAttribute('data-i18n-placeholder');
             if (key) {
-                element.placeholder = t(key);
+                const translatedText = t(key);
+                element.placeholder = translatedText;
+                console.log(`🌐 Updated placeholder: ${key} -> ${translatedText}`);
             }
         });
         
@@ -127,7 +135,10 @@ function updateStatusBarI18n() {
  */
 function setupLanguageChangeListener() {
     window.addEventListener('languageChanged', (event) => {
-        console.log('🌐 Language changed, updating UI...');
+        console.log('🌐 Language changed event received, updating UI...');
+        console.log('🎯 New language:', event.detail?.language);
+        
+        // UI更新を実行
         applyI18nToUI();
         
         // 言語切り替えUIの状態も更新
@@ -137,6 +148,8 @@ function setupLanguageChangeListener() {
         
         // フォントサイズ表示も更新
         updateFontSizeDisplay();
+        
+        console.log('✅ UI updated for new language');
     });
 }
 
@@ -186,7 +199,7 @@ export async function initializeApp() {
     // UIに多言語化を適用
     applyI18nToUI();
     
-    // 言語切り替えUIを作成
+    // 言語切り替えUIを作成（多言語化システム初期化後）
     console.log('🌐 Creating language switcher...');
     createLanguageSwitcher();
     

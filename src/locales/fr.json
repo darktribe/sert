@@ -1,4 +1,10 @@
 {
+  "_meta": {
+    "code": "fr",
+    "name": "French",
+    "nativeName": "Français",
+    "version": "1.0.0"
+  },
   "menu": {
     "file": "Fichier",
     "edit": "Édition",

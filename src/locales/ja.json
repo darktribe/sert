@@ -1,4 +1,10 @@
 {
+  "_meta": {
+    "code": "ja",
+    "name": "日本語",
+    "nativeName": "日本語",
+    "version": "1.0.0"
+  },
   "menu": {
     "file": "ファイル",
     "edit": "編集",
