@@ -40,7 +40,8 @@
     "column": "Column",
     "encoding": "UTF-8",
     "fontSize": "Font",
-    "charCount": "Character count"
+    "charCount": "Character count",
+    "selectionCount": "Selection"
   },
   "fonts": {
     "title": "Font Settings",

@@ -40,7 +40,8 @@
     "column": "列",
     "encoding": "UTF-8",
     "fontSize": "フォント",
-    "charCount": "総文字数"
+    "charCount": "総文字数",
+    "selectionCount": "選択中"
   },
   "fonts": {
     "title": "フォント設定",

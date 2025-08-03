@@ -40,7 +40,8 @@
     "column": "Colonne",
     "encoding": "UTF-8",
     "fontSize": "Police",
-    "charCount": "Nombre de caractères"
+    "charCount": "Nombre de caractères",
+    "selectionCount": "Sélection"
   },
   "fonts": {
     "title": "Paramètres de police",
