@@ -534,6 +534,8 @@ export function getCurrentLanguage() {
  * 利用可能な言語一覧を取得
  */
 export function getAvailableLanguages() {
+    console.log('🔍 getAvailableLanguages called, external system:', isExternalSystemEnabled);
+    console.log('🔍 Available languages:', availableLanguages);
     return [...availableLanguages];
 }
 
@@ -641,8 +643,9 @@ export async function changeLanguage(languageCode) {
 export async function initializeI18n() {
     console.log('🌐 Initializing i18n system...');
     
-    // まずフォールバックシステムを確実に初期化
+    // まずフォールバックシステムを確実に初期化（外部システムが失敗した場合の備え）
     initializeFallbackSystem();
+    console.log('🔄 Fallback system initialized as backup');
     
     // 外部ファイルシステムを試行（バックグラウンドで）
     try {
@@ -724,6 +727,8 @@ export async function tryExternalFileSystem() {
         isExternalSystemEnabled = true;
         console.log('✅ External file system initialized successfully');
         console.log('🔍 External system status:', isExternalSystemEnabled);
+        console.log('🔍 Available languages count:', availableLanguages.length);
+        console.log('🔍 Languages:', availableLanguages.map(l => `${l.nativeName} (${l.code})`));
         console.log('🗂️ Config directory should be at:', configDirectory);
         console.log('🗂️ Locales directory should be at:', localesDirectory);
         
@@ -788,7 +793,7 @@ async function loadExternalLanguages() {
             entry.name.endsWith('.json') && !entry.isDirectory
         );
         
-        availableLanguages = [];
+        const externalLanguages = [];
         
         for (const file of jsonFiles) {
             try {
@@ -797,7 +802,7 @@ async function loadExternalLanguages() {
                 const langData = JSON.parse(content);
                 
                 if (langData._meta && langData._meta.code) {
-                    availableLanguages.push({
+                    externalLanguages.push({
                         code: langData._meta.code,
                         name: langData._meta.name || langData._meta.code,
                         nativeName: langData._meta.nativeName || langData._meta.name || langData._meta.code,
@@ -809,7 +814,18 @@ async function loadExternalLanguages() {
             }
         }
         
-        console.log('🌐 External languages loaded:', availableLanguages);
+        if (externalLanguages.length > 0) {
+            // 外部言語ファイルが見つかった場合は外部のみを使用
+            availableLanguages = externalLanguages;
+            console.log('🌐 External languages loaded (internal fallback ignored):', availableLanguages);
+        } else {
+            // 外部言語ファイルがない場合はフォールバックを使用
+            availableLanguages = [
+                { code: 'ja', name: '日本語', nativeName: '日本語', version: '1.0.0' },
+                { code: 'en', name: 'English', nativeName: 'English', version: '1.0.0' }
+            ];
+            console.log('🌐 Using fallback languages (no external files found):', availableLanguages);
+        }
         
     } catch (error) {
         console.error('❌ Failed to load external languages:', error);
