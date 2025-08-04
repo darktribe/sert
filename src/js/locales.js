@@ -11,6 +11,13 @@ let availableLanguages = [];
 let localesDirectory = null;
 let isExternalSystemEnabled = false;
 
+// デバッグ用：アプリ起動時に必ずフラグをリセット
+function resetExternalSystemFlag() {
+    isExternalSystemEnabled = false;
+    console.log('🔄 External system flag reset to false');
+}
+let configDirectory = null;
+
 // ハードコードされた完全な言語データ（フォールバック用）
 const FALLBACK_LANGUAGES = {
     ja: {
@@ -282,19 +289,26 @@ const FALLBACK_LANGUAGES = {
 /**
  * OS固有の設定ディレクトリを取得してlocalesフォルダのパスを構築
  */
-async function getLocalesDirectory() {
+/**
+ * OS固有の設定ディレクトリを取得
+ */
+/**
+ * OS固有の設定ディレクトリを取得
+ */
+async function getConfigDirectory() {
     try {
         if (window.__TAURI__ && window.__TAURI__.path) {
             const { appDataDir, join } = window.__TAURI__.path;
-            
-            // アプリデータディレクトリを取得
             const appData = await appDataDir();
+            // アプリ専用のサブディレクトリを作成
+            const appConfigDir = await join(appData, 'vinsert');
+            console.log('📁 Config directory path:', appConfigDir);
             
-            // localesディレクトリのパスを構築
-            const localesPath = await join(appData, 'locales');
+            // 実際のパスを確認するためのデバッグログ
+            console.log('🔍 Debug - App data dir:', appData);
+            console.log('🔍 Debug - Final config dir:', appConfigDir);
             
-            console.log('🌐 Locales directory path:', localesPath);
-            return localesPath;
+            return appConfigDir;
         } else {
             throw new Error('Tauri path API not available');
         }
@@ -305,27 +319,121 @@ async function getLocalesDirectory() {
 }
 
 /**
+ * OS固有の設定ディレクトリを取得してlocalesフォルダのパスを構築
+ */
+async function getLocalesDirectory() {
+    try {
+        if (window.__TAURI__ && window.__TAURI__.path) {
+            const { join } = window.__TAURI__.path;
+            
+            if (!configDirectory) {
+                configDirectory = await getConfigDirectory();
+            }
+            
+            if (!configDirectory) {
+                throw new Error('Config directory not available');
+            }
+            
+            // localesディレクトリのパスを構築
+            const localesPath = await join(configDirectory, 'locale');
+            
+            console.log('🌐 Locales directory path:', localesPath);
+            return localesPath;
+        } else {
+            throw new Error('Tauri path API not available');
+        }
+    } catch (error) {
+        console.warn('⚠️ Could not get locales directory:', error);
+        return null;
+    }
+}
+
+/**
+ * localesディレクトリを作成（存在しない場合）
+ */
+/**
+ * 設定ディレクトリを作成（存在しない場合）
+ */
+async function ensureConfigDirectory() {
+    try {
+        if (!configDirectory || !window.__TAURI__?.fs) {
+            console.error('❌ Config directory or Tauri FS not available');
+            return false;
+        }
+
+        const { exists, mkdir } = window.__TAURI__.fs;
+        
+        console.log('🔍 Checking config directory exists:', configDirectory);
+        const dirExists = await exists(configDirectory);
+        console.log('📁 Config directory exists:', dirExists);
+        
+        if (!dirExists) {
+            console.log('📁 Creating config directory:', configDirectory);
+            
+            // 親ディレクトリも含めて再帰的に作成
+            await mkdir(configDirectory, { 
+                recursive: true,
+                mode: 0o755
+            });
+            
+            // 作成確認
+            const createdExists = await exists(configDirectory);
+            console.log('✅ Config directory created successfully:', createdExists);
+            
+            // Finderで確認できるように絶対パスをログ出力
+            console.log('🗂️ FOLDER LOCATION FOR FINDER:', configDirectory);
+            console.log('🗂️ Please check this path in Finder');
+            
+            if (!createdExists) {
+                throw new Error('Directory creation appeared to succeed but directory still does not exist');
+            }
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('❌ Failed to create config directory:', error);
+        console.error('❌ Error details:', error.message);
+        return false;
+    }
+}
+
+/**
  * localesディレクトリを作成（存在しない場合）
  */
 async function ensureLocalesDirectory() {
     try {
         if (!localesDirectory || !window.__TAURI__?.fs) {
+            console.error('❌ Locales directory or Tauri FS not available');
             return false;
         }
 
-        const { exists, createDir } = window.__TAURI__.fs;
+        const { exists, mkdir } = window.__TAURI__.fs;
         
-        // ディレクトリが存在するかチェック
+        console.log('🔍 Checking locales directory exists:', localesDirectory);
         const dirExists = await exists(localesDirectory);
+        console.log('📁 Locales directory exists:', dirExists);
         
         if (!dirExists) {
             console.log('📁 Creating locales directory:', localesDirectory);
-            await createDir(localesDirectory, { recursive: true });
+            
+            await mkdir(localesDirectory, { 
+                recursive: true,
+                mode: 0o755
+            });
+            
+            // 作成確認
+            const createdExists = await exists(localesDirectory);
+            console.log('✅ Locales directory created successfully:', createdExists);
+            
+            if (!createdExists) {
+                throw new Error('Directory creation appeared to succeed but directory still does not exist');
+            }
         }
         
         return true;
     } catch (error) {
         console.error('❌ Failed to create locales directory:', error);
+        console.error('❌ Error details:', error.message);
         return false;
     }
 }
@@ -482,25 +590,44 @@ export function saveLanguageToStorage(language) {
 /**
  * 言語を変更してUIを更新
  */
+/**
+ * 言語を変更してUIを更新
+ */
 export async function changeLanguage(languageCode) {
     console.log(`🌐 Changing language to: ${languageCode}`);
     
-    // フォールバックシステムの言語データから選択
-    if (FALLBACK_LANGUAGES[languageCode]) {
+    let langData = null;
+    let langInfo = null;
+    
+    // 外部システムが有効な場合は外部ファイルから読み込み
+    if (isExternalSystemEnabled) {
+        langData = await loadLanguageFromFile(languageCode);
+        const langMeta = availableLanguages.find(l => l.code === languageCode);
+        if (langMeta) {
+            langInfo = langMeta;
+        }
+    }
+    
+    // 外部ファイルが読み込めない場合はフォールバックを使用
+    if (!langData && FALLBACK_LANGUAGES[languageCode]) {
         const selectedLang = FALLBACK_LANGUAGES[languageCode];
-        const { _meta, ...langData } = selectedLang;
-        
+        const { _meta, ...fallbackData } = selectedLang;
+        langData = fallbackData;
+        langInfo = _meta;
+    }
+    
+    if (langData && langInfo) {
         languageData = langData;
-        currentLanguage = _meta.code;
+        currentLanguage = langInfo.code;
         
         saveLanguageToStorage(languageCode);
         
         // UI更新イベントを発火
         window.dispatchEvent(new CustomEvent('languageChanged', {
-            detail: { language: languageCode, languageInfo: _meta }
+            detail: { language: languageCode, languageInfo: langInfo }
         }));
         
-        console.log(`✅ Language changed to: ${_meta.name} (${languageCode})`);
+        console.log(`✅ Language changed to: ${langInfo.name} (${languageCode})`);
         return true;
     } else {
         console.error(`❌ Language not found: ${languageCode}`);
@@ -531,14 +658,187 @@ export async function initializeI18n() {
 /**
  * 外部ファイルシステムを試行
  */
-async function tryExternalFileSystem() {
-    // まだ外部システムが有効でない場合のみ試行
-    if (isExternalSystemEnabled) {
+/**
+ * 外部ファイルシステムを初期化
+ */
+/**
+ * 外部ファイルシステムを初期化
+ */
+/**
+ * 外部ファイルシステムを安全に初期化（失敗してもアプリは継続）
+ */
+export async function tryExternalFileSystem() {
+    // 必ずフラグをリセットしてから開始
+    resetExternalSystemFlag();
+    
+    console.log('🔍 tryExternalFileSystem called - forcing folder creation check');
+    console.log('🔍 isExternalSystemEnabled after reset:', isExternalSystemEnabled);
+    
+    // デバッグ用：常にフォルダ作成処理を実行
+    console.log('🔍 tryExternalFileSystem called - forcing folder creation check');
+    console.log('🔍 isExternalSystemEnabled before:', isExternalSystemEnabled);
+    
+    // フラグに関係なく、フォルダの存在確認と作成を実行
+    // if (isExternalSystemEnabled) {
+    //     console.log('⚠️ External system already enabled, skipping');
+    //     return;
+    // }
+    
+    try {
+        console.log('📂 Initializing external file system...');
+        console.log('🔍 Checking Tauri APIs...');
+        console.log('🔍 window.__TAURI__:', !!window.__TAURI__);
+        console.log('🔍 window.__TAURI__.path:', !!window.__TAURI__?.path);
+        console.log('🔍 window.__TAURI__.fs:', !!window.__TAURI__?.fs);
+        
+        // 設定ディレクトリを取得・作成
+        console.log('🔍 Getting config directory...');
+        configDirectory = await getConfigDirectory();
+        console.log('📁 Config directory path:', configDirectory);
+        if (!configDirectory) {
+            throw new Error('Config directory not available');
+        }
+        
+        console.log('🔍 Ensuring config directory exists...');
+        const configCreated = await ensureConfigDirectory();
+        console.log('📁 Config directory creation result:', configCreated);
+        if (!configCreated) {
+            throw new Error(`設定ファイル保存場所（${configDirectory}）が開けませんでした`);
+        }
+        console.log('✅ Config directory confirmed');
+        
+        // localesディレクトリを取得・作成
+        localesDirectory = await getLocalesDirectory();
+        if (!localesDirectory) {
+            throw new Error('Locales directory not available');
+        }
+        
+        await ensureLocalesDirectory();
+        
+        // 言語ファイルを作成
+        await createLanguageFiles();
+        
+        // 外部言語ファイルを読み込み
+        await loadExternalLanguages();
+        
+        isExternalSystemEnabled = true;
+        console.log('✅ External file system initialized successfully');
+        console.log('🔍 External system status:', isExternalSystemEnabled);
+        console.log('🗂️ Config directory should be at:', configDirectory);
+        console.log('🗂️ Locales directory should be at:', localesDirectory);
+        
+    } catch (error) {
+        console.error('❌ External file system initialization failed:', error);
+        
+        // フォールバックシステムで継続（alertは表示しない）
+        console.log('🔄 Falling back to internal language system');
+        isExternalSystemEnabled = false;
+        
+        // エラーの詳細をコンソールに記録
+        if (error.message.includes('が開けませんでした')) {
+            console.error('📁 Directory creation failed:', error.message);
+            console.log('💡 The app will continue using built-in language data');
+        }
+        
+        return false;
+    }
+}
+
+/**
+ * 言語ファイルを作成
+ */
+async function createLanguageFiles() {
+    if (!window.__TAURI__?.fs || !localesDirectory) {
         return;
     }
     
-    // この機能は将来の実装用
-    console.log('📂 External file system will be implemented in future updates');
+    const { exists, writeTextFile } = window.__TAURI__.fs;
+    const { join } = window.__TAURI__.path;
+    
+    for (const [langCode, langData] of Object.entries(FALLBACK_LANGUAGES)) {
+        try {
+            const filePath = await join(localesDirectory, `${langCode}.json`);
+            const fileExists = await exists(filePath);
+            
+            if (!fileExists) {
+                console.log(`📝 Creating language file: ${langCode}.json`);
+                await writeTextFile(filePath, JSON.stringify(langData, null, 2));
+            }
+        } catch (error) {
+            console.error(`❌ Failed to create ${langCode}.json:`, error);
+        }
+    }
+}
+
+/**
+ * 外部言語ファイルを読み込み
+ */
+async function loadExternalLanguages() {
+    if (!window.__TAURI__?.fs || !localesDirectory) {
+        return;
+    }
+    
+    try {
+        const { readDir, readTextFile } = window.__TAURI__.fs;
+        const { join } = window.__TAURI__.path;
+        
+        // localeディレクトリの内容を読み取り
+        const entries = await readDir(localesDirectory);
+        const jsonFiles = entries.filter(entry => 
+            entry.name.endsWith('.json') && !entry.isDirectory
+        );
+        
+        availableLanguages = [];
+        
+        for (const file of jsonFiles) {
+            try {
+                const filePath = await join(localesDirectory, file.name);
+                const content = await readTextFile(filePath);
+                const langData = JSON.parse(content);
+                
+                if (langData._meta && langData._meta.code) {
+                    availableLanguages.push({
+                        code: langData._meta.code,
+                        name: langData._meta.name || langData._meta.code,
+                        nativeName: langData._meta.nativeName || langData._meta.name || langData._meta.code,
+                        version: langData._meta.version || '1.0.0'
+                    });
+                }
+            } catch (error) {
+                console.error(`❌ Failed to load language file ${file.name}:`, error);
+            }
+        }
+        
+        console.log('🌐 External languages loaded:', availableLanguages);
+        
+    } catch (error) {
+        console.error('❌ Failed to load external languages:', error);
+        throw error;
+    }
+}
+
+/**
+ * 外部言語ファイルから言語データを読み込み
+ */
+async function loadLanguageFromFile(languageCode) {
+    if (!window.__TAURI__?.fs || !localesDirectory) {
+        return null;
+    }
+    
+    try {
+        const { readTextFile } = window.__TAURI__.fs;
+        const { join } = window.__TAURI__.path;
+        const filePath = await join(localesDirectory, `${languageCode}.json`);
+        const content = await readTextFile(filePath);
+        const langData = JSON.parse(content);
+        
+        const { _meta, ...actualLangData } = langData;
+        return actualLangData;
+        
+    } catch (error) {
+        console.error(`❌ Failed to load language file ${languageCode}.json:`, error);
+        return null;
+    }
 }
 
 /**

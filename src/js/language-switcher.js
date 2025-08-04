@@ -132,6 +132,15 @@ ${getAvailableLanguages().map(l => `- ${l.nativeName} (${l.code})`).join('\n')}`
     // メニューバーに追加
     menuBar.appendChild(languageSwitcher);
     
+    // セレクトボックスが開かれるたびに言語リストを更新
+    languageSelect.addEventListener('focus', async () => {
+        await refreshLanguageOptions(languageSelect);
+    });
+    
+    languageSelect.addEventListener('click', async () => {
+        await refreshLanguageOptions(languageSelect);
+    });
+    
     // イベントリスナーを設定
     setupLanguageSwitcherEvents(languageSelect);
     
@@ -246,6 +255,47 @@ export function updateLanguageSwitcherState() {
     }
     
     console.log('✅ Language switcher state updated');
+}
+
+/**
+ * 言語オプションを動的に更新
+ */
+async function refreshLanguageOptions(languageSelect) {
+    try {
+        console.log('🔄 Refreshing language options...');
+        
+        // 外部言語ファイルを再読み込み
+        const { loadExternalLanguages } = await import('./locales.js');
+        if (typeof loadExternalLanguages === 'function') {
+            await loadExternalLanguages();
+        }
+        
+        const { getAvailableLanguages, getCurrentLanguage } = await import('./locales.js');
+        const availableLanguages = getAvailableLanguages();
+        const currentLang = getCurrentLanguage();
+        
+        // 既存のオプションをクリア
+        languageSelect.innerHTML = '';
+        
+        // 新しいオプションを追加
+        availableLanguages.forEach(lang => {
+            const option = document.createElement('option');
+            option.value = lang.code;
+            option.textContent = `${lang.nativeName} (${lang.code.toUpperCase()})`;
+            option.title = `${lang.name} - ${lang.nativeName}`;
+            
+            if (lang.code === currentLang) {
+                option.selected = true;
+            }
+            
+            languageSelect.appendChild(option);
+        });
+        
+        console.log('✅ Language options refreshed');
+        
+    } catch (error) {
+        console.error('❌ Failed to refresh language options:', error);
+    }
 }
 
 /**

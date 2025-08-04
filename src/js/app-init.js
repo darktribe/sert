@@ -168,6 +168,21 @@ export async function initializeApp() {
     
     await initializeTauri();
     
+    // 外部ファイルシステムの初期化を試行
+    try {
+        console.log('🌐 Starting external file system initialization...');
+        console.log('🔍 Importing locales module...');
+        const localesModule = await import('./locales.js');
+        console.log('✅ Locales module imported successfully');
+        console.log('🔍 Calling tryExternalFileSystem...');
+        await localesModule.tryExternalFileSystem();
+        console.log('✅ External file system initialization completed');
+    } catch (error) {
+        console.error('❌ External file system initialization failed:', error);
+        console.warn('⚠️ Using fallback system - app will continue normally');
+        // エラーがあってもフォールバックシステムで続行
+    }
+    
     const editorElement = document.getElementById('editor');
     if (!editorElement) {
         console.error('Editor element not found');
@@ -192,6 +207,17 @@ export async function initializeApp() {
     
     // イベントリスナーを設定
     setupEventListeners();
+    
+    // 外部ファイルシステムの初期化を試行
+    console.log('🌐 Starting external file system initialization...');
+    try {
+        const { tryExternalFileSystem } = await import('./locales.js');
+        await tryExternalFileSystem();
+        console.log('✅ External file system initialization completed');
+    } catch (error) {
+        console.error('❌ External file system initialization failed:', error);
+        console.warn('⚠️ Using fallback system');
+    }
     
     // 言語変更イベントリスナーを設定
     setupLanguageChangeListener();

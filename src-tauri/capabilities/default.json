@@ -15,6 +15,17 @@
     "dialog:default",
     "fs:allow-read-text-file",
     "fs:allow-write-text-file",
+    "fs:allow-exists",
+    "fs:allow-mkdir",
+    "fs:allow-read-dir",
+    "fs:allow-create",
+    "fs:allow-write-file",
+    "fs:allow-read-file",
+    "fs:scope-appdata",
+    "fs:scope-appdata-recursive",
+    "fs:allow-appdata-write-recursive",
+    "fs:allow-appdata-read-recursive",
+    "fs:allow-appdata-meta-recursive",
     "fs:default"
   ]
 }
