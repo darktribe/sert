@@ -69,16 +69,78 @@ const FALLBACK_LANGUAGES = {
         },
         fonts: {
             title: 'フォント設定',
+            fontFamily: 'フォントファミリ',
+            fontSize: 'フォントサイズ',
+            preview: 'プレビュー',
+            previewText: 'function example() {\n    // 日本語のコメント\n    console.log(\'Hello, World!\');\n    return 42;\n}',
+            sizeInput: {
+                title: 'フォントサイズ指定',
+                label: 'フォントサイズ',
+                placeholder: '8-32の数値を入力',
+                rangeInfo: '指定可能範囲: {min}px ～ {max}px',
+                invalidRange: 'フォントサイズは{min}px～{max}pxの範囲で指定してください'
+            },
             buttons: {
                 apply: '適用',
                 reset: 'リセット',
                 cancel: 'キャンセル'
+            },
+            messages: {
+                resetConfirm: 'フォント設定をデフォルトに戻しますか？'
+            }
+        },
+        search: {
+            searchTitle: '検索',
+            replaceTitle: '置換',
+            searchLabel: '検索文字:',
+            searchPlaceholder: '検索する文字列を入力',
+            replaceSearchLabel: '置換するテキスト:',
+            replaceSearchPlaceholder: '置換するテキストを入力',
+            replaceLabel: '置換後のテキスト:',
+            replacePlaceholder: '置換後のテキストを入力',
+            useRegex: '正規表現',
+            caseSensitive: '大文字小文字を区別',
+            resultCount: '結果: {count}件',
+            resultPosition: '結果: {total}件 {current}/{total}',
+            buttons: {
+                search: '検索',
+                replace: '置換',
+                next: '次へ',
+                previous: '前へ',
+                replaceAll: 'すべて置換',
+                clear: 'クリア',
+                close: '閉じる'
+            },
+            messages: {
+                noSearchText: '検索する文字列を入力して下さい',
+                noReplaceText: '置換するテキストと置換後のテキストを入力して下さい',
+                noResults: '検索結果：0件',
+                noTarget: '置換する対象が選択されていません。次へ・前へで選択して下さい',
+                noMatches: '置換する対象がありません',
+                replaceAllComplete: '全{count}件を置換しました',
+                regexError: '正規表現に問題があります。正規表現でなくその文字自体を検索したい場合、正規表現のチェックを外して下さい。'
             }
         },
         dialogs: {
             newFile: {
                 title: '内容に変更があります',
                 message: '保存せずに新規作成すると、変更内容は失われます。',
+                saveAndNew: '保存して新規作成',
+                newWithoutSaving: '保存せずに新規作成',
+                cancel: 'キャンセル'
+            },
+            openFile: {
+                title: '内容に変更があります',
+                message: '保存せずにファイルを開くと、変更内容は失われます。',
+                saveAndOpen: '保存してから開く',
+                openWithoutSaving: '保存せずに開く',
+                cancel: 'キャンセル'
+            },
+            exit: {
+                title: '内容に変更があります',
+                message: '保存せずに終了すると、変更内容は失われます。',
+                saveAndExit: '保存して終了',
+                exitWithoutSaving: '保存せずに終了',
                 cancel: 'キャンセル'
             }
         }
@@ -139,16 +201,78 @@ const FALLBACK_LANGUAGES = {
         },
         fonts: {
             title: 'Font Settings',
+            fontFamily: 'Font Family',
+            fontSize: 'Font Size',
+            preview: 'Preview',
+            previewText: 'function example() {\n    // English comment\n    console.log(\'Hello, World!\');\n    return 42;\n}',
+            sizeInput: {
+                title: 'Font Size Input',
+                label: 'Font Size',
+                placeholder: 'Enter size 8-32',
+                rangeInfo: 'Valid range: {min}px - {max}px',
+                invalidRange: 'Font size must be between {min}px and {max}px'
+            },
             buttons: {
                 apply: 'Apply',
                 reset: 'Reset',
                 cancel: 'Cancel'
+            },
+            messages: {
+                resetConfirm: 'Reset font settings to default?'
+            }
+        },
+        search: {
+            searchTitle: 'Search',
+            replaceTitle: 'Replace',
+            searchLabel: 'Search for:',
+            searchPlaceholder: 'Enter text to search',
+            replaceSearchLabel: 'Text to replace:',
+            replaceSearchPlaceholder: 'Enter text to replace',
+            replaceLabel: 'Replace with:',
+            replacePlaceholder: 'Enter replacement text',
+            useRegex: 'Regular Expression',
+            caseSensitive: 'Case Sensitive',
+            resultCount: 'Results: {count}',
+            resultPosition: 'Results: {total} ({current}/{total})',
+            buttons: {
+                search: 'Search',
+                replace: 'Replace',
+                next: 'Next',
+                previous: 'Previous',
+                replaceAll: 'Replace All',
+                clear: 'Clear',
+                close: 'Close'
+            },
+            messages: {
+                noSearchText: 'Please enter text to search for',
+                noReplaceText: 'Please enter both search text and replacement text',
+                noResults: 'No results found',
+                noTarget: 'No target selected for replacement. Use Next/Previous to select',
+                noMatches: 'No matches to replace',
+                replaceAllComplete: 'Replaced all {count} matches',
+                regexError: 'Regular expression error. If you want to search for these characters literally, uncheck Regular Expression.'
             }
         },
         dialogs: {
             newFile: {
                 title: 'Unsaved Changes',
                 message: 'Creating a new file without saving will lose your changes.',
+                saveAndNew: 'Save and New',
+                newWithoutSaving: 'New Without Saving',
+                cancel: 'Cancel'
+            },
+            openFile: {
+                title: 'Unsaved Changes',
+                message: 'Opening a file without saving will lose your changes.',
+                saveAndOpen: 'Save and Open',
+                openWithoutSaving: 'Open Without Saving',
+                cancel: 'Cancel'
+            },
+            exit: {
+                title: 'Unsaved Changes',
+                message: 'Exiting without saving will lose your changes.',
+                saveAndExit: 'Save and Exit',
+                exitWithoutSaving: 'Exit Without Saving',
                 cancel: 'Cancel'
             }
         }
