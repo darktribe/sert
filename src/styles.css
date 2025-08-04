@@ -63,7 +63,7 @@ body, html {
   border-top: none;
   min-width: 160px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
+  z-index: 10005;
 }
 
 .menu-option {
@@ -103,15 +103,14 @@ body, html {
 /* =====================================================
  言語切り替えUI
  ===================================================== */
-.language-switcher {
+ .language-switcher {
   margin-left: auto;
   margin-right: 10px;
   display: flex;
-  gap: 2px;
-  background-color: #37373d;
-  border-radius: 4px;
-  padding: 2px;
   align-items: center;
+  gap: 4px;
+  z-index: 100;
+  position: relative;
 }
 
 .language-btn {
