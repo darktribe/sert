@@ -283,6 +283,138 @@ const FALLBACK_LANGUAGES = {
                 cancel: 'Cancel'
             }
         }
+    },
+    fr: {
+        _meta: { code: 'fr', name: 'French', nativeName: 'Français', version: '1.0.0' },
+        menu: {
+            file: 'Fichier',
+            edit: 'Édition',
+            view: 'Affichage',
+            search: 'Recherche'
+        },
+        fileMenu: {
+            new: 'Nouveau',
+            open: 'Ouvrir',
+            save: 'Enregistrer',
+            saveAs: 'Enregistrer sous',
+            exit: 'Quitter'
+        },
+        editMenu: {
+            undo: 'Annuler',
+            redo: 'Rétablir',
+            cut: 'Couper',
+            copy: 'Copier',
+            paste: 'Coller',
+            selectAll: 'Tout sélectionner'
+        },
+        viewMenu: {
+            fontSettings: 'Paramètres de police',
+            fontSizeInput: 'Saisie de taille de police',
+            increaseFontSize: 'Augmenter la taille de police',
+            decreaseFontSize: 'Diminuer la taille de police',
+            lineHighlight: 'Surbrillance de ligne',
+            typewriterMode: 'Mode machine à écrire'
+        },
+        searchMenu: {
+            find: 'Rechercher',
+            replace: 'Remplacer'
+        },
+        editor: {
+            placeholder: 'Veuillez saisir votre texte ici...'
+        },
+        statusBar: {
+            line: 'Ligne',
+            column: 'Colonne',
+            encoding: 'UTF-8',
+            fontSize: 'Police',
+            charCount: 'Nombre de caractères',
+            selectionCount: 'Sélection'
+        },
+        fonts: {
+            title: 'Paramètres de police',
+            fontFamily: 'Famille de police',
+            fontSize: 'Taille de police',
+            preview: 'Aperçu',
+            previewText: 'function exemple() {\n    // Commentaire français\n    console.log(\'Bonjour, le monde!\');\n    return 42;\n}',
+            sizeInput: {
+                title: 'Saisie de taille de police',
+                label: 'Taille de police',
+                placeholder: 'Saisir taille 8-32',
+                rangeInfo: 'Plage valide : {min}px - {max}px',
+                invalidRange: 'La taille de police doit être entre {min}px et {max}px'
+            },
+            buttons: {
+                apply: 'Appliquer',
+                reset: 'Réinitialiser',
+                cancel: 'Annuler'
+            },
+            messages: {
+                resetConfirm: 'Réinitialiser les paramètres de police par défaut ?'
+            }
+        },
+        search: {
+            searchTitle: 'Recherche',
+            replaceTitle: 'Remplacer',
+            searchLabel: 'Rechercher :',
+            searchPlaceholder: 'Saisir le texte à rechercher',
+            replaceSearchLabel: 'Texte à remplacer :',
+            replaceSearchPlaceholder: 'Saisir le texte à remplacer',
+            replaceLabel: 'Remplacer par :',
+            replacePlaceholder: 'Saisir le texte de remplacement',
+            useRegex: 'Expression régulière',
+            caseSensitive: 'Sensible à la casse',
+            resultCount: 'Résultats : {count}',
+            resultPosition: 'Résultats : {total} ({current}/{total})',
+            buttons: {
+                search: 'Rechercher',
+                replace: 'Remplacer',
+                next: 'Suivant',
+                previous: 'Précédent',
+                replaceAll: 'Tout remplacer',
+                clear: 'Effacer',
+                close: 'Fermer'
+            },
+            messages: {
+                noSearchText: 'Veuillez saisir un texte à rechercher',
+                noReplaceText: 'Veuillez saisir le texte à rechercher et le texte de remplacement',
+                noResults: 'Aucun résultat trouvé',
+                noTarget: 'Aucune cible sélectionnée pour le remplacement',
+                noMatches: 'Aucune correspondance à remplacer',
+                replaceAllComplete: 'Toutes les {count} correspondances ont été remplacées',
+                regexError: 'Erreur d\'expression régulière'
+            }
+        },
+        dialogs: {
+            newFile: {
+                title: 'Modifications non sauvegardées',
+                message: 'Créer un nouveau fichier sans sauvegarder fera perdre vos modifications.',
+                saveAndNew: 'Sauvegarder et nouveau',
+                newWithoutSaving: 'Nouveau sans sauvegarder',
+                cancel: 'Annuler'
+            },
+            openFile: {
+                title: 'Modifications non sauvegardées',
+                message: 'Ouvrir un fichier sans sauvegarder fera perdre vos modifications.',
+                saveAndOpen: 'Sauvegarder et ouvrir',
+                openWithoutSaving: 'Ouvrir sans sauvegarder',
+                cancel: 'Annuler'
+            },
+            exit: {
+                title: 'Modifications non sauvegardées',
+                message: 'Quitter sans sauvegarder fera perdre vos modifications.',
+                saveAndExit: 'Sauvegarder et quitter',
+                exitWithoutSaving: 'Quitter sans sauvegarder',
+                cancel: 'Annuler'
+            }
+        },
+        window: {
+            defaultTitle: 'Vinsert - Sans titre',
+            titleFormat: 'Vinsert - {filename}'
+        },
+        messages: {
+            messageTitle: 'Message',
+            ok: 'OK'
+        }
     }
 };
 
@@ -778,8 +910,14 @@ async function createLanguageFiles() {
 /**
  * 外部言語ファイルを読み込み
  */
-async function loadExternalLanguages() {
+/**
+ * 外部言語ファイルを読み込み（常に最新のディスク内容を読み込み）
+ */
+export async function loadExternalLanguages() {
+    console.log('🔍 loadExternalLanguages called - scanning disk for latest files');
+    
     if (!window.__TAURI__?.fs || !localesDirectory) {
+        console.log('⚠️ Tauri FS or localesDirectory not available');
         return;
     }
     
@@ -818,6 +956,7 @@ async function loadExternalLanguages() {
             // 外部言語ファイルが見つかった場合は外部のみを使用
             availableLanguages = externalLanguages;
             console.log('🌐 External languages loaded (internal fallback ignored):', availableLanguages);
+            console.log('📊 Language files found:', externalLanguages.length);
         } else {
             // 外部言語ファイルがない場合はフォールバックを使用
             availableLanguages = [
@@ -825,6 +964,7 @@ async function loadExternalLanguages() {
                 { code: 'en', name: 'English', nativeName: 'English', version: '1.0.0' }
             ];
             console.log('🌐 Using fallback languages (no external files found):', availableLanguages);
+            console.log('📊 Using fallback with 2 languages');
         }
         
     } catch (error) {

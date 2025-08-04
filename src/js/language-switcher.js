@@ -260,19 +260,29 @@ export function updateLanguageSwitcherState() {
 /**
  * 言語オプションを動的に更新
  */
+/**
+ * 言語オプションを動的に更新（localeフォルダを再スキャン）
+ */
 async function refreshLanguageOptions(languageSelect) {
     try {
         console.log('🔄 Refreshing language options...');
+        console.log('📁 Re-scanning locale directory for latest files...');
         
-        // 外部言語ファイルを再読み込み
-        const { loadExternalLanguages } = await import('./locales.js');
-        if (typeof loadExternalLanguages === 'function') {
-            await loadExternalLanguages();
+        // localeフォルダを再スキャンして最新の言語ファイルを読み込み
+        const localesModule = await import('./locales.js');
+        
+        // 外部言語ファイルを強制的に再読み込み
+        if (typeof localesModule.loadExternalLanguages === 'function') {
+            console.log('🔍 Calling loadExternalLanguages to refresh from disk...');
+            await localesModule.loadExternalLanguages();
         }
         
-        const { getAvailableLanguages, getCurrentLanguage } = await import('./locales.js');
-        const availableLanguages = getAvailableLanguages();
-        const currentLang = getCurrentLanguage();
+        // 最新の言語リストを取得
+        const availableLanguages = localesModule.getAvailableLanguages();
+        const currentLang = localesModule.getCurrentLanguage();
+        
+        console.log('🌐 Latest available languages:', availableLanguages);
+        console.log('🎯 Current language:', currentLang);
         
         // 既存のオプションをクリア
         languageSelect.innerHTML = '';
@@ -291,10 +301,11 @@ async function refreshLanguageOptions(languageSelect) {
             languageSelect.appendChild(option);
         });
         
-        console.log('✅ Language options refreshed');
+        console.log(`✅ Language options refreshed with ${availableLanguages.length} languages`);
         
     } catch (error) {
         console.error('❌ Failed to refresh language options:', error);
+        console.error('❌ Error details:', error.message);
     }
 }
 
