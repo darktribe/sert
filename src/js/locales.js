@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - 多言語化システム（確実なフォールバック版）
+ * Vinsert Editor - 多言語化システム（テーマ機能対応版）
  * =====================================================
  */
 
@@ -26,7 +26,8 @@ const FALLBACK_LANGUAGES = {
             file: 'ファイル',
             edit: '編集', 
             view: '表示',
-            search: '検索'
+            search: '検索',
+            extensions: '機能拡張'
         },
         fileMenu: {
             new: '新規作成',
@@ -54,6 +55,10 @@ const FALLBACK_LANGUAGES = {
         searchMenu: {
             find: '検索',
             replace: '置換'
+        },
+        extensionsMenu: {
+            languageSettings: '言語設定',
+            theme: 'テーマ'
         },
         editor: {
             placeholder: 'ここにテキストを入力してください...'
@@ -94,6 +99,15 @@ const FALLBACK_LANGUAGES = {
             },
             messages: {
                 resetConfirm: 'フォント設定をデフォルトに戻しますか？'
+            }
+        },
+        theme: {
+            title: 'テーマ設定',
+            selectLabel: 'テーマを選択',
+            preview: 'プレビュー',
+            buttons: {
+                apply: '適用',
+                cancel: 'キャンセル'
             }
         },
         search: {
@@ -158,7 +172,8 @@ const FALLBACK_LANGUAGES = {
             file: 'File',
             edit: 'Edit',
             view: 'View', 
-            search: 'Search'
+            search: 'Search',
+            extensions: 'Extensions'
         },
         fileMenu: {
             new: 'New',
@@ -186,6 +201,10 @@ const FALLBACK_LANGUAGES = {
         searchMenu: {
             find: 'Find',
             replace: 'Replace'
+        },
+        extensionsMenu: {
+            languageSettings: 'Language Settings',
+            theme: 'Theme'
         },
         editor: {
             placeholder: 'Please enter text here...'
@@ -226,6 +245,15 @@ const FALLBACK_LANGUAGES = {
             },
             messages: {
                 resetConfirm: 'Reset font settings to default?'
+            }
+        },
+        theme: {
+            title: 'Theme Settings',
+            selectLabel: 'Select Theme',
+            preview: 'Preview',
+            buttons: {
+                apply: 'Apply',
+                cancel: 'Cancel'
             }
         },
         search: {
@@ -290,7 +318,8 @@ const FALLBACK_LANGUAGES = {
             file: 'Fichier',
             edit: 'Édition',
             view: 'Affichage',
-            search: 'Recherche'
+            search: 'Recherche',
+            extensions: 'Extensions'
         },
         fileMenu: {
             new: 'Nouveau',
@@ -318,6 +347,10 @@ const FALLBACK_LANGUAGES = {
         searchMenu: {
             find: 'Rechercher',
             replace: 'Remplacer'
+        },
+        extensionsMenu: {
+            languageSettings: 'Paramètres de langue',
+            theme: 'Thème'
         },
         editor: {
             placeholder: 'Veuillez saisir votre texte ici...'
@@ -350,6 +383,15 @@ const FALLBACK_LANGUAGES = {
             },
             messages: {
                 resetConfirm: 'Réinitialiser les paramètres de police par défaut ?'
+            }
+        },
+        theme: {
+            title: 'Paramètres de thème',
+            selectLabel: 'Sélectionner un thème',
+            preview: 'Aperçu',
+            buttons: {
+                apply: 'Appliquer',
+                cancel: 'Annuler'
             }
         },
         search: {

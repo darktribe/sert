@@ -15,6 +15,7 @@ import { exitApp } from './js/app-exit.js';
 import { createLanguageSwitcher, removeLanguageSwitcher, reinitializeLanguageSwitcher, refreshLanguages } from './js/language-switcher.js';
 import { changeLanguage, getCurrentLanguage, getAvailableLanguages } from './js/locales.js';
 import { toggleLineHighlight } from './js/line-highlight.js';
+import { initializeThemeSystem, showThemeDialog, showLanguageSettingsDialog, getAvailableThemes, getCurrentTheme, applyTheme } from './js/theme-manager.js';
 import { toggleTypewriterMode, initTypewriterMode } from './js/typewriter-mode.js';
 
 
@@ -38,6 +39,13 @@ window.showReplaceDialog = showReplaceDialog;
 window.exitApp = exitApp;
 window.toggleLineHighlight = toggleLineHighlight;
 window.toggleTypewriterMode = toggleTypewriterMode;
+
+// テーマ機能
+window.showThemeDialog = showThemeDialog;
+window.showLanguageSettingsDialog = showLanguageSettingsDialog;
+window.getAvailableThemes = getAvailableThemes;
+window.getCurrentTheme = getCurrentTheme;
+window.applyTheme = applyTheme;
 
 // フォント設定機能（新機能追加）
 window.showFontSettingsDialog = showFontSettingsDialog;

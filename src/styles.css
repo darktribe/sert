@@ -1,9 +1,53 @@
 /*
  * =====================================================
- * Sert Editor - スタイルシート（新機能対応版）
+ * Sert Editor - スタイルシート（テーマ機能対応・修正版）
  * =====================================================
  */
 
+ /*
+ * =====================================================
+ * テーマ用CSSカスタムプロパティ
+ * =====================================================
+ */
+
+:root {
+  /* エディタ関連 */
+  --editor-bg-color: #1e1e1e;
+  --editor-text-color: #d4d4d4;
+  --editor-cursor-color: #ffffff;
+  --editor-selection-bg-color: rgba(173, 214, 255, 0.15);
+  
+  /* 行番号関連 */
+  --line-numbers-bg-color: #252526;
+  --line-numbers-text-color: #858585;
+  --line-numbers-border-color: #3e3e40;
+  
+  /* メニューバー関連 */
+  --menu-bar-bg-color: #2d2d30;
+  --menu-bar-text-color: #d4d4d4;
+  --menu-bar-hover-bg-color: #37373d;
+  --menu-bar-border-color: #3e3e40;
+  
+  /* ステータスバー関連 */
+  --status-bar-bg-color: #007acc;
+  --status-bar-text-color: #ffffff;
+  
+  /* 行ハイライト関連 */
+  --line-highlight-bg-color: rgba(255, 255, 255, 0.05);
+  
+  /* プレビュー用 */
+  --preview-editor-bg: var(--editor-bg-color);
+  --preview-editor-text: var(--editor-text-color);
+  --preview-line-numbers-bg: var(--line-numbers-bg-color);
+  --preview-line-numbers-text: var(--line-numbers-text-color);
+  --preview-line-numbers-border: var(--line-numbers-border-color);
+  --preview-menu-bg: var(--menu-bar-bg-color);
+  --preview-menu-text: var(--menu-bar-text-color);
+  --preview-status-bg: var(--status-bar-bg-color);
+  --preview-status-text: var(--status-bar-text-color);
+}
+ 
+ 
 /* 基本設定 */
 * {
   margin: 0;
@@ -14,8 +58,8 @@
 body, html {
   height: 100%;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  background-color: #1e1e1e;
-  color: #d4d4d4;
+  background-color: var(--editor-bg-color);
+  color: var(--editor-text-color);
   overflow: hidden;
 }
 
@@ -30,9 +74,9 @@ body, html {
 /* =====================================================
  メニューバー
  ===================================================== */
-.menu-bar {
-  background-color: #2d2d30;
-  border-bottom: 1px solid #3e3e40;
+ .menu-bar {
+  background-color: var(--menu-bar-bg-color);
+  border-bottom: 1px solid var(--menu-bar-border-color);
   padding: 0;
   display: flex;
   user-select: none;
@@ -45,8 +89,12 @@ body, html {
   padding: 6px 12px;
   cursor: pointer;
   font-size: 14px;
-  color: #d4d4d4;
+  color: var(--menu-bar-text-color);
   transition: background-color 0.2s;
+}
+
+.menu-item:hover {
+  background-color: var(--menu-bar-hover-bg-color);
 }
 
 .menu-item:hover {
@@ -200,10 +248,10 @@ body, html {
 /* =====================================================
  エディタテキストエリア - Tab入力対応
  ===================================================== */
-.editor-textarea {
+ .editor-textarea {
   flex: 1;
-  background-color: transparent;  /* 背景を透明に */
-  color: #d4d4d4;
+  background-color: transparent;
+  color: var(--editor-text-color);
   border: none;
   outline: none;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
@@ -212,21 +260,23 @@ body, html {
   padding: 10px;
   resize: none;
   
-  /* 表示折り返しの設定 */
   white-space: pre-wrap;
   overflow-wrap: break-word;
   word-wrap: break-word;
   overflow-x: hidden;
   overflow-y: auto;
   
-  /* Tab文字のサイズ設定 */
   tab-size: 4;
   -moz-tab-size: 4;
   -webkit-tab-size: 4;
   
-  /* レイヤー順序 */
   position: relative;
   z-index: 2;
+  caret-color: var(--editor-cursor-color);
+}
+
+.editor-textarea::selection {
+  background-color: var(--editor-selection-bg-color);
 }
 
 .editor-textarea::placeholder {
@@ -240,10 +290,10 @@ body, html {
 /* =====================================================
  行ハイライト
  ===================================================== */
-.line-highlight-overlay {
+ .line-highlight-overlay {
   position: absolute;
   left: 0;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--line-highlight-bg-color);
   pointer-events: none;
   z-index: 1;
   transition: top 0.1s ease-out, height 0.1s ease-out;
@@ -257,16 +307,16 @@ body, html {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #1e1e1e;
+  background-color: var(--editor-bg-color);
   z-index: 0;
 }
 
 /* =====================================================
  ステータスバー（フォントサイズ表示対応）
  ===================================================== */
-.status-bar {
-  background-color: #007acc;
-  color: white;
+ .status-bar {
+  background-color: var(--status-bar-bg-color);
+  color: var(--status-bar-text-color);
   padding: 4px 12px;
   font-size: 12px;
   display: flex;
@@ -672,6 +722,138 @@ body, html {
 }
 
 /* =====================================================
+ テーマダイアログ
+ ===================================================== */
+.theme-dialog-overlay {
+  z-index: 10003;
+}
+
+.theme-dialog {
+  min-width: 520px;
+  max-width: 680px;
+}
+
+.theme-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #3e3e40;
+  border-radius: 4px;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.theme-select:focus {
+  outline: none;
+  border-color: #007acc;
+  box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.3);
+}
+
+.theme-select option {
+  background-color: #2d2d30;
+  color: #d4d4d4;
+  padding: 8px;
+}
+
+.theme-preview-section {
+  margin: 20px 0;
+}
+
+.theme-preview-section label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #cccccc;
+}
+
+.theme-preview {
+  border: 1px solid #3e3e40;
+  border-radius: 4px;
+  overflow: hidden;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 12px;
+  background: #1e1e1e;
+  color: #d4d4d4;
+}
+
+.preview-menubar {
+  background: #2d2d30;
+  color: #d4d4d4;
+  padding: 6px 12px;
+  font-size: 12px;
+  border-bottom: 1px solid #3e3e40;
+}
+
+.preview-editor {
+  display: flex;
+  min-height: 60px;
+}
+
+.preview-line-numbers {
+  background: #252526;
+  color: #858585;
+  padding: 8px;
+  text-align: right;
+  min-width: 30px;
+  border-right: 1px solid #3e3e40;
+}
+
+.preview-text {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 8px;
+  flex: 1;
+  white-space: pre;
+}
+
+.preview-statusbar {
+  background: #007acc;
+  color: #ffffff;
+  padding: 4px 12px;
+  font-size: 11px;
+}
+
+.preview-menubar {
+  background: #2d2d30;
+  color: #d4d4d4;
+  padding: 6px 12px;
+  font-size: 12px;
+  border-bottom: 1px solid #3e3e40;
+}
+
+.preview-editor {
+  display: flex;
+  min-height: 60px;
+}
+
+.preview-line-numbers {
+  background: #252526;
+  color: #858585;
+  padding: 8px;
+  text-align: right;
+  min-width: 30px;
+  border-right: 1px solid #3e3e40;
+}
+
+.preview-text {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 8px;
+  flex: 1;
+  white-space: pre;
+}
+
+.preview-statusbar {
+  background: #007acc;
+  color: #ffffff;
+  padding: 4px 12px;
+  font-size: 11px;
+}
+
+/* =====================================================
  レスポンシブ対応
  ===================================================== */
 @media (max-width: 768px) {
@@ -687,6 +869,11 @@ body, html {
   }
   
   .font-size-input-dialog {
+    min-width: 90vw;
+    max-width: 95vw;
+  }
+  
+  .theme-dialog {
     min-width: 90vw;
     max-width: 95vw;
   }

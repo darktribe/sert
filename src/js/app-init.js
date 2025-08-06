@@ -14,6 +14,7 @@ import { createLanguageSwitcher } from './language-switcher.js';
 import { loadFontSettings } from './font-settings.js';
 import { loadLineHighlightSetting } from './globals.js';
 import { initializeLineHighlight } from './line-highlight.js';
+import { initializeThemeSystem } from './theme-manager.js';
 
 /**
  * Tauri APIの初期化
@@ -204,6 +205,14 @@ export async function initializeApp() {
     console.log('🎨 Initializing line highlight settings...');
     loadLineHighlightSetting();
     initializeLineHighlight();
+    
+    // テーマシステムの初期化
+    console.log('🎨 Initializing theme system...');
+    try {
+        await initializeThemeSystem();
+    } catch (error) {
+        console.error('❌ Theme system initialization failed:', error);
+    }
     
     // イベントリスナーを設定
     setupEventListeners();
