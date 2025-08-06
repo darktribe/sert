@@ -288,8 +288,12 @@ export async function applyTheme(themeId) {
 /**
  * 外部テーマファイルから読み込み
  */
+/**
+ * 外部テーマファイルから読み込み
+ */
 async function loadThemeFromFile(themeId) {
     if (!window.__TAURI__?.fs || !themesDirectory) {
+        console.log('⚠️ Tauri FS or themes directory not available');
         return null;
     }
     
@@ -297,8 +301,16 @@ async function loadThemeFromFile(themeId) {
         const { readTextFile } = window.__TAURI__.fs;
         const { join } = window.__TAURI__.path;
         const filePath = await join(themesDirectory, `${themeId}.json`);
+        
+        console.log(`📖 Reading theme file: ${filePath}`);
         const content = await readTextFile(filePath);
-        return JSON.parse(content);
+        const langData = JSON.parse(content);
+        
+        console.log(`✅ Theme file loaded: ${themeId}`);
+        
+        // _metaを除いて実際のテーマデータを返す
+        const { _meta, ...actualThemeData } = langData;
+        return actualThemeData;
         
     } catch (error) {
         console.error(`❌ Failed to load theme file ${themeId}.json:`, error);
@@ -378,15 +390,44 @@ function createThemeDialog() {
     
     updateThemePreview();
     
-    setTimeout(() => {
+    setTimeout(async () => {
         const themeSelect = document.getElementById('theme-select');
         if (themeSelect) {
             themeSelect.focus();
-            // フォーカス時に初回プレビューも更新
-            updateThemePreview();
+            // フォーカス時に初回プレビューも更新（非同期）
+            await updateThemePreview();
         }
     }, 100);
 }
+
+/**
+ * テーマリストを再読み込みしてセレクトボックスを更新
+ */
+async function refreshThemeList(themeSelect) {
+    try {
+        // テーマを再読み込み
+        await loadThemes();
+        
+        // 現在選択されているテーマを保存
+        const currentSelection = themeSelect.value;
+        
+        // セレクトボックスの選択肢を更新
+        themeSelect.innerHTML = '';
+        availableThemes.forEach(theme => {
+            const option = document.createElement('option');
+            option.value = theme.id;
+            option.textContent = theme.nativeName;
+            option.selected = theme.id === currentSelection;
+            themeSelect.appendChild(option);
+        });
+        
+        console.log(`🎨 Theme list refreshed: ${availableThemes.length} themes found`);
+        
+    } catch (error) {
+        console.error('❌ Failed to refresh theme list:', error);
+    }
+}
+
 
 /**
  * テーマダイアログのイベント設定
@@ -398,11 +439,22 @@ function setupThemeDialogEvents(dialogOverlay) {
     
     let selectedTheme = currentTheme;
     
+    // セレクトボックスが開かれた時に最新のテーマリストを読み込み
+    themeSelect.addEventListener('focus', async () => {
+        console.log('🎨 Theme select focused - reloading themes...');
+        await refreshThemeList(themeSelect);
+    });
+    
+    themeSelect.addEventListener('click', async () => {
+        console.log('🎨 Theme select clicked - reloading themes...');
+        await refreshThemeList(themeSelect);
+    });
+    
     // テーマ選択変更
-    themeSelect.addEventListener('change', () => {
+    themeSelect.addEventListener('change', async () => {
         console.log('🎨 Theme selection changed to:', themeSelect.value);
         selectedTheme = themeSelect.value;
-        updateThemePreview();
+        await updateThemePreview();
     });
     
     // 適用ボタン
@@ -440,9 +492,9 @@ function setupThemeDialogEvents(dialogOverlay) {
 }
 
 /**
- * テーマプレビューを更新
+ * テーマプレビューを更新（外部テーマファイル対応）
  */
-function updateThemePreview() {
+async function updateThemePreview() {
     const preview = document.getElementById('theme-preview');
     const themeSelect = document.getElementById('theme-select');
     
@@ -460,14 +512,24 @@ function updateThemePreview() {
     
     let themeData = null;
     
-    // 外部ファイルまたはデフォルトテーマから取得
-    if (isThemeSystemEnabled) {
-        themeData = DEFAULT_THEMES[selectedThemeId];
-    } else {
-        themeData = DEFAULT_THEMES[selectedThemeId];
+    // まず外部ファイルから読み込みを試行
+    if (isThemeSystemEnabled && themesDirectory) {
+        console.log('🎨 Trying to load theme from external file...');
+        const externalThemeData = await loadThemeFromFile(selectedThemeId);
+        if (externalThemeData) {
+            // _metaを除いて実際のテーマデータを取得
+            themeData = externalThemeData;
+            console.log('✅ External theme data loaded:', themeData);
+        }
     }
     
-    console.log('🎨 Theme data:', themeData);
+    // 外部ファイルが見つからない場合はデフォルトテーマから取得
+    if (!themeData && DEFAULT_THEMES[selectedThemeId]) {
+        themeData = DEFAULT_THEMES[selectedThemeId];
+        console.log('📦 Using default theme data:', themeData);
+    }
+    
+    console.log('🎨 Final theme data:', themeData);
     
     if (themeData) {
         // プレビュー要素の子要素を直接スタイリング
