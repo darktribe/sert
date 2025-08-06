@@ -41,9 +41,12 @@
                     <div class="menu-option" onclick="showReplaceDialog()" data-i18n="searchMenu.replace">Replace</div>
                 </div>
             </div>
+            <!-- 機能拡張メニュー -->
             <div class="menu-item" onclick="toggleMenu('extensions-menu')">
                 <span data-i18n="menu.extensions">Extensions</span>
                 <div id="extensions-menu" class="dropdown-menu">
+                    <div class="menu-option" onclick="showExtensionSettingsDialog()" data-i18n="extensionsMenu.extensionSettings">Extension Settings</div>
+                    <div class="menu-separator"></div>
                     <div class="menu-option" onclick="showLanguageSettingsDialog()" data-i18n="extensionsMenu.languageSettings">Language Settings</div>
                     <div class="menu-option" onclick="showThemeDialog()" data-i18n="extensionsMenu.theme">Theme</div>
                 </div>

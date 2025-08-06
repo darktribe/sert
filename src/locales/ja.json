@@ -9,11 +9,12 @@
     "file": "ファイル",
     "edit": "編集",
     "view": "表示",
-    "search": "検索"
+    "search": "検索",
+    "extensions": "機能拡張"
   },
   "fileMenu": {
     "new": "新規作成",
-    "open": "開く", 
+    "open": "開く",
     "save": "上書き保存",
     "saveAs": "名前をつけて保存",
     "exit": "終了"
@@ -38,6 +39,10 @@
     "find": "検索",
     "replace": "置換"
   },
+  "extensionsMenu": {
+    "languageSettings": "言語設定",
+    "theme": "テーマ"
+  },
   "editor": {
     "placeholder": "ここにテキストを入力してください..."
   },
@@ -48,6 +53,14 @@
     "fontSize": "フォント",
     "charCount": "総文字数",
     "selectionCount": "選択中"
+  },
+  "window": {
+    "defaultTitle": "Vinsert - 名前なし",
+    "titleFormat": "Vinsert - {filename}"
+  },
+  "messages": {
+    "messageTitle": "メッセージ",
+    "ok": "OK"
   },
   "fonts": {
     "title": "フォント設定",
@@ -71,39 +84,13 @@
       "resetConfirm": "フォント設定をデフォルトに戻しますか？"
     }
   },
-  "dialogs": {
-    "newFile": {
-      "title": "内容に変更があります",
-      "message": "保存せずに新規作成すると、変更内容は失われます。",
-      "saveAndNew": "保存して新規作成",
-      "newWithoutSaving": "保存せずに新規作成",
+  "theme": {
+    "title": "テーマ設定",
+    "selectLabel": "テーマを選択",
+    "preview": "プレビュー",
+    "buttons": {
+      "apply": "適用",
       "cancel": "キャンセル"
-    },
-    "openFile": {
-      "title": "内容に変更があります",
-      "message": "保存せずにファイルを開くと、変更内容は失われます。",
-      "saveAndOpen": "保存してから開く",
-      "openWithoutSaving": "保存せずに開く",
-      "cancel": "キャンセル"
-    },
-    "exit": {
-      "title": "内容に変更があります",
-      "message": "保存せずに終了すると、変更内容は失われます。",
-      "saveAndExit": "保存して終了",
-      "exitWithoutSaving": "保存せずに終了",
-      "cancel": "キャンセル"
-    },
-    "fileDialog": {
-      "openTitle": "ファイルを開く",
-      "saveTitle": "名前を付けて保存",
-      "saveBeforeNewTitle": "ファイルを保存してから新規作成",
-      "saveBeforeOpenTitle": "ファイルを保存してから開く",
-      "saveBeforeExitTitle": "ファイルを保存"
-    },
-    "fileFilters": {
-      "textFiles": "テキストファイル",
-      "markdownFiles": "Markdownファイル",
-      "allFiles": "すべてのファイル"
     }
   },
   "search": {
@@ -138,29 +125,27 @@
       "regexError": "正規表現に問題があります。正規表現でなくその文字自体を検索したい場合、正規表現のチェックを外して下さい。"
     }
   },
-  "messages": {
-    "messageTitle": "メッセージ",
-    "ok": "OK",
-    "saveError": "保存に失敗しました: {error}",
-    "saveCancelNew": "新規作成をキャンセルします。",
-    "saveCancelOpen": "ファイルを開く処理をキャンセルします。",
-    "saveCancelExit": "終了をキャンセルします。",
-    "openError": "ファイルを開くことができませんでした: {error}",
-    "copyError": "コピーに失敗:",
-    "cutError": "切り取りに失敗:",
-    "pasteError": "貼り付けに失敗:",
-    "tauriOnly": "この機能はTauriアプリでのみ利用可能です",
-    "newFileError": "新規ファイルのため保存できません。先に「名前を付けて保存」を実行してください。"
-  },
-  "window": {
-    "defaultTitle": "Vinsert - 名前なし",
-    "titleFormat": "Vinsert - {filename}"
-  },
-  "keyboard": {
-    "shortcuts": {
-      "tab": "Tab: インデント追加",
-      "shiftTab": "Shift+Tab: インデント削除",
-      "info": "エディタ内でTabキーを押すとインデント（タブ文字）が挿入されます。Shift+Tabでインデントを削除できます。"
+  "dialogs": {
+    "newFile": {
+      "title": "内容に変更があります",
+      "message": "保存せずに新規作成すると、変更内容は失われます。",
+      "saveAndNew": "保存して新規作成",
+      "newWithoutSaving": "保存せずに新規作成",
+      "cancel": "キャンセル"
+    },
+    "openFile": {
+      "title": "内容に変更があります",
+      "message": "保存せずにファイルを開くと、変更内容は失われます。",
+      "saveAndOpen": "保存してから開く",
+      "openWithoutSaving": "保存せずに開く",
+      "cancel": "キャンセル"
+    },
+    "exit": {
+      "title": "内容に変更があります",
+      "message": "保存せずに終了すると、変更内容は失われます。",
+      "saveAndExit": "保存して終了",
+      "exitWithoutSaving": "保存せずに終了",
+      "cancel": "キャンセル"
     }
   }
 }

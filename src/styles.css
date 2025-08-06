@@ -987,3 +987,117 @@ body, html {
 .language-btn {
   display: none;
 }
+
+/* =====================================================
+ 拡張機能設定ダイアログ
+ ===================================================== */
+ .extension-dialog-overlay {
+  z-index: 10004;
+}
+
+.extension-dialog {
+  min-width: 600px;
+  max-width: 800px;
+}
+
+.extension-list {
+  max-height: 400px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+  border: 1px solid #3e3e40;
+  border-radius: 4px;
+  background-color: #1e1e1e;
+}
+
+.extension-item {
+  padding: 12px;
+  border-bottom: 1px solid #3e3e40;
+  transition: background-color 0.2s;
+}
+
+.extension-item:last-child {
+  border-bottom: none;
+}
+
+.extension-item:hover {
+  background-color: #252526;
+}
+
+.extension-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.extension-checkbox {
+  margin-right: 12px;
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  accent-color: #007acc;
+  cursor: pointer;
+}
+
+.extension-info {
+  flex: 1;
+}
+
+.extension-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #d4d4d4;
+  margin-bottom: 4px;
+}
+
+.extension-summary {
+  font-size: 14px;
+  color: #cccccc;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.extension-author {
+  font-size: 12px;
+  color: #888888;
+}
+
+.no-extensions {
+  padding: 40px;
+  text-align: center;
+  color: #888888;
+  font-size: 14px;
+}
+
+/* =====================================================
+ 補完候補ボックス
+ ===================================================== */
+.suggestion-box {
+  background-color: #2d2d30;
+  border: 1px solid #3e3e40;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10010;
+  min-width: 200px;
+}
+
+.suggestion-item {
+  padding: 6px 12px;
+  color: #d4d4d4;
+  cursor: pointer;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  transition: background-color 0.1s;
+}
+
+.suggestion-item:hover,
+.suggestion-item.selected {
+  background-color: #007acc;
+  color: white;
+}
+
+/* HTMLハイライト用（拡張機能から適用） */
+.html-highlight {
+  color: #e06c75 !important;
+}

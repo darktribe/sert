@@ -9,11 +9,12 @@
     "file": "Fichier",
     "edit": "Édition",
     "view": "Affichage",
-    "search": "Recherche"
+    "search": "Recherche",
+    "extensions": "Extensions"
   },
   "fileMenu": {
     "new": "Nouveau",
-    "open": "Ouvrir", 
+    "open": "Ouvrir",
     "save": "Enregistrer",
     "saveAs": "Enregistrer sous",
     "exit": "Quitter"
@@ -37,6 +38,10 @@
   "searchMenu": {
     "find": "Rechercher",
     "replace": "Remplacer"
+  },
+  "extensionsMenu": {
+    "languageSettings": "Paramètres de langue",
+    "theme": "Thème"
   },
   "editor": {
     "placeholder": "Veuillez saisir votre texte ici..."
@@ -71,39 +76,13 @@
       "resetConfirm": "Réinitialiser les paramètres de police par défaut ?"
     }
   },
-  "dialogs": {
-    "newFile": {
-      "title": "Modifications non sauvegardées",
-      "message": "Créer un nouveau fichier sans sauvegarder fera perdre vos modifications.",
-      "saveAndNew": "Sauvegarder et nouveau",
-      "newWithoutSaving": "Nouveau sans sauvegarder",
+  "theme": {
+    "title": "Paramètres de thème",
+    "selectLabel": "Sélectionner un thème",
+    "preview": "Aperçu",
+    "buttons": {
+      "apply": "Appliquer",
       "cancel": "Annuler"
-    },
-    "openFile": {
-      "title": "Modifications non sauvegardées",
-      "message": "Ouvrir un fichier sans sauvegarder fera perdre vos modifications.",
-      "saveAndOpen": "Sauvegarder et ouvrir",
-      "openWithoutSaving": "Ouvrir sans sauvegarder",
-      "cancel": "Annuler"
-    },
-    "exit": {
-      "title": "Modifications non sauvegardées",
-      "message": "Quitter sans sauvegarder fera perdre vos modifications.",
-      "saveAndExit": "Sauvegarder et quitter",
-      "exitWithoutSaving": "Quitter sans sauvegarder",
-      "cancel": "Annuler"
-    },
-    "fileDialog": {
-      "openTitle": "Ouvrir un fichier",
-      "saveTitle": "Enregistrer sous",
-      "saveBeforeNewTitle": "Sauvegarder le fichier avant de créer un nouveau",
-      "saveBeforeOpenTitle": "Sauvegarder le fichier avant d'ouvrir",
-      "saveBeforeExitTitle": "Sauvegarder le fichier"
-    },
-    "fileFilters": {
-      "textFiles": "Fichiers texte",
-      "markdownFiles": "Fichiers Markdown",
-      "allFiles": "Tous les fichiers"
     }
   },
   "search": {
@@ -132,35 +111,41 @@
       "noSearchText": "Veuillez saisir un texte à rechercher",
       "noReplaceText": "Veuillez saisir le texte à rechercher et le texte de remplacement",
       "noResults": "Aucun résultat trouvé",
-      "noTarget": "Aucune cible sélectionnée pour le remplacement. Utilisez Suivant/Précédent pour sélectionner",
+      "noTarget": "Aucune cible sélectionnée pour le remplacement",
       "noMatches": "Aucune correspondance à remplacer",
       "replaceAllComplete": "Toutes les {count} correspondances ont été remplacées",
-      "regexError": "Erreur d'expression régulière. Si vous voulez rechercher ces caractères littéralement, décochez Expression régulière."
+      "regexError": "Erreur d'expression régulière"
     }
   },
-  "messages": {
-    "messageTitle": "Message",
-    "ok": "OK",
-    "saveError": "Échec de la sauvegarde : {error}",
-    "saveCancelNew": "Création du nouveau fichier annulée.",
-    "saveCancelOpen": "Ouverture du fichier annulée.",
-    "saveCancelExit": "Sortie annulée.",
-    "openError": "Impossible d'ouvrir le fichier : {error}",
-    "copyError": "Échec de la copie :",
-    "cutError": "Échec de la coupure :",
-    "pasteError": "Échec du collage :",
-    "tauriOnly": "Cette fonctionnalité n'est disponible que dans les applications Tauri",
-    "newFileError": "Impossible de sauvegarder un nouveau fichier. Veuillez d'abord utiliser 'Enregistrer sous'."
+  "dialogs": {
+    "newFile": {
+      "title": "Modifications non sauvegardées",
+      "message": "Créer un nouveau fichier sans sauvegarder fera perdre vos modifications.",
+      "saveAndNew": "Sauvegarder et nouveau",
+      "newWithoutSaving": "Nouveau sans sauvegarder",
+      "cancel": "Annuler"
+    },
+    "openFile": {
+      "title": "Modifications non sauvegardées",
+      "message": "Ouvrir un fichier sans sauvegarder fera perdre vos modifications.",
+      "saveAndOpen": "Sauvegarder et ouvrir",
+      "openWithoutSaving": "Ouvrir sans sauvegarder",
+      "cancel": "Annuler"
+    },
+    "exit": {
+      "title": "Modifications non sauvegardées",
+      "message": "Quitter sans sauvegarder fera perdre vos modifications.",
+      "saveAndExit": "Sauvegarder et quitter",
+      "exitWithoutSaving": "Quitter sans sauvegarder",
+      "cancel": "Annuler"
+    }
   },
   "window": {
     "defaultTitle": "Vinsert - Sans titre",
     "titleFormat": "Vinsert - {filename}"
   },
-  "keyboard": {
-    "shortcuts": {
-      "tab": "Tab : Ajouter une indentation",
-      "shiftTab": "Shift+Tab : Supprimer l'indentation",
-      "info": "Appuyez sur Tab dans l'éditeur pour insérer une indentation (caractère de tabulation). Utilisez Shift+Tab pour supprimer l'indentation."
-    }
+  "messages": {
+    "messageTitle": "Message",
+    "ok": "OK"
   }
 }
