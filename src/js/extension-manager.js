@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - 拡張機能管理システム
+ * Vinsert Editor - 拡張機能管理システム（完全復旧版）
  * =====================================================
  */
 
@@ -14,7 +14,8 @@ let extensionState = {
     enabledExtensions: [],
     suggestionBox: null,
     isInitialized: false,
-    extensionsDirectory: null
+    extensionsDirectory: null,
+    lastInputEvent: null // 重複イベント防止用（追加）
 };
 
 /**
@@ -78,7 +79,7 @@ async function ensureExtensionsDirectory() {
 }
 
 /**
- * サンプル拡張機能を作成
+ * サンプル拡張機能を作成（修正されたPythonコード）
  */
 async function createSampleExtension() {
     if (!window.__TAURI__?.fs || !extensionState.extensionsDirectory) {
@@ -119,7 +120,7 @@ async function createSampleExtension() {
         const settingsPath = await join(sampleExtDir, 'setting.json');
         await writeTextFile(settingsPath, JSON.stringify(settings, null, 2));
         
-        // main.py を作成
+        // 修正されたmain.py を作成
         const pythonCode = `
 import json
 import re
@@ -142,15 +143,15 @@ def on_event(event_type, event_data):
     try:
         data = json.loads(event_data)
         
-        if event_type == "text_input" or event_type == "key_press":
+        if event_type == "text_input":
             text = data.get("text", "")
             cursor_pos = data.get("cursor_position", 0)
+            input_type = data.get("input_type", "")
+            input_data = data.get("data", "")
             
-            # カーソル位置直前の文字を確認
-            if cursor_pos > 0 and cursor_pos <= len(text):
+            # '<'が最後に入力された場合のみサジェスションを表示
+            if input_data == '<' and cursor_pos > 0:
                 char_before_cursor = text[cursor_pos - 1]
-                
-                # '<'が入力された場合、補完候補を返す
                 if char_before_cursor == '<':
                     suggestions = [{"tag": tag, "display": f"<{tag}>"} for tag in HTML_TAGS]
                     return json.dumps({
@@ -158,34 +159,45 @@ def on_event(event_type, event_data):
                         "suggestions": suggestions,
                         "position": cursor_pos
                     })
-                
-                # '>'が入力された場合、閉じタグを追加
+            
+            # '>'が入力された場合、閉じタグを追加（重複チェック付き）
+            elif input_data == '>' and cursor_pos > 0:
+                char_before_cursor = text[cursor_pos - 1]
                 if char_before_cursor == '>':
+                    # カーソル位置の後をチェックして重複を防ぐ
+                    text_after_cursor = text[cursor_pos:cursor_pos + 20]  # 20文字程度先をチェック
+                    
                     # カーソル位置までのテキストを取得
                     text_before = text[:cursor_pos]
                     # 最後の開始タグを検出
-                    match = re.search(r'<([a-zA-Z]+)(?:\\s[^>]*)?>$', text_before)
+                    match = re.search(r'<([a-zA-Z]+)(?:\\\\s[^>]*)?>$', text_before)
+                    
                     if match:
                         tag_name = match.group(1).lower()
                         if tag_name in HTML_TAGS and tag_name not in SELF_CLOSING_TAGS:
-                            return json.dumps({
-                                "action": "insert_text",
-                                "text": f"</{tag_name}>",
-                                "move_cursor_back": len(tag_name) + 3
-                            })
+                            # 既に対応する閉じタグが存在するかチェック
+                            closing_tag = f"</{tag_name}>"
+                            if not text_after_cursor.startswith(closing_tag):
+                                return json.dumps({
+                                    "action": "insert_text",
+                                    "text": closing_tag,
+                                    "move_cursor_back": len(tag_name) + 3
+                                })
         
         elif event_type == "suggestion_selected":
             tag = data.get("tag", "")
             if tag and tag not in SELF_CLOSING_TAGS:
+                # '<'は既に入力されているので、残りの部分のみを挿入
                 return json.dumps({
                     "action": "insert_text",
-                    "text": f"<{tag}></{tag}>",
+                    "text": f"{tag}></{tag}>",
                     "move_cursor_back": len(tag) + 3
                 })
             elif tag:
+                # 自己完結型タグの場合
                 return json.dumps({
                     "action": "insert_text",
-                    "text": f"<{tag} />",
+                    "text": f"{tag} />",
                     "move_cursor_back": 3
                 })
         
@@ -458,7 +470,7 @@ function closeExtensionDialog(dialogOverlay) {
 }
 
 /**
- * エディタイベントリスナーの設定
+ * エディタイベントリスナーの設定（修正版：keydownを削除、重複防止追加）
  */
 function setupEditorEventListeners() {
     if (!editor) return;
@@ -466,6 +478,13 @@ function setupEditorEventListeners() {
     // 拡張機能が有効な場合のみイベントを処理
     editor.addEventListener('input', async (e) => {
         if (extensionState.enabledExtensions.length === 0) return;
+        
+        // 重複イベント防止（新機能）
+        const currentTime = Date.now();
+        if (extensionState.lastInputEvent && currentTime - extensionState.lastInputEvent < 50) {
+            return;
+        }
+        extensionState.lastInputEvent = currentTime;
         
         // 有効な拡張機能に対してイベントを送信
         for (const extensionId of extensionState.enabledExtensions) {
@@ -478,21 +497,7 @@ function setupEditorEventListeners() {
         }
     });
     
-    // キーダウンイベントも監視（<や>の入力検出用）
-    editor.addEventListener('keydown', async (e) => {
-        if (extensionState.enabledExtensions.length === 0) return;
-        
-        // 特定のキーに対してのみ処理
-        if (e.key === '<' || e.key === '>') {
-            for (const extensionId of extensionState.enabledExtensions) {
-                await executeExtensionEvent(extensionId, 'key_press', {
-                    key: e.key,
-                    text: editor.value,
-                    cursor_position: editor.selectionStart
-                });
-            }
-        }
-    });
+    // keydownイベントは削除（問題の原因だったため）
 }
 
 /**
@@ -558,7 +563,7 @@ event_data_json = '''${JSON.stringify(eventData)}'''
 if 'on_event' in globals():
     try:
         result = on_event(event_type, event_data_json)
-        if result:
+        if result and result.strip():
             print(result)
     except Exception as e:
         print(json.dumps({"error": str(e), "traceback": traceback.format_exc()}))
