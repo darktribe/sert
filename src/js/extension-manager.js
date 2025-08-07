@@ -15,7 +15,15 @@ let extensionState = {
     suggestionBox: null,
     isInitialized: false,
     extensionsDirectory: null,
-    lastInputEvent: null // 重複イベント防止用（追加）
+    lastInputEvent: null, // 重複イベント防止用（追加）
+    // インクリメンタルサーチ用の状態（新規追加）
+    htmlSearchState: {
+        isActive: false,
+        searchText: '',
+        startPosition: -1,
+        currentIndex: 0,
+        filteredSuggestions: []
+    }
 };
 
 /**
@@ -149,28 +157,32 @@ def on_event(event_type, event_data):
             input_type = data.get("input_type", "")
             input_data = data.get("data", "")
             
-            # '<'が最後に入力された場合のみサジェスションを表示
-            if input_data == '<' and cursor_pos > 0:
-                char_before_cursor = text[cursor_pos - 1]
-                if char_before_cursor == '<':
-                    suggestions = [{"tag": tag, "display": f"<{tag}>"} for tag in HTML_TAGS]
-                    return json.dumps({
-                        "action": "show_suggestions",
-                        "suggestions": suggestions,
-                        "position": cursor_pos
-                    })
+            # '<'が入力された場合（どの行でも動作）
+            if input_data == '<':
+                # カーソル位置が正しいか確認
+                if 0 <= cursor_pos <= len(text):
+                    # '<'が実際に入力されたことを確認
+                    # cursor_posは'<'の後の位置を指すため、1つ前をチェック
+                    if cursor_pos > 0 and cursor_pos <= len(text):
+                        if text[cursor_pos - 1] == '<':
+                            suggestions = [{"tag": tag, "display": tag} for tag in HTML_TAGS]
+                            return json.dumps({
+                                "action": "show_suggestions",
+                                "suggestions": suggestions,
+                                "position": cursor_pos
+                            })
             
             # '>'が入力された場合、閉じタグを追加（重複チェック付き）
             elif input_data == '>' and cursor_pos > 0:
-                char_before_cursor = text[cursor_pos - 1]
-                if char_before_cursor == '>':
+                # カーソル位置が範囲内かチェック
+                if cursor_pos <= len(text) and text[cursor_pos - 1] == '>':
                     # カーソル位置の後をチェックして重複を防ぐ
-                    text_after_cursor = text[cursor_pos:cursor_pos + 20]  # 20文字程度先をチェック
+                    text_after_cursor = text[cursor_pos:min(cursor_pos + 20, len(text))]
                     
                     # カーソル位置までのテキストを取得
                     text_before = text[:cursor_pos]
-                    # 最後の開始タグを検出
-                    match = re.search(r'<([a-zA-Z]+)(?:\\\\s[^>]*)?>$', text_before)
+                    # 最後の開始タグを検出（改行を考慮）
+                    match = re.search(r'<([a-zA-Z]+)(?:\\s[^>]*)?>$', text_before)
                     
                     if match:
                         tag_name = match.group(1).lower()
@@ -633,7 +645,7 @@ async function handleExtensionResponse(response) {
 }
 
 /**
- * サジェスションボックスを表示
+ * サジェスションボックスを表示（インクリメンタルサーチ対応版）
  */
 function showSuggestions(suggestions, position) {
     // 既存のサジェスションボックスを削除
@@ -641,8 +653,15 @@ function showSuggestions(suggestions, position) {
     
     if (!suggestions || suggestions.length === 0) return;
     
+    // HTMLサーチ状態を初期化
+    extensionState.htmlSearchState.isActive = true;
+    extensionState.htmlSearchState.startPosition = position;
+    extensionState.htmlSearchState.searchText = '';
+    extensionState.htmlSearchState.currentIndex = 0;
+    extensionState.htmlSearchState.filteredSuggestions = suggestions;
+    
     const suggestionBox = document.createElement('div');
-    suggestionBox.className = 'suggestion-box';
+    suggestionBox.className = 'enhanced-suggestion-box';
     suggestionBox.style.position = 'absolute';
     
     // カーソル位置を計算
@@ -653,31 +672,230 @@ function showSuggestions(suggestions, position) {
     suggestionBox.style.top = (editorRect.top + cursorCoords.y + 20) + 'px';
     
     // サジェスションアイテムを追加
+    updateSuggestionItems(suggestionBox, suggestions);
+    
+    document.body.appendChild(suggestionBox);
+    extensionState.suggestionBox = suggestionBox;
+    
+    // キーボードイベントハンドラー
+    const handleKeyDown = (e) => {
+        if (!extensionState.htmlSearchState.isActive) return;
+        
+        const items = suggestionBox.querySelectorAll('.suggestion-item');
+        
+        switch(e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                extensionState.htmlSearchState.currentIndex = 
+                    (extensionState.htmlSearchState.currentIndex + 1) % items.length;
+                updateSelectedItem(items);
+                break;
+                
+            case 'ArrowUp':
+                e.preventDefault();
+                extensionState.htmlSearchState.currentIndex = 
+                    extensionState.htmlSearchState.currentIndex <= 0 
+                        ? items.length - 1 
+                        : extensionState.htmlSearchState.currentIndex - 1;
+                updateSelectedItem(items);
+                break;
+                
+                case 'Tab':
+                if (items.length > 0) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    const selectedItem = items[extensionState.htmlSearchState.currentIndex];
+                    if (selectedItem) {
+                        selectSuggestion(selectedItem.dataset.tag);
+                        removeSuggestionBox();
+                    }
+                    return false; // イベントの伝播を完全に停止
+                }
+                break;
+                
+            case 'Enter':
+                if (items.length > 0) {
+                    e.preventDefault();
+                    const selectedItem = items[extensionState.htmlSearchState.currentIndex];
+                    if (selectedItem) {
+                        selectSuggestion(selectedItem.dataset.tag);
+                        removeSuggestionBox();
+                    }
+                }
+                break;
+                
+            case 'Escape':
+                e.preventDefault();
+                // <も削除
+                const start = editor.selectionStart;
+                if (start > 0 && editor.value[start - 1] === '<') {
+                    editor.value = editor.value.substring(0, start - 1) + editor.value.substring(start);
+                    editor.setSelectionRange(start - 1, start - 1);
+                }
+                removeSuggestionBox();
+                break;
+                
+            case 'Backspace':
+                // <を削除した場合はサジェスションを閉じる
+                setTimeout(() => {
+                    const cursorPos = editor.selectionStart;
+                    if (cursorPos <= extensionState.htmlSearchState.startPosition) {
+                        removeSuggestionBox();
+                    } else {
+                        // インクリメンタルサーチを更新
+                        updateIncrementalSearch();
+                    }
+                }, 10);
+                break;
+                
+            default:
+                // 文字入力時はインクリメンタルサーチを更新
+                if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                    setTimeout(() => {
+                        updateIncrementalSearch();
+                    }, 10);
+                }
+                break;
+        }
+    };
+    
+    // イベントリスナーを追加
+    // イベントリスナーを追加（キャプチャフェーズで最優先処理）
+    document.addEventListener('keydown', handleKeyDown, true);
+    
+    // Tabキー専用の追加ハンドラー（さらに確実にするため）
+    const handleTabKey = (e) => {
+        if (!extensionState.htmlSearchState.isActive) return;
+        if (e.key === 'Tab') {
+            const items = suggestionBox.querySelectorAll('.suggestion-item');
+            if (items.length > 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                const selectedItem = items[extensionState.htmlSearchState.currentIndex];
+                if (selectedItem) {
+                    selectSuggestion(selectedItem.dataset.tag);
+                    removeSuggestionBox();
+                }
+                return false;
+            }
+        }
+    };
+    
+    // エディタに直接イベントリスナーを追加（最優先）
+    editor.addEventListener('keydown', handleTabKey, true);
+    
+    // クリーンアップ関数を保存
+    extensionState.suggestionBox.cleanup = () => {
+        document.removeEventListener('keydown', handleKeyDown, true);
+    };
+    extensionState.suggestionBox.tabHandler = handleTabKey;
+}
+
+/**
+ * インクリメンタルサーチを更新
+ */
+function updateIncrementalSearch() {
+    if (!extensionState.htmlSearchState.isActive) return;
+    if (!extensionState.suggestionBox) return;
+    
+    const cursorPos = editor.selectionStart;
+    const startPos = extensionState.htmlSearchState.startPosition;
+    
+    // <の後のテキストを取得
+    const searchText = editor.value.substring(startPos, cursorPos).toLowerCase();
+    extensionState.htmlSearchState.searchText = searchText;
+    
+    // 元のサジェスションリストから取得
+    const allSuggestions = [
+        'div', 'span', 'p', 'a', 'img', 'ul', 'ol', 'li',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'header', 'footer', 'nav', 'main', 'section', 'article',
+        'table', 'tr', 'td', 'th', 'thead', 'tbody',
+        'form', 'input', 'button', 'select', 'option', 'textarea',
+        'script', 'style', 'link', 'meta'
+    ].map(tag => ({ tag: tag, display: tag }));
+    
+    // フィルタリング
+    const filtered = allSuggestions.filter(s => 
+        s.tag.toLowerCase().startsWith(searchText)
+    );
+    
+    extensionState.htmlSearchState.filteredSuggestions = filtered;
+    extensionState.htmlSearchState.currentIndex = 0;
+    
+    // サジェスションボックスを更新
+    updateSuggestionItems(extensionState.suggestionBox, filtered);
+}
+
+/**
+ * サジェスションアイテムを更新
+ */
+function updateSuggestionItems(suggestionBox, suggestions) {
+    // 既存のアイテムをクリア
+    suggestionBox.innerHTML = '';
+    
+    if (suggestions.length === 0) {
+        removeSuggestionBox();
+        return;
+    }
+    
+    // 新しいアイテムを追加
     suggestions.forEach((suggestion, index) => {
         const item = document.createElement('div');
         item.className = 'suggestion-item';
-        item.textContent = suggestion.display || suggestion.tag;
+        
+        // インクリメンタルサーチのハイライト
+        const searchText = extensionState.htmlSearchState.searchText;
+        if (searchText) {
+            const tag = suggestion.tag;
+            const matchIndex = tag.toLowerCase().indexOf(searchText);
+            if (matchIndex === 0) {
+                item.innerHTML = 
+                    `<span class="suggestion-highlight">${tag.substring(0, searchText.length)}</span>` +
+                    tag.substring(searchText.length);
+            } else {
+                item.textContent = tag;
+            }
+        } else {
+            item.textContent = suggestion.display || suggestion.tag;
+        }
+        
         item.dataset.tag = suggestion.tag;
+        
+        // 最初のアイテムを選択状態にする
+        if (index === extensionState.htmlSearchState.currentIndex) {
+            item.classList.add('selected');
+        }
         
         item.addEventListener('click', () => {
             selectSuggestion(suggestion.tag);
             removeSuggestionBox();
         });
         
+        item.addEventListener('mouseenter', () => {
+            extensionState.htmlSearchState.currentIndex = index;
+            updateSelectedItem(suggestionBox.querySelectorAll('.suggestion-item'));
+        });
+        
         suggestionBox.appendChild(item);
     });
-    
-    document.body.appendChild(suggestionBox);
-    extensionState.suggestionBox = suggestionBox;
-    
-    // ESCキーで閉じる
-    const handleEscape = (e) => {
-        if (e.key === 'Escape') {
-            removeSuggestionBox();
-            document.removeEventListener('keydown', handleEscape);
+}
+
+/**
+ * 選択されたアイテムを更新
+ */
+function updateSelectedItem(items) {
+    items.forEach((item, index) => {
+        if (index === extensionState.htmlSearchState.currentIndex) {
+            item.classList.add('selected');
+            // スクロールして表示
+            item.scrollIntoView({ block: 'nearest' });
+        } else {
+            item.classList.remove('selected');
         }
-    };
-    document.addEventListener('keydown', handleEscape);
+    });
 }
 
 /**
@@ -685,18 +903,62 @@ function showSuggestions(suggestions, position) {
  */
 function removeSuggestionBox() {
     if (extensionState.suggestionBox) {
+        // クリーンアップ関数を実行
+        if (extensionState.suggestionBox.cleanup) {
+            extensionState.suggestionBox.cleanup();
+        }
+        // Tabキー用のハンドラーも削除
+        if (extensionState.suggestionBox.tabHandler) {
+            editor.removeEventListener('keydown', extensionState.suggestionBox.tabHandler, true);
+        }
         extensionState.suggestionBox.remove();
         extensionState.suggestionBox = null;
     }
+    
+    // HTMLサーチ状態をリセット
+    extensionState.htmlSearchState.isActive = false;
+    extensionState.htmlSearchState.searchText = '';
+    extensionState.htmlSearchState.startPosition = -1;
+    extensionState.htmlSearchState.currentIndex = 0;
+    extensionState.htmlSearchState.filteredSuggestions = [];
 }
 
 /**
  * サジェスションを選択
  */
 async function selectSuggestion(tag) {
-    // 選択イベントを拡張機能に送信
-    for (const extensionId of extensionState.enabledExtensions) {
-        await executeExtensionEvent(extensionId, 'suggestion_selected', { tag });
+    // インクリメンタルサーチで入力された文字を削除してからタグを挿入
+    if (extensionState.htmlSearchState.isActive) {
+        // startPositionの1文字前（`<`の位置）から現在位置までを置換
+        const start = extensionState.htmlSearchState.startPosition - 1; // `<`の位置
+        const end = editor.selectionStart;
+        const beforeTag = editor.value.substring(0, start);
+        const afterTag = editor.value.substring(end);
+        
+        // <tag>|</tag> の形式で挿入（|はカーソル位置）
+        const selfClosingTags = ['img', 'input', 'br', 'hr', 'meta', 'link'];
+        let insertText;
+        let cursorOffset;
+        
+        if (selfClosingTags.includes(tag)) {
+            insertText = `<${tag} />`;
+            cursorOffset = tag.length + 2; // "<tag "の位置
+        } else {
+            insertText = `<${tag}></${tag}>`;
+            cursorOffset = tag.length + 2; // "<tag>"の直後
+        }
+        
+        editor.value = beforeTag + insertText + afterTag;
+        const newCursorPos = start + cursorOffset;
+        editor.setSelectionRange(newCursorPos, newCursorPos);
+        
+        // inputイベントを発火
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+        // 従来の処理（互換性のため残す）
+        for (const extensionId of extensionState.enabledExtensions) {
+            await executeExtensionEvent(extensionId, 'suggestion_selected', { tag });
+        }
     }
 }
 
