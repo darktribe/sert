@@ -85,34 +85,44 @@ async function createSampleExtension() {
         return;
     }
     
-    const { exists, writeTextFile, mkdir } = window.__TAURI__.fs;
+    const { exists, writeTextFile, mkdir, removeDir } = window.__TAURI__.fs;
     const { join } = window.__TAURI__.path;
     
     try {
         const sampleExtDir = await join(extensionState.extensionsDirectory, 'html-support');
         
-        // ディレクトリが存在しない場合のみ作成
+        // 既存のディレクトリを削除して再作成（開発中のみ）
         const dirExists = await exists(sampleExtDir);
-        if (!dirExists) {
-            await mkdir(sampleExtDir, { recursive: true });
-            
-            // setting.json を作成
-            const settings = {
-                id: "html-support",
-                name: "HTML作成支援",
-                summary: "HTMLタグの入力補完と自動閉じタグ生成を提供します",
-                version: "1.0.0",
-                author: "Vinsert Team",
-                main_file: "main.py",
-                enabled: false
-            };
-            
-            const settingsPath = await join(sampleExtDir, 'setting.json');
-            await writeTextFile(settingsPath, JSON.stringify(settings, null, 2));
-            
-            // main.py を作成
-            const pythonCode = `
+        if (dirExists) {
+            console.log('🗑️ Removing existing html-support extension for update...');
+            try {
+                await removeDir(sampleExtDir, { recursive: true });
+            } catch (e) {
+                console.warn('Could not remove existing extension:', e);
+            }
+        }
+        
+        // ディレクトリを作成
+        await mkdir(sampleExtDir, { recursive: true });
+        
+        // setting.json を作成
+        const settings = {
+            id: "html-support",
+            name: "HTML作成支援",
+            summary: "HTMLタグの入力補完と自動閉じタグ生成を提供します",
+            version: "1.0.0",
+            author: "Vinsert Team",
+            main_file: "main.py",
+            enabled: false
+        };
+        
+        const settingsPath = await join(sampleExtDir, 'setting.json');
+        await writeTextFile(settingsPath, JSON.stringify(settings, null, 2));
+        
+        // main.py を作成
+        const pythonCode = `
 import json
+import re
 
 # HTMLタグの補完候補
 HTML_TAGS = [
@@ -132,35 +142,37 @@ def on_event(event_type, event_data):
     try:
         data = json.loads(event_data)
         
-        if event_type == "text_input":
+        if event_type == "text_input" or event_type == "key_press":
             text = data.get("text", "")
             cursor_pos = data.get("cursor_position", 0)
             
-            # '<'が入力された場合、補完候補を返す
-            if text and text[-1] == '<':
-                suggestions = [{"tag": tag, "display": f"<{tag}>"} for tag in HTML_TAGS]
-                return json.dumps({
-                    "action": "show_suggestions",
-                    "suggestions": suggestions,
-                    "position": cursor_pos
-                })
-            
-            # 開始タグが完成した場合、閉じタグを追加
-            if text and '>' in text:
-                lines = text[:cursor_pos].split('\\n')
-                current_line = lines[-1] if lines else ""
+            # カーソル位置直前の文字を確認
+            if cursor_pos > 0 and cursor_pos <= len(text):
+                char_before_cursor = text[cursor_pos - 1]
                 
-                # 開始タグを検出
-                import re
-                match = re.search(r'<([a-zA-Z]+)(?:\\s[^>]*)?>$', current_line)
-                if match:
-                    tag_name = match.group(1).lower()
-                    if tag_name not in SELF_CLOSING_TAGS:
-                        return json.dumps({
-                            "action": "insert_text",
-                            "text": f"</{tag_name}>",
-                            "move_cursor_back": len(tag_name) + 3
-                        })
+                # '<'が入力された場合、補完候補を返す
+                if char_before_cursor == '<':
+                    suggestions = [{"tag": tag, "display": f"<{tag}>"} for tag in HTML_TAGS]
+                    return json.dumps({
+                        "action": "show_suggestions",
+                        "suggestions": suggestions,
+                        "position": cursor_pos
+                    })
+                
+                # '>'が入力された場合、閉じタグを追加
+                if char_before_cursor == '>':
+                    # カーソル位置までのテキストを取得
+                    text_before = text[:cursor_pos]
+                    # 最後の開始タグを検出
+                    match = re.search(r'<([a-zA-Z]+)(?:\\s[^>]*)?>$', text_before)
+                    if match:
+                        tag_name = match.group(1).lower()
+                        if tag_name in HTML_TAGS and tag_name not in SELF_CLOSING_TAGS:
+                            return json.dumps({
+                                "action": "insert_text",
+                                "text": f"</{tag_name}>",
+                                "move_cursor_back": len(tag_name) + 3
+                            })
         
         elif event_type == "suggestion_selected":
             tag = data.get("tag", "")
@@ -178,16 +190,15 @@ def on_event(event_type, event_data):
                 })
         
     except Exception as e:
-        print(f"Extension error: {e}")
+        return json.dumps({"error": str(e)})
     
     return ""
 `;
-            
-            const mainPyPath = await join(sampleExtDir, 'main.py');
-            await writeTextFile(mainPyPath, pythonCode);
-            
-            console.log('✅ Sample extension created: html-support');
-        }
+        
+        const mainPyPath = await join(sampleExtDir, 'main.py');
+        await writeTextFile(mainPyPath, pythonCode);
+        
+        console.log('✅ Sample extension created: html-support');
     } catch (error) {
         console.error('❌ Failed to create sample extension:', error);
     }
@@ -456,9 +467,272 @@ function setupEditorEventListeners() {
     editor.addEventListener('input', async (e) => {
         if (extensionState.enabledExtensions.length === 0) return;
         
-        // ここで拡張機能にイベントを送信する処理を実装
-        // Python統合が必要な場合はここに実装
+        // 有効な拡張機能に対してイベントを送信
+        for (const extensionId of extensionState.enabledExtensions) {
+            await executeExtensionEvent(extensionId, 'text_input', {
+                text: editor.value,
+                cursor_position: editor.selectionStart,
+                input_type: e.inputType,
+                data: e.data
+            });
+        }
     });
+    
+    // キーダウンイベントも監視（<や>の入力検出用）
+    editor.addEventListener('keydown', async (e) => {
+        if (extensionState.enabledExtensions.length === 0) return;
+        
+        // 特定のキーに対してのみ処理
+        if (e.key === '<' || e.key === '>') {
+            for (const extensionId of extensionState.enabledExtensions) {
+                await executeExtensionEvent(extensionId, 'key_press', {
+                    key: e.key,
+                    text: editor.value,
+                    cursor_position: editor.selectionStart
+                });
+            }
+        }
+    });
+}
+
+/**
+ * 拡張機能のPythonコードを実行
+ */
+async function executeExtensionEvent(extensionId, eventType, eventData) {
+    try {
+        if (!window.__TAURI__?.fs || !tauriInvoke) {
+            console.warn('⚠️ Tauri APIs not available for extension execution');
+            return;
+        }
+        
+        const { readTextFile } = window.__TAURI__.fs;
+        const { join } = window.__TAURI__.path;
+        
+        // 拡張機能のmain.pyパスを構築
+        const extensionDir = await join(extensionState.extensionsDirectory, extensionId);
+        const mainPyPath = await join(extensionDir, 'main.py');
+        
+        console.log(`🐍 Executing extension ${extensionId} with event ${eventType}`);
+        console.log(`📁 Extension path: ${mainPyPath}`);
+        
+        // main.pyを直接読み込む
+        let pythonScript;
+        try {
+            pythonScript = await readTextFile(mainPyPath);
+            console.log('📄 Extension script loaded, length:', pythonScript.length);
+        } catch (error) {
+            console.error(`❌ Failed to read extension file: ${mainPyPath}`, error);
+            return;
+        }
+        
+        // PythonスクリプトをBase64エンコード（エスケープ問題を回避）
+        const encodedScript = btoa(unescape(encodeURIComponent(pythonScript)));
+        
+        // Pythonコードを実行
+        const pythonCode = `
+import json
+import sys
+import re
+import traceback
+import base64
+
+# 拡張機能のコードをBase64デコード
+try:
+    extension_code = base64.b64decode("${encodedScript}").decode('utf-8')
+except Exception as e:
+    print(json.dumps({"error": "Failed to decode extension: " + str(e)}))
+    sys.exit(1)
+
+# 拡張機能のコードを実行
+try:
+    exec(extension_code, globals())
+except Exception as e:
+    print(json.dumps({"error": "Failed to exec extension: " + str(e), "traceback": traceback.format_exc()}))
+    sys.exit(1)
+
+# イベントデータ
+event_type = "${eventType}"
+event_data_json = '''${JSON.stringify(eventData)}'''
+
+# on_event関数が定義されているか確認して実行
+if 'on_event' in globals():
+    try:
+        result = on_event(event_type, event_data_json)
+        if result:
+            print(result)
+    except Exception as e:
+        print(json.dumps({"error": str(e), "traceback": traceback.format_exc()}))
+else:
+    print(json.dumps({"error": "on_event function not found in extension"}))
+`;
+        
+        console.log('📝 Executing Python code...');
+        const result = await tauriInvoke('execute_python', { code: pythonCode });
+        console.log('📤 Python execution result:', result);
+        
+        if (result && result !== 'Code executed successfully') {
+            // 複数行の結果を処理
+            const lines = result.split('\n').filter(line => line.trim());
+            for (const line of lines) {
+                try {
+                    const response = JSON.parse(line);
+                    if (response.error) {
+                        console.error('❌ Extension error:', response.error);
+                        if (response.traceback) {
+                            console.error('Traceback:', response.traceback);
+                        }
+                    } else if (response.action) {
+                        await handleExtensionResponse(response);
+                    }
+                } catch (e) {
+                    // JSON以外の行は無視
+                    if (line.trim()) {
+                        console.log('Non-JSON output:', line);
+                    }
+                }
+            }
+        }
+        
+    } catch (error) {
+        console.error(`❌ Failed to execute extension ${extensionId}:`, error);
+    }
+}
+
+/**
+ * 拡張機能からのレスポンスを処理
+ */
+async function handleExtensionResponse(response) {
+    if (!response || !response.action) {
+        console.log('⚠️ Invalid extension response:', response);
+        return;
+    }
+    
+    console.log('📥 Extension response:', response);
+    
+    switch (response.action) {
+        case 'show_suggestions':
+            if (response.suggestions && response.suggestions.length > 0) {
+                showSuggestions(response.suggestions, response.position);
+            }
+            break;
+            
+        case 'insert_text':
+            if (response.text) {
+                insertTextAtCursor(response.text, response.move_cursor_back || 0);
+            }
+            break;
+            
+        default:
+            console.warn('Unknown extension action:', response.action);
+    }
+}
+
+/**
+ * サジェスションボックスを表示
+ */
+function showSuggestions(suggestions, position) {
+    // 既存のサジェスションボックスを削除
+    removeSuggestionBox();
+    
+    if (!suggestions || suggestions.length === 0) return;
+    
+    const suggestionBox = document.createElement('div');
+    suggestionBox.className = 'suggestion-box';
+    suggestionBox.style.position = 'absolute';
+    
+    // カーソル位置を計算
+    const editorRect = editor.getBoundingClientRect();
+    const cursorCoords = getCursorCoordinates(position);
+    
+    suggestionBox.style.left = (editorRect.left + cursorCoords.x) + 'px';
+    suggestionBox.style.top = (editorRect.top + cursorCoords.y + 20) + 'px';
+    
+    // サジェスションアイテムを追加
+    suggestions.forEach((suggestion, index) => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        item.textContent = suggestion.display || suggestion.tag;
+        item.dataset.tag = suggestion.tag;
+        
+        item.addEventListener('click', () => {
+            selectSuggestion(suggestion.tag);
+            removeSuggestionBox();
+        });
+        
+        suggestionBox.appendChild(item);
+    });
+    
+    document.body.appendChild(suggestionBox);
+    extensionState.suggestionBox = suggestionBox;
+    
+    // ESCキーで閉じる
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            removeSuggestionBox();
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+}
+
+/**
+ * サジェスションボックスを削除
+ */
+function removeSuggestionBox() {
+    if (extensionState.suggestionBox) {
+        extensionState.suggestionBox.remove();
+        extensionState.suggestionBox = null;
+    }
+}
+
+/**
+ * サジェスションを選択
+ */
+async function selectSuggestion(tag) {
+    // 選択イベントを拡張機能に送信
+    for (const extensionId of extensionState.enabledExtensions) {
+        await executeExtensionEvent(extensionId, 'suggestion_selected', { tag });
+    }
+}
+
+/**
+ * カーソル位置にテキストを挿入
+ */
+function insertTextAtCursor(text, moveCursorBack = 0) {
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const value = editor.value;
+    
+    const newValue = value.substring(0, start) + text + value.substring(end);
+    editor.value = newValue;
+    
+    const newCursorPos = start + text.length - moveCursorBack;
+    editor.setSelectionRange(newCursorPos, newCursorPos);
+    
+    // inputイベントを発火
+    editor.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+/**
+ * カーソル座標を取得（簡易版）
+ */
+function getCursorCoordinates(position) {
+    // エディタのスタイルを取得
+    const computedStyle = window.getComputedStyle(editor);
+    const lineHeight = parseFloat(computedStyle.lineHeight);
+    const fontSize = parseFloat(computedStyle.fontSize);
+    
+    // 位置までのテキストから行数を計算
+    const textBeforePosition = editor.value.substring(0, position);
+    const lines = textBeforePosition.split('\n');
+    const lineNumber = lines.length - 1;
+    const columnNumber = lines[lines.length - 1].length;
+    
+    // 概算座標を計算
+    const x = columnNumber * (fontSize * 0.6); // 文字幅の概算
+    const y = lineNumber * lineHeight;
+    
+    return { x, y };
 }
 
 /**

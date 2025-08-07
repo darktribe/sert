@@ -38,13 +38,39 @@ fn test_python() -> Result<String, String> {
 #[tauri::command]
 fn execute_python(code: String) -> Result<String, String> {
     Python::with_gil(|py| {
+        
+        // 標準出力をキャプチャするための設定
+        let sys = py.import_bound("sys").map_err(|e| format!("Failed to import sys: {}", e))?;
+        let io_module = py.import_bound("io").map_err(|e| format!("Failed to import io: {}", e))?;
+        let string_io = io_module.getattr("StringIO").map_err(|e| format!("Failed to get StringIO: {}", e))?;
+        let output_buffer = string_io.call0().map_err(|e| format!("Failed to create StringIO: {}", e))?;
+        
+        // 標準出力を一時的にStringIOにリダイレクト
+        let original_stdout = sys.getattr("stdout").map_err(|e| format!("Failed to get stdout: {}", e))?;
+        sys.setattr("stdout", &output_buffer).map_err(|e| format!("Failed to redirect stdout: {}", e))?;
+        
         let locals = PyDict::new_bound(py);
-        match py.run_bound(&code, None, Some(&locals)) {
+        let result = py.run_bound(&code, None, Some(&locals));
+        
+        // 標準出力を元に戻す
+        sys.setattr("stdout", original_stdout).map_err(|e| format!("Failed to restore stdout: {}", e))?;
+        
+        // 出力を取得
+        let output = output_buffer.call_method0("getvalue")
+            .map_err(|e| format!("Failed to get output: {}", e))?
+            .to_string();
+        
+        match result {
             Ok(_) => {
-                // 結果を取得する場合（例：最後の変数の値）
-                match locals.get_item("result") {
-                    Ok(Some(val)) => Ok(format!("{}", val)),
-                    _ => Ok("Code executed successfully".to_string()),
+                // printされた内容を返す
+                if !output.is_empty() {
+                    Ok(output.trim().to_string())
+                } else {
+                    // 結果を取得する場合（例：最後の変数の値）
+                    match locals.get_item("result") {
+                        Ok(Some(val)) => Ok(format!("{}", val)),
+                        _ => Ok("Code executed successfully".to_string()),
+                    }
                 }
             },
             Err(e) => Err(format!("Python execution error: {}", e)),
