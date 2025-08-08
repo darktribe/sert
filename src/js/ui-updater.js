@@ -180,7 +180,7 @@ export function updateStatus() {
         charCount.textContent = `${t('statusBar.charCount')}: ${editor.value.length}`;
     }
     
-    // 選択中の文字数表示を更新
+    // // 選択中の文字数表示を更新
     const selectionCount = document.getElementById('selection-count');
     if (selectionCount) {
         const selectionStart = editor.selectionStart;
@@ -189,7 +189,7 @@ export function updateStatus() {
         if (selectionStart !== selectionEnd) {
             // 文字が選択されている場合
             const selectedLength = selectionEnd - selectionStart;
-            selectionCount.textContent = `${t('statusBar.selectionCount')}: ${selectedLength}`;
+            selectionCount.textContent = ` ${t('statusBar.selectionCount')}: ${selectedLength}`; // 先頭にスペースを追加
             selectionCount.style.display = 'inline';
         } else {
             // 選択されていない場合は非表示

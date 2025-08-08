@@ -689,10 +689,173 @@ function loadThemeFromStorage() {
 /**
  * 言語設定ダイアログを表示（機能拡張メニュー用）
  */
-export function showLanguageSettingsDialog() {
-    // 既存の言語切り替え機能を呼び出し
-    const languageSelect = document.getElementById('language-select');
-    if (languageSelect) {
-        languageSelect.click();
+export async function showLanguageSettingsDialog() {
+    console.log('🌐 Opening language settings dialog');
+    closeAllMenus();
+    
+    // 既存のダイアログがあれば削除
+    const existingDialog = document.getElementById('language-dialog-overlay');
+    if (existingDialog) {
+        document.body.removeChild(existingDialog);
+    }
+    
+    // locales.jsから必要な関数をインポート
+    const { getAvailableLanguages, getCurrentLanguage, changeLanguage, loadExternalLanguages } = await import('./locales.js');
+    
+    // 最新の言語リストを取得するため再読み込み
+    try {
+        await loadExternalLanguages();
+    } catch (error) {
+        console.warn('⚠️ Could not reload external languages:', error);
+    }
+    
+    const availableLanguages = getAvailableLanguages();
+    const currentLanguage = getCurrentLanguage();
+    
+    // ダイアログを作成
+    const dialogOverlay = document.createElement('div');
+    dialogOverlay.id = 'language-dialog-overlay';
+    dialogOverlay.className = 'search-dialog-overlay language-dialog-overlay';
+    
+    const dialog = document.createElement('div');
+    dialog.className = 'search-dialog language-dialog';
+    
+    dialog.innerHTML = `
+        <div class="search-dialog-header">${t('extensionsMenu.languageSettings')}</div>
+        <div class="search-dialog-content">
+            <div class="search-input-group">
+                <label for="language-dialog-select">${t('fonts.title').replace('フォント設定', '言語選択').replace('Font Settings', 'Language Selection').replace('Paramètres de police', 'Sélection de langue')}</label>
+                <select id="language-dialog-select" class="theme-select">
+                    ${availableLanguages.map(lang => 
+                        `<option value="${lang.code}" ${lang.code === currentLanguage ? 'selected' : ''}>
+                            ${lang.nativeName} (${lang.code.toUpperCase()})
+                        </option>`
+                    ).join('')}
+                </select>
+            </div>
+            
+            <div class="language-info-section">
+                <div style="margin-top: 20px; padding: 12px; background-color: #37373d; border-radius: 4px; font-size: 13px; color: #cccccc;">
+                    <div style="margin-bottom: 8px;">
+                        <strong>現在の言語 / Current Language:</strong> 
+                        <span id="current-language-display">${availableLanguages.find(l => l.code === currentLanguage)?.nativeName || currentLanguage}</span>
+                    </div>
+                    <div style="margin-bottom: 8px;">
+                        <strong>利用可能な言語数 / Available Languages:</strong> 
+                        <span>${availableLanguages.length}</span>
+                    </div>
+                    <div>
+                        <strong>言語ファイルの場所 / Language Files Location:</strong>
+                        <div style="font-size: 11px; margin-top: 4px; word-break: break-all; opacity: 0.8;">
+                            ~/Library/Application Support/com.saigetsudo.vinsert/vinsert/locale/
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="search-button-group">
+                <button id="language-apply-btn" class="search-button search-button-primary">${t('fonts.buttons.apply')}</button>
+                <button id="language-cancel-btn" class="search-button search-button-cancel">${t('fonts.buttons.cancel')}</button>
+            </div>
+        </div>
+    `;
+    
+    dialogOverlay.appendChild(dialog);
+    document.body.appendChild(dialogOverlay);
+    
+    // イベントリスナーを設定
+    setupLanguageDialogEvents(dialogOverlay, currentLanguage);
+    
+    // セレクトボックスにフォーカス
+    setTimeout(() => {
+        const langSelect = document.getElementById('language-dialog-select');
+        if (langSelect) {
+            langSelect.focus();
+        }
+    }, 100);
+}
+
+/**
+ * 言語設定ダイアログのイベント設定
+ */
+async function setupLanguageDialogEvents(dialogOverlay, originalLanguage) {
+    const langSelect = document.getElementById('language-dialog-select');
+    const applyBtn = document.getElementById('language-apply-btn');
+    const cancelBtn = document.getElementById('language-cancel-btn');
+    const currentLangDisplay = document.getElementById('current-language-display');
+    
+    const { getAvailableLanguages, changeLanguage } = await import('./locales.js');
+    
+    let selectedLanguage = originalLanguage;
+    
+    // 言語選択変更時のプレビュー
+    langSelect.addEventListener('change', () => {
+        selectedLanguage = langSelect.value;
+        const languages = getAvailableLanguages();
+        const langInfo = languages.find(l => l.code === selectedLanguage);
+        if (langInfo && currentLangDisplay) {
+            currentLangDisplay.textContent = `${langInfo.nativeName} (変更後 / After change)`;
+            currentLangDisplay.style.color = '#ffcc00';
+        }
+    });
+    
+    // 適用ボタン
+    applyBtn.addEventListener('click', async () => {
+        if (selectedLanguage !== originalLanguage) {
+            const success = await changeLanguage(selectedLanguage);
+            if (success) {
+                console.log(`✅ Language changed to: ${selectedLanguage}`);
+                
+                // UI全体を更新
+                window.dispatchEvent(new CustomEvent('languageChanged', {
+                    detail: { language: selectedLanguage }
+                }));
+            }
+        }
+        closeLanguageDialog(dialogOverlay);
+    });
+    
+    // キャンセルボタン
+    cancelBtn.addEventListener('click', () => {
+        closeLanguageDialog(dialogOverlay);
+    });
+    
+    // ESCキーでキャンセル
+    function handleKeyDown(e) {
+        if (e.key === 'Escape') {
+            closeLanguageDialog(dialogOverlay);
+        }
+    }
+    
+    document.addEventListener('keydown', handleKeyDown);
+    
+    // オーバーレイクリックでキャンセル
+    dialogOverlay.addEventListener('click', (e) => {
+        if (e.target === dialogOverlay) {
+            closeLanguageDialog(dialogOverlay);
+        }
+    });
+    
+    // クリーンアップ
+    dialogOverlay.addEventListener('remove', () => {
+        document.removeEventListener('keydown', handleKeyDown);
+    });
+}
+
+/**
+ * 言語設定ダイアログを閉じる
+ */
+function closeLanguageDialog(dialogOverlay) {
+    try {
+        document.body.removeChild(dialogOverlay);
+        
+        setTimeout(() => {
+            const editor = document.getElementById('editor');
+            if (editor && editor.focus) {
+                editor.focus();
+            }
+        }, 100);
+    } catch (error) {
+        console.warn('⚠️ Error closing language dialog:', error);
     }
 }

@@ -235,8 +235,9 @@ export async function initializeApp() {
     applyI18nToUI();
     
     // 言語切り替えUIを作成（多言語化システム初期化後）
-    console.log('🌐 Creating language switcher...');
-    createLanguageSwitcher();
+    // 右上の言語セレクトボックスは無効化（メニューからのダイアログ形式に変更）
+    // console.log('🌐 Creating language switcher...');
+    // createLanguageSwitcher();
     
     // 初期UI更新
     updateLineNumbers();
