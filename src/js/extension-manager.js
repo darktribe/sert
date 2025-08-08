@@ -498,14 +498,27 @@ function setupEditorEventListeners() {
         }
         extensionState.lastInputEvent = currentTime;
         
+        // デバッグログ追加
+        console.log('🔍 Input event:', {
+            type: e.inputType,
+            data: e.data,
+            cursorPos: editor.selectionStart,
+            textLength: editor.value.length
+        });
+        
         // 有効な拡張機能に対してイベントを送信
         for (const extensionId of extensionState.enabledExtensions) {
-            await executeExtensionEvent(extensionId, 'text_input', {
+            const result = await executeExtensionEvent(extensionId, 'text_input', {
                 text: editor.value,
                 cursor_position: editor.selectionStart,
                 input_type: e.inputType,
                 data: e.data
             });
+            
+            // デバッグ: 結果を確認
+            if (result) {
+                console.log('📤 Extension response:', result);
+            }
         }
     });
     
@@ -545,6 +558,9 @@ async function executeExtensionEvent(extensionId, eventType, eventData) {
         // PythonスクリプトをBase64エンコード（エスケープ問題を回避）
         const encodedScript = btoa(unescape(encodeURIComponent(pythonScript)));
         
+        // イベントデータもBase64エンコード（改行文字の問題を回避）
+        const encodedEventData = btoa(unescape(encodeURIComponent(JSON.stringify(eventData))));
+        
         // Pythonコードを実行
         const pythonCode = `
 import json
@@ -567,9 +583,15 @@ except Exception as e:
     print(json.dumps({"error": "Failed to exec extension: " + str(e), "traceback": traceback.format_exc()}))
     sys.exit(1)
 
-# イベントデータ
+# イベントデータをBase64デコード
+try:
+    event_data_json = base64.b64decode("${encodedEventData}").decode('utf-8')
+except Exception as e:
+    print(json.dumps({"error": "Failed to decode event data: " + str(e)}))
+    sys.exit(1)
+
+# イベントタイプ
 event_type = "${eventType}"
-event_data_json = '''${JSON.stringify(eventData)}'''
 
 # on_event関数が定義されているか確認して実行
 if 'on_event' in globals():
@@ -662,14 +684,27 @@ function showSuggestions(suggestions, position) {
     
     const suggestionBox = document.createElement('div');
     suggestionBox.className = 'enhanced-suggestion-box';
-    suggestionBox.style.position = 'absolute';
+    suggestionBox.style.position = 'fixed'; // absoluteからfixedに変更
+    suggestionBox.style.zIndex = '10010';
     
     // カーソル位置を計算
     const editorRect = editor.getBoundingClientRect();
     const cursorCoords = getCursorCoordinates(position);
     
-    suggestionBox.style.left = (editorRect.left + cursorCoords.x) + 'px';
-    suggestionBox.style.top = (editorRect.top + cursorCoords.y + 20) + 'px';
+    // エディタのスクロール位置を考慮
+    const scrollTop = editor.scrollTop;
+    const lineHeight = parseFloat(window.getComputedStyle(editor).lineHeight);
+    
+    // サジェスションボックスの位置を計算
+    const left = editorRect.left + cursorCoords.x;
+    const top = editorRect.top + cursorCoords.y - scrollTop + lineHeight;
+    
+    // 画面端でのはみ出しを防ぐ
+    const maxLeft = window.innerWidth - 250; // サジェスションボックスの最小幅
+    const maxTop = window.innerHeight - 200; // サジェスションボックスの最大高さ
+    
+    suggestionBox.style.left = Math.min(left, maxLeft) + 'px';
+    suggestionBox.style.top = Math.min(top, maxTop) + 'px';
     
     // サジェスションアイテムを追加
     updateSuggestionItems(suggestionBox, suggestions);
@@ -981,25 +1016,65 @@ function insertTextAtCursor(text, moveCursorBack = 0) {
 }
 
 /**
- * カーソル座標を取得（簡易版）
+ * カーソル座標を取得（改良版）
  */
 function getCursorCoordinates(position) {
-    // エディタのスタイルを取得
-    const computedStyle = window.getComputedStyle(editor);
-    const lineHeight = parseFloat(computedStyle.lineHeight);
-    const fontSize = parseFloat(computedStyle.fontSize);
+    // より正確な座標を取得するため、一時的な要素を使用
+    const tempDiv = document.createElement('div');
+    const editorStyle = window.getComputedStyle(editor);
     
-    // 位置までのテキストから行数を計算
-    const textBeforePosition = editor.value.substring(0, position);
-    const lines = textBeforePosition.split('\n');
-    const lineNumber = lines.length - 1;
-    const columnNumber = lines[lines.length - 1].length;
+    // エディタと同じスタイルを適用
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.visibility = 'hidden';
+    tempDiv.style.height = 'auto';
+    tempDiv.style.width = editor.clientWidth + 'px';
+    tempDiv.style.font = editorStyle.font;
+    tempDiv.style.fontSize = editorStyle.fontSize;
+    tempDiv.style.fontFamily = editorStyle.fontFamily;
+    tempDiv.style.lineHeight = editorStyle.lineHeight;
+    tempDiv.style.whiteSpace = 'pre-wrap';
+    tempDiv.style.wordWrap = 'break-word';
+    tempDiv.style.overflowWrap = 'break-word';
+    tempDiv.style.padding = editorStyle.padding;
+    tempDiv.style.border = editorStyle.border;
+    tempDiv.style.boxSizing = editorStyle.boxSizing;
     
-    // 概算座標を計算
-    const x = columnNumber * (fontSize * 0.6); // 文字幅の概算
-    const y = lineNumber * lineHeight;
+    // カーソル位置までのテキストと、カーソル位置にマーカーを挿入
+    const textBefore = editor.value.substring(0, position);
+    const textAfter = editor.value.substring(position);
     
-    return { x, y };
+    // テキストノードとマーカーを作成
+    const beforeNode = document.createTextNode(textBefore);
+    const marker = document.createElement('span');
+    marker.textContent = '|';
+    marker.style.position = 'relative';
+    const afterNode = document.createTextNode(textAfter);
+    
+    tempDiv.appendChild(beforeNode);
+    tempDiv.appendChild(marker);
+    tempDiv.appendChild(afterNode);
+    
+    document.body.appendChild(tempDiv);
+    
+    // マーカーの位置を取得
+    const markerRect = marker.getBoundingClientRect();
+    const tempDivRect = tempDiv.getBoundingClientRect();
+    
+    // 相対座標を計算
+    const x = markerRect.left - tempDivRect.left;
+    const y = markerRect.top - tempDivRect.top;
+    
+    // 一時要素を削除
+    document.body.removeChild(tempDiv);
+    
+    // エディタのパディングを考慮
+    const paddingLeft = parseFloat(editorStyle.paddingLeft) || 0;
+    const paddingTop = parseFloat(editorStyle.paddingTop) || 0;
+    
+    return { 
+        x: x + paddingLeft, 
+        y: y + paddingTop
+    };
 }
 
 /**
