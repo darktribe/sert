@@ -225,7 +225,7 @@ export async function loadThemes() {
 }
 
 /**
- * テーマを適用
+ * テーマを適用（検索ハイライト対応版）
  */
 export async function applyTheme(themeId) {
     try {
@@ -273,10 +273,22 @@ export async function applyTheme(themeId) {
         // 行ハイライト関連
         root.style.setProperty('--line-highlight-bg-color', themeData.lineHighlight.backgroundColor);
         
+        // 検索ハイライト関連（新規追加）
+        if (themeData.searchHighlight) {
+            root.style.setProperty('--search-highlight-bg-color', 
+                themeData.searchHighlight.backgroundColor || 'rgba(255, 215, 0, 0.4)');
+            root.style.setProperty('--search-highlight-border-color', 
+                themeData.searchHighlight.borderColor || 'rgba(255, 215, 0, 0.8)');
+            root.style.setProperty('--search-current-highlight-bg-color', 
+                themeData.searchHighlight.currentBackgroundColor || 'rgba(255, 140, 0, 0.6)');
+            root.style.setProperty('--search-current-highlight-border-color', 
+                themeData.searchHighlight.currentBorderColor || 'rgba(255, 140, 0, 1)');
+        }
+        
         currentTheme = themeId;
         saveThemeToStorage(themeId);
         
-        console.log(`✅ Theme applied: ${themeId}`);
+        console.log(`✅ Enhanced theme applied: ${themeId}`);
         return true;
         
     } catch (error) {

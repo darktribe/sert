@@ -10,12 +10,18 @@
  * =====================================================
  */
 
-:root {
+/*
+ * =====================================================
+ * 拡張されたテーマ用CSSカスタムプロパティ
+ * =====================================================
+ */
+
+ :root {
   /* エディタ関連 */
   --editor-bg-color: #1e1e1e;
   --editor-text-color: #d4d4d4;
   --editor-cursor-color: #ffffff;
-  --editor-selection-bg-color: rgba(173, 214, 255, 0.15);
+  --editor-selection-bg-color: rgba(173, 214, 255, 0.35); /* 強化 */
   
   /* 行番号関連 */
   --line-numbers-bg-color: #252526;
@@ -32,8 +38,14 @@
   --status-bar-bg-color: #007acc;
   --status-bar-text-color: #ffffff;
   
-  /* 行ハイライト関連 */
-  --line-highlight-bg-color: rgba(255, 255, 255, 0.05);
+  /* 行ハイライト関連（強化） */
+  --line-highlight-bg-color: rgba(255, 255, 255, 0.12);
+  
+  /* 検索・置換ハイライト関連（新規追加） */
+  --search-highlight-bg-color: rgba(255, 215, 0, 0.4);
+  --search-highlight-border-color: rgba(255, 215, 0, 0.8);
+  --search-current-highlight-bg-color: rgba(255, 140, 0, 0.6);
+  --search-current-highlight-border-color: rgba(255, 140, 0, 1);
   
   /* プレビュー用 */
   --preview-editor-bg: var(--editor-bg-color);
@@ -1292,4 +1304,74 @@ body, html {
       font-size: 10px;
       padding: 4px 8px;
   }
+}
+
+/* =====================================================
+ 検索・置換ハイライト強化スタイル（styles.cssに追加）
+ ===================================================== */
+
+/* 検索結果のハイライト */
+.search-highlight {
+  background-color: var(--search-highlight-bg-color) !important;
+  border: 1px solid var(--search-highlight-border-color) !important;
+  border-radius: 2px;
+  padding: 1px 2px;
+  margin: -1px -2px;
+}
+
+/* 現在選択中の検索結果 */
+.search-highlight.current {
+  background-color: var(--search-current-highlight-bg-color) !important;
+  border-color: var(--search-current-highlight-border-color) !important;
+  box-shadow: 0 0 3px var(--search-current-highlight-border-color);
+}
+
+/* 行ハイライトの強化 */
+.line-highlight-overlay {
+  background-color: var(--line-highlight-bg-color);
+  border-left: 2px solid transparent;
+  transition: all 0.15s ease;
+}
+
+/* エディタの選択範囲（強化版） */
+.editor-textarea::selection {
+  background-color: var(--editor-selection-bg-color);
+  color: inherit;
+}
+
+/* より強い視覚的フィードバック */
+.editor-textarea:focus .search-highlight.current {
+  animation: searchPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes searchPulse {
+  from {
+    box-shadow: 0 0 3px var(--search-current-highlight-border-color);
+  }
+  to {
+    box-shadow: 0 0 6px var(--search-current-highlight-border-color), 
+                0 0 9px var(--search-current-highlight-border-color);
+  }
+}
+
+/* テーマ別の追加強化 */
+
+/* ライトテーマでの追加コントラスト */
+[data-theme="light"] .line-highlight-overlay {
+  border-left-color: rgba(0, 122, 255, 0.3);
+}
+
+/* ダークテーマでの追加強化 */
+[data-theme="dark"] .line-highlight-overlay {
+  border-left-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Cobaltテーマでの青い強調 */
+[data-theme="cobalt"] .line-highlight-overlay {
+  border-left-color: rgba(0, 150, 255, 0.5);
+}
+
+/* Solarized Darkテーマでの強調 */
+[data-theme="solarized-dark"] .line-highlight-overlay {
+  border-left-color: rgba(38, 139, 210, 0.4);
 }
