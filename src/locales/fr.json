@@ -40,6 +40,7 @@
     "replace": "Remplacer"
   },
   "extensionsMenu": {
+    "extensionSettings": "Paramètres d'extension",
     "languageSettings": "Paramètres de langue",
     "theme": "Thème"
   },

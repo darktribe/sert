@@ -40,6 +40,7 @@
     "replace": "置換"
   },
   "extensionsMenu": {
+    "extensionSettings": "拡張機能設定",
     "languageSettings": "言語設定",
     "theme": "テーマ"
   },

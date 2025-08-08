@@ -57,6 +57,7 @@ const FALLBACK_LANGUAGES = {
             replace: '置換'
         },
         extensionsMenu: {
+            extensionSettings: '拡張機能設定',
             languageSettings: '言語設定',
             theme: 'テーマ'
         },
@@ -203,6 +204,7 @@ const FALLBACK_LANGUAGES = {
             replace: 'Replace'
         },
         extensionsMenu: {
+            extensionSettings: 'Extension Settings',
             languageSettings: 'Language Settings',
             theme: 'Theme'
         },
@@ -349,6 +351,7 @@ const FALLBACK_LANGUAGES = {
             replace: 'Remplacer'
         },
         extensionsMenu: {
+            extensionSettings: 'Paramètres d\'extension',
             languageSettings: 'Paramètres de langue',
             theme: 'Thème'
         },
