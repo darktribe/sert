@@ -305,8 +305,10 @@ body, html {
   z-index: 0;
 }
 
+/* src/styles.css の該当部分に追加 */
+
 /* =====================================================
- ステータスバー（フォントサイズ表示対応）
+ ステータスバー（スペース修正版）
  ===================================================== */
  .status-bar {
   background-color: var(--status-bar-bg-color);
@@ -318,6 +320,20 @@ body, html {
   align-items: center;
   flex-shrink: 0;
   height: 24px;
+  gap: 8px; /* 要素間に8pxのギャップを追加 */
+}
+
+/* 選択中の文字数表示に左マージンを追加 */
+#selection-count {
+  margin-left: 4px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  white-space: nowrap;
+}
+
+/* 他のステータスバー要素も統一 */
+#cursor-position, #file-encoding, #font-size-display, #char-count, #selection-count {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  white-space: nowrap;
 }
 
 #cursor-position, #file-encoding, #font-size-display, #char-count {

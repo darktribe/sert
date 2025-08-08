@@ -153,8 +153,10 @@ export function updateLineHighlight() {
     }
 }
 
+// src/js/ui-updater.js の updateStatus 関数内の該当部分を修正
+
 /**
- * ステータスバーの更新（多言語化対応）
+ * ステータスバーの更新（多言語化対応・スペース修正版）
  */
 export function updateStatus() {
     const cursorPosition = document.getElementById('cursor-position');
@@ -180,7 +182,7 @@ export function updateStatus() {
         charCount.textContent = `${t('statusBar.charCount')}: ${editor.value.length}`;
     }
     
-    // // 選択中の文字数表示を更新
+    // 選択中の文字数表示を更新（修正版）
     const selectionCount = document.getElementById('selection-count');
     if (selectionCount) {
         const selectionStart = editor.selectionStart;
@@ -189,7 +191,8 @@ export function updateStatus() {
         if (selectionStart !== selectionEnd) {
             // 文字が選択されている場合
             const selectedLength = selectionEnd - selectionStart;
-            selectionCount.textContent = ` ${t('statusBar.selectionCount')}: ${selectedLength}`; // 先頭にスペースを追加
+            // スペースを削除（CSSのmarginで間隔を制御）
+            selectionCount.textContent = `${t('statusBar.selectionCount')}: ${selectedLength}`;
             selectionCount.style.display = 'inline';
         } else {
             // 選択されていない場合は非表示
