@@ -229,6 +229,39 @@ def on_event(event_type, event_data):
 }
 
 /**
+ * 拡張機能の有効/無効状態をlocalStorageに保存
+ */
+function saveExtensionStates() {
+    try {
+        const states = {};
+        extensionState.extensions.forEach(ext => {
+            states[ext.id] = ext.enabled;
+        });
+        localStorage.setItem('vinsert-extension-states', JSON.stringify(states));
+        console.log('💾 Extension states saved:', states);
+    } catch (error) {
+        console.warn('⚠️ Could not save extension states:', error);
+    }
+}
+
+/**
+ * 拡張機能の有効/無効状態をlocalStorageから読み込み
+ */
+function loadExtensionStates() {
+    try {
+        const saved = localStorage.getItem('vinsert-extension-states');
+        if (saved) {
+            const states = JSON.parse(saved);
+            console.log('📂 Loaded extension states:', states);
+            return states;
+        }
+    } catch (error) {
+        console.warn('⚠️ Could not load extension states:', error);
+    }
+    return {};
+}
+
+/**
  * 拡張機能をスキャン
  */
 async function scanExtensions() {
@@ -253,6 +286,13 @@ async function scanExtensions() {
                 try {
                     const content = await readTextFile(settingsPath);
                     const settings = JSON.parse(content);
+                    
+                    // 保存された状態を適用
+                    const savedStates = loadExtensionStates();
+                    if (settings.id in savedStates) {
+                        settings.enabled = savedStates[settings.id];
+                    }
+                    
                     extensions.push(settings);
                 } catch (e) {
                     console.warn(`Failed to load extension ${entry.name}:`, e);
@@ -434,8 +474,11 @@ function setupExtensionDialogEvents(dialogOverlay) {
             }
         }
         
+        // localStorageにも保存
+        saveExtensionStates();
+        
         closeExtensionDialog(dialogOverlay);
-        console.log('✅ Extension settings applied');
+        console.log('✅ Extension settings applied and saved');
     });
     
     // キャンセルボタン
@@ -735,7 +778,7 @@ function showSuggestions(suggestions, position) {
                 updateSelectedItem(items);
                 break;
                 
-                case 'Tab':
+            case 'Tab':
                 if (items.length > 0) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -795,7 +838,6 @@ function showSuggestions(suggestions, position) {
         }
     };
     
-    // イベントリスナーを追加
     // イベントリスナーを追加（キャプチャフェーズで最優先処理）
     document.addEventListener('keydown', handleKeyDown, true);
     
