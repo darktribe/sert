@@ -70,7 +70,8 @@
     "appName": "Vinsert",
     "description": "Vinsert Is New Simple Editor by Rust and Tauri",
     "version": "Version 1.00",
-    "author": "Author : Akihiko Ouchi a.k.a show-ya kisaragi（from saigetsudo）"
+    "author": "Author : Akihiko Ouchi a.k.a show-ya kisaragi（from saigetsudo）",
+    "supportUrl": "Support URL : https://saigetsudo.com/product/vinsert"
   },
   "fonts": {
     "title": "Font Settings",

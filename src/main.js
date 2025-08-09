@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - メインエントリーポイント（デバッグ強化版）
+ * Vinsert Editor - メインエントリーポイント（修正版）
  * =====================================================
  */
 
@@ -84,31 +84,40 @@ async function loadExtensionFunctions() {
 }
 
 /**
- * 動的イベントリスナーの設定（デバッグ強化版）
+ * 動的イベントリスナーの設定（修正版）
  */
 function setupDynamicEventListeners() {
     console.log('🔧 Setting up dynamic event listeners for production build...');
     
-    // メニュー項目（data-menu属性）のイベントリスナー設定
     const menuItems = document.querySelectorAll('.menu-item[data-menu]');
     menuItems.forEach(item => {
         const menuId = item.getAttribute('data-menu');
         if (menuId) {
-            item.addEventListener('click', (e) => {
+            // 既存のイベントリスナーを削除してから追加
+            const newItem = item.cloneNode(true);
+            item.parentNode.replaceChild(newItem, item);
+            
+            newItem.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                e.stopImmediatePropagation();
+                
                 console.log(`🔧 Toggling menu: ${menuId}`);
                 if (window.toggleMenu && typeof window.toggleMenu === 'function') {
-                    window.toggleMenu(menuId);
+                    // 少し遅延させてからメニューを開く
+                    setTimeout(() => {
+                        window.toggleMenu(menuId);
+                    }, 10);
                 } else {
                     console.error('❌ toggleMenu function not found');
                 }
-            });
+            }, { once: false, passive: false });
+            
             console.log(`✅ Added menu toggle listener for: ${menuId}`);
         }
     });
     
-    // メニューオプション（data-action属性）のイベントリスナー設定（強化版）
+    // メニューオプション（data-action属性）のイベントリスナー設定
     const menuOptions = document.querySelectorAll('.menu-option[data-action]');
     console.log(`🔍 Found ${menuOptions.length} menu options with data-action`);
     
@@ -117,7 +126,6 @@ function setupDynamicEventListeners() {
         if (actionName) {
             console.log(`🔧 Setting up listener ${index + 1}: ${actionName}`);
             
-            // イベントリスナーを追加（強化版）
             const clickHandler = (e) => {
                 console.log(`🎯 MENU OPTION CLICKED: ${actionName}`);
                 e.preventDefault();
@@ -149,12 +157,8 @@ function setupDynamicEventListeners() {
                 }
             };
             
-            // 複数のイベントに対応
-            option.addEventListener('click', clickHandler, true); // キャプチャフェーズ
-            option.addEventListener('click', clickHandler, false); // バブリングフェーズ
-            
-            // タッチイベントにも対応
-            option.addEventListener('touchend', clickHandler, true);
+            // メインのクリックイベントリスナーを追加
+            option.addEventListener('click', clickHandler);
             
             // デバッグ用：要素にマウスオーバーした時のログ
             option.addEventListener('mouseenter', () => {
@@ -165,7 +169,7 @@ function setupDynamicEventListeners() {
             const computedStyle = window.getComputedStyle(option);
             console.log(`🎨 ${actionName} - pointer-events: ${computedStyle.pointerEvents}, z-index: ${computedStyle.zIndex}`);
             
-            console.log(`✅ Added enhanced action listener for: ${actionName}`);
+            console.log(`✅ Added action listener for: ${actionName}`);
         }
     });
     

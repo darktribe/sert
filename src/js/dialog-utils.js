@@ -291,6 +291,10 @@ export async function showAboutDialog() {
                     <div class="about-description">${t('about.description')}</div>
                     <div class="about-version">${t('about.version')}</div>
                     <div class="about-author">${t('about.author')}</div>
+                    <div class="about-support-url">
+                        <span>Support URL : </span>
+                        <a href="#" id="support-url-link" class="support-url-link">https://saigetsudo.com/product/vinsert</a>
+                    </div>
                 </div>
                 
                 <div class="search-button-group">
@@ -311,6 +315,7 @@ export async function showAboutDialog() {
  */
 function setupAboutDialogEvents(dialogOverlay, resolve) {
     const okBtn = document.getElementById('about-ok-btn');
+    const supportUrlLink = document.getElementById('support-url-link');
     
     function closeAboutDialog() {
         try {
@@ -321,6 +326,37 @@ function setupAboutDialogEvents(dialogOverlay, resolve) {
             console.warn('⚠️ Error closing about dialog:', error);
             resolve();
         }
+    }
+    
+    // サポートURLクリック処理
+    if (supportUrlLink) {
+        supportUrlLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                const url = 'https://saigetsudo.com/product/vinsert';
+                
+                // Tauri環境でブラウザを開く
+                if (window.__TAURI__ && window.__TAURI__.shell) {
+                    await window.__TAURI__.shell.open(url);
+                } else if (window.__TAURI__ && window.__TAURI__.core) {
+                    // フォールバック: Tauri invoke
+                    await window.__TAURI__.core.invoke('open_url', { url });
+                } else {
+                    // 最後の手段: window.open
+                    window.open(url, '_blank');
+                }
+                console.log('✅ Support URL opened:', url);
+            } catch (error) {
+                console.error('❌ Failed to open support URL:', error);
+                // エラー時はクリップボードにコピー
+                try {
+                    navigator.clipboard.writeText('https://saigetsudo.com/product/vinsert');
+                    alert('URLをクリップボードにコピーしました');
+                } catch (clipError) {
+                    alert('URLを開けませんでした: https://saigetsudo.com/product/vinsert');
+                }
+            }
+        });
     }
     
     okBtn.addEventListener('click', closeAboutDialog);

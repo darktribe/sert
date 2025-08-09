@@ -95,6 +95,10 @@ body, html {
   transition: background-color 0.2s;
   z-index: 1001;
   pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .menu-item:hover {
@@ -626,6 +630,29 @@ body, html {
   font-size: 14px;
   color: #cccccc;
   line-height: 1.4;
+}
+
+.about-support-url {
+  font-size: 14px;
+  color: #cccccc;
+  line-height: 1.4;
+  margin-top: 8px;
+}
+
+.support-url-link {
+  color: #007acc;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.support-url-link:hover {
+  color: #005a9e;
+  text-decoration: underline;
+}
+
+.support-url-link:active {
+  color: #003d6b;
 }
 
 /* =====================================================
