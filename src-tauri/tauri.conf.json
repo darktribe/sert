@@ -54,6 +54,11 @@
       "frameworks": [],
       "providerShortName": null,
       "signingIdentity": null
+    },
+    "windows": {
+      "wix": {
+        "language": "ja-JP"
+      }
     }
   },
   "plugins": {
