@@ -221,11 +221,16 @@ if (document.readyState !== 'loading') {
         setupDynamicEventListeners();
         await loadExtensionFunctions();
         
-        // タイプライターモードの初期化（フォールバック時も遅延）
+        // タイプライターモードの初期化（フォールバック）
         console.log('🖥️ Starting typewriter mode initialization (fallback)...');
-        setTimeout(() => {
-            initTypewriterMode();
-        }, 600);
+        try {
+            const { initTypewriterMode } = await import('./js/typewriter-mode.js');
+            setTimeout(() => {
+                initTypewriterMode();
+            }, 300);
+        } catch (error) {
+            console.error('❌ Typewriter mode initialization failed (fallback):', error);
+        }
     });
 }
 

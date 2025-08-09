@@ -15,6 +15,7 @@ import { loadFontSettings } from './font-settings.js';
 import { loadLineHighlightSetting } from './globals.js';
 import { initializeLineHighlight } from './line-highlight.js';
 import { initializeThemeSystem } from './theme-manager.js';
+import { initTypewriterMode } from './typewriter-mode.js';
 
 /**
  * Tauri APIの初期化
@@ -206,12 +207,31 @@ export async function initializeApp() {
     loadLineHighlightSetting();
     initializeLineHighlight();
     
+    // タイプライターモード設定の初期化
+    console.log('🖥️ Initializing typewriter mode settings...');
+    try {
+        initTypewriterMode();
+        console.log('✅ Typewriter mode initialized successfully');
+    } catch (error) {
+        console.error('❌ Typewriter mode initialization failed:', error);
+    }
+    
     // テーマシステムの初期化
     console.log('🎨 Initializing theme system...');
     try {
         await initializeThemeSystem();
     } catch (error) {
         console.error('❌ Theme system initialization failed:', error);
+    }
+    
+    // タイプライターモード設定の初期化
+    console.log('🖥️ Initializing typewriter mode settings...');
+    try {
+        const { initTypewriterMode } = await import('./typewriter-mode.js');
+        initTypewriterMode();
+        console.log('✅ Typewriter mode initialized successfully');
+    } catch (error) {
+        console.error('❌ Typewriter mode initialization failed:', error);
     }
     
     // イベントリスナーを設定
@@ -265,6 +285,8 @@ export async function initializeApp() {
     console.log('🎨 フォントサイズ表示機能が有効になりました:');
     console.log('  - ステータスバーに現在のフォントサイズが表示されます');
     console.log('  - 表示メニュー > フォントサイズ指定で直接数値入力できます');
+    console.log('🖥️ タイプライターモード機能が有効になりました:');
+    console.log('  - 表示メニュー > タイプライターモードで設定の切り替えができます');
 }
 
 /**

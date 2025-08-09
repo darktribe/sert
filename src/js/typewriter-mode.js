@@ -21,13 +21,7 @@ export function toggleTypewriterMode() {
     isEnabled = !isEnabled;
     
     // メニューのチェックマーク更新
-    const menuOption = document.getElementById('typewriter-mode-menu-option');
-    if (menuOption) {
-        const checkmark = menuOption.querySelector('.menu-checkmark');
-        if (checkmark) {
-            checkmark.style.visibility = isEnabled ? 'visible' : 'hidden';
-        }
-    }
+    updateMenuCheckmark();
     
     // 保存
     try {
@@ -61,6 +55,19 @@ export function toggleTypewriterMode() {
     
     // メニューを閉じる
     document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
+}
+
+/**
+ * メニューのチェックマーク更新
+ */
+function updateMenuCheckmark() {
+    const menuOption = document.getElementById('typewriter-mode-menu-option');
+    if (menuOption) {
+        const checkmark = menuOption.querySelector('.menu-checkmark');
+        if (checkmark) {
+            checkmark.style.visibility = isEnabled ? 'visible' : 'hidden';
+        }
+    }
 }
 
 /**
@@ -162,8 +169,39 @@ function centerCurrentLine() {
  */
 export function initTypewriterMode() {
     try {
-        if (localStorage.getItem('vinsert-typewriter-mode') === 'true') {
-            setTimeout(toggleTypewriterMode, 200);
+        // ローカルストレージから設定を読み込み
+        const saved = localStorage.getItem('vinsert-typewriter-mode');
+        if (saved === 'true') {
+            isEnabled = true;
+            
+            // DOM要素を取得
+            editorElement = document.getElementById('editor');
+            lineNumbersElement = document.getElementById('line-numbers');
+            
+            // メニューのチェックマークを更新
+            updateMenuCheckmark();
+            
+            if (editorElement) {
+                // パディング追加
+                const halfHeight = Math.floor(editorElement.clientHeight / 2);
+                editorElement.style.paddingTop = `${halfHeight}px`;
+                editorElement.style.paddingBottom = `${halfHeight}px`;
+                if (lineNumbersElement) {
+                    lineNumbersElement.style.paddingTop = `${halfHeight}px`;
+                    lineNumbersElement.style.paddingBottom = `${halfHeight}px`;
+                }
+                
+                // 継続的な監視を開始
+                startContinuousCenter();
+            }
+        } else {
+            // 無効な場合もメニューのチェックマークを更新
+            isEnabled = false;
+            updateMenuCheckmark();
         }
-    } catch (e) {}
+    } catch (e) {
+        console.warn('Could not load typewriter mode setting:', e);
+        isEnabled = false;
+        updateMenuCheckmark();
+    }
 }
