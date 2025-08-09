@@ -272,6 +272,78 @@ export async function showExitDialog() {
 }
 
 /**
+ * アバウトダイアログを表示
+ */
+export async function showAboutDialog() {
+    return new Promise((resolve) => {
+        const dialogOverlay = document.createElement('div');
+        dialogOverlay.id = 'about-dialog-overlay';
+        dialogOverlay.className = 'search-dialog-overlay about-dialog-overlay';
+        
+        const dialog = document.createElement('div');
+        dialog.className = 'search-dialog about-dialog';
+        
+        dialog.innerHTML = `
+            <div class="search-dialog-header">${t('about.title')}</div>
+            <div class="search-dialog-content">
+                <div class="about-content">
+                    <div class="about-app-name">${t('about.appName')}</div>
+                    <div class="about-description">${t('about.description')}</div>
+                    <div class="about-version">${t('about.version')}</div>
+                    <div class="about-author">${t('about.author')}</div>
+                </div>
+                
+                <div class="search-button-group">
+                    <button id="about-ok-btn" class="search-button search-button-primary">${t('messages.ok')}</button>
+                </div>
+            </div>
+        `;
+        
+        dialogOverlay.appendChild(dialog);
+        document.body.appendChild(dialogOverlay);
+        
+        setupAboutDialogEvents(dialogOverlay, resolve);
+    });
+}
+
+/**
+ * アバウトダイアログのイベント設定
+ */
+function setupAboutDialogEvents(dialogOverlay, resolve) {
+    const okBtn = document.getElementById('about-ok-btn');
+    
+    function closeAboutDialog() {
+        try {
+            document.body.removeChild(dialogOverlay);
+            document.removeEventListener('keydown', handleAboutKeyDown);
+            resolve();
+        } catch (error) {
+            console.warn('⚠️ Error closing about dialog:', error);
+            resolve();
+        }
+    }
+    
+    okBtn.addEventListener('click', closeAboutDialog);
+    
+    function handleAboutKeyDown(e) {
+        if (e.key === 'Enter' || e.key === 'Escape') {
+            e.preventDefault();
+            closeAboutDialog();
+        }
+    }
+    
+    document.addEventListener('keydown', handleAboutKeyDown);
+    
+    dialogOverlay.addEventListener('click', (e) => {
+        if (e.target === dialogOverlay) {
+            closeAboutDialog();
+        }
+    });
+    
+    setTimeout(() => okBtn.focus(), 100);
+}
+
+/**
  * ダイアログの共通キーボードナビゲーション処理
  */
 function setupDialogNavigation(dialogOverlay, buttonIds, returnValues, resolve) {

@@ -34,6 +34,7 @@ const FALLBACK_LANGUAGES = {
             open: '開く',
             save: '上書き保存',
             saveAs: '名前をつけて保存',
+            about: 'Vinsertについて',
             exit: '終了'
         },
         editMenu: {
@@ -182,6 +183,7 @@ const FALLBACK_LANGUAGES = {
             open: 'Open',
             save: 'Save',
             saveAs: 'Save As',
+            about: 'About Vinsert',
             exit: 'Exit'
         },
         editMenu: {
@@ -330,6 +332,7 @@ const FALLBACK_LANGUAGES = {
             open: 'Ouvrir',
             save: 'Enregistrer',
             saveAs: 'Enregistrer sous',
+            about: 'À propos de Vinsert',
             exit: 'Quitter'
         },
         editMenu: {

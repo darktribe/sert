@@ -17,6 +17,7 @@
     "open": "Ouvrir",
     "save": "Enregistrer",
     "saveAs": "Enregistrer sous",
+    "about": "À propos de Vinsert",
     "exit": "Quitter"
   },
   "editMenu": {
@@ -149,5 +150,12 @@
   "messages": {
     "messageTitle": "Message",
     "ok": "OK"
+  },
+  "about": {
+    "title": "À propos de Vinsert",
+    "appName": "Vinsert",
+    "description": "Vinsert Is Simple Editor by Rust and Tauri",
+    "version": "Version 1.00",
+    "author": "Author : Akihiko Ouchi a.k.a show-ya kisaragi（from saigetsudo）"
   }
 }

@@ -11,6 +11,7 @@ import { newFile, openFile, saveFile, saveAsFile } from './js/file-operations.js
 import { undo, redo } from './js/undo-redo.js';
 import { copy, cut, paste, selectAll } from './js/edit-operations.js';
 import { showSearchDialog, showReplaceDialog } from './js/search-replace.js';
+import { showAboutDialog } from './js/dialog-utils.js';
 import { showFontSettingsDialog, showFontSizeInputDialog, increaseFontSize, decreaseFontSize } from './js/font-settings.js';
 import { exitApp } from './js/app-exit.js';
 import { toggleLineHighlight } from './js/line-highlight.js';
@@ -41,6 +42,9 @@ window.selectAll = selectAll;
 // 検索・置換
 window.showSearchDialog = showSearchDialog;
 window.showReplaceDialog = showReplaceDialog;
+
+// アバウト
+window.showAboutDialog = showAboutDialog;
 
 // 表示・フォント
 window.showFontSettingsDialog = showFontSettingsDialog;

@@ -576,6 +576,50 @@ body, html {
 }
 
 /* =====================================================
+ アバウトダイアログ
+ ===================================================== */
+.about-dialog-overlay {
+  z-index: 10005;
+}
+
+.about-dialog {
+  min-width: 400px;
+  max-width: 500px;
+}
+
+.about-content {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.about-app-name {
+  font-size: 24px;
+  font-weight: bold;
+  color: #007acc;
+  margin-bottom: 8px;
+}
+
+.about-description {
+  font-size: 14px;
+  color: #cccccc;
+  margin-bottom: 12px;
+  font-style: italic;
+}
+
+.about-version {
+  font-size: 16px;
+  color: #d4d4d4;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.about-author {
+  font-size: 14px;
+  color: #cccccc;
+  line-height: 1.4;
+}
+
+/* =====================================================
  フォント設定ダイアログ
  ===================================================== */
 .font-settings-overlay {
