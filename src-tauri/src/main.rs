@@ -161,41 +161,28 @@ fn write_clipboard(text: String) -> Result<(), String> {
     
     #[cfg(target_os = "windows")]
     {
-        use std::process::Command;
+        use std::process::{Command, Stdio};
+        use std::io::Write;
         
-        // Windowsでは非同期実行でexplorerを起動
-        let result = Command::new("explorer")
-            .arg(&path)
-            .spawn();
+        let mut child = Command::new("powershell")
+            .args(["-Command", "Set-Clipboard"])
+            .stdin(Stdio::piped())
+            .spawn()
+            .map_err(|e| format!("Failed to spawn powershell: {}", e))?;
         
-        match result {
-            Ok(mut child) => {
-                // プロセスが正常に起動したかチェック
-                match child.try_wait() {
-                    Ok(Some(status)) => {
-                        // 即座に終了した場合はステータスをチェック
-                        if status.success() {
-                            println!("✅ Folder opened successfully (Windows)");
-                            Ok(())
-                        } else {
-                            println!("⚠️ Explorer exited with non-zero status, but folder might have opened");
-                            Ok(()) // Windows explorerは既に開いているフォルダでも非ゼロで終了することがある
-                        }
-                    },
-                    Ok(None) => {
-                        // プロセスがまだ実行中（正常）
-                        println!("✅ Folder opened successfully (Windows)");
-                        Ok(())
-                    },
-                    Err(e) => {
-                        println!("⚠️ Could not check process status: {}, but explorer started", e);
-                        Ok(()) // プロセスは起動したので成功とみなす
-                    }
-                }
-            },
-            Err(e) => {
-                Err(format!("Failed to start explorer: {}", e))
-            }
+        if let Some(stdin) = child.stdin.as_mut() {
+            stdin.write_all(text.as_bytes())
+                .map_err(|e| format!("Failed to write to powershell: {}", e))?;
+        }
+        
+        let status = child.wait()
+            .map_err(|e| format!("Failed to wait for powershell: {}", e))?;
+        
+        if status.success() {
+            println!("✅ Clipboard write successful (Windows)");
+            Ok(())
+        } else {
+            Err("Clipboard write failed (Windows)".to_string())
         }
     }
     
@@ -408,6 +395,45 @@ async fn write_file(path: String, content: String) -> Result<(), String> {
 async fn open_folder(path: String) -> Result<(), String> {
     println!("📁 Opening folder: {}", path);
     
+    #[cfg(target_os = "windows")]
+    {
+        use std::process::Command;
+        
+        let result = Command::new("explorer")
+            .arg(&path)
+            .spawn();
+        
+        match result {
+            Ok(mut child) => {
+                // プロセスが正常に起動したかチェック
+                match child.try_wait() {
+                    Ok(Some(status)) => {
+                        // 即座に終了した場合はステータスをチェック
+                        if status.success() {
+                            println!("✅ Folder opened successfully (Windows)");
+                            Ok(())
+                        } else {
+                            println!("⚠️ Explorer exited with non-zero status, but folder might have opened");
+                            Ok(()) // Windows explorerは既に開いているフォルダでも非ゼロで終了することがある
+                        }
+                    },
+                    Ok(None) => {
+                        // プロセスがまだ実行中（正常）
+                        println!("✅ Folder opened successfully (Windows)");
+                        Ok(())
+                    },
+                    Err(e) => {
+                        println!("⚠️ Could not check process status: {}, but explorer started", e);
+                        Ok(()) // プロセスは起動したので成功とみなす
+                    }
+                }
+            },
+            Err(e) => {
+                Err(format!("Failed to start explorer: {}", e))
+            }
+        }
+    }
+    
     #[cfg(target_os = "macos")]
     {
         use std::process::Command;
@@ -421,22 +447,6 @@ async fn open_folder(path: String) -> Result<(), String> {
             Ok(())
         } else {
             Err("Failed to open folder (macOS)".to_string())
-        }
-    }
-    
-    #[cfg(target_os = "windows")]
-    {
-        use std::process::Command;
-        let status = Command::new("explorer")
-            .arg(&path)
-            .status()
-            .map_err(|e| format!("Failed to execute explorer command: {}", e))?;
-        
-        if status.success() {
-            println!("✅ Folder opened successfully (Windows)");
-            Ok(())
-        } else {
-            Err("Failed to open folder (Windows)".to_string())
         }
     }
     

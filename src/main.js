@@ -185,7 +185,7 @@ function setupDynamicEventListeners() {
 }
 
 /**
- * ページ読み込み時の初期化処理
+ * ページ読み込み時の初期化処理（修正版）
  */
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('📄 DOM loaded, starting initialization...');
@@ -193,29 +193,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     // アプリケーションの初期化
     await initializeApp();
     
-    // 少し遅延してからイベントリスナーを設定
-    setTimeout(() => {
-        setupDynamicEventListeners();
-    }, 500);
+    // DOM要素が確実に準備されるまで少し待機
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // イベントリスナーを設定
+    setupDynamicEventListeners();
     
     // 拡張機能の遅延初期化
     await loadExtensionFunctions();
     
-    // タイプライターモードの初期化
-    initTypewriterMode();
+    // タイプライターモードの初期化（最後に実行、追加の遅延付き）
+    console.log('🖥️ Starting typewriter mode initialization...');
+    setTimeout(() => {
+        initTypewriterMode();
+    }, 500); // DOM完全準備後に実行
     
     console.log('🎯 App ready!');
 });
 
-// フォールバック初期化
+// フォールバック初期化（修正版）
 if (document.readyState !== 'loading') {
     console.log('📄 DOM already loaded, initializing immediately...');
     initializeApp().then(async () => {
-        setTimeout(() => {
-            setupDynamicEventListeners();
-        }, 500);
+        // DOM要素が確実に準備されるまで待機
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        setupDynamicEventListeners();
         await loadExtensionFunctions();
-        initTypewriterMode();
+        
+        // タイプライターモードの初期化（フォールバック時も遅延）
+        console.log('🖥️ Starting typewriter mode initialization (fallback)...');
+        setTimeout(() => {
+            initTypewriterMode();
+        }, 600);
     });
 }
 
