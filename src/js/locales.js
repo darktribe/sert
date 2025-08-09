@@ -143,6 +143,13 @@ const FALLBACK_LANGUAGES = {
                 noMatches: '置換する対象がありません',
                 replaceAllComplete: '全{count}件を置換しました',
                 regexError: '正規表現に問題があります。正規表現でなくその文字自体を検索したい場合、正規表現のチェックを外して下さい。'
+            },
+            about: {
+                title: 'Vinsertについて',
+                appName: 'Vinsert',
+                description: 'Vinsert Is New Simple Editor by Rust and Tauri',
+                version: 'Version 1.00',
+                author: 'Author : Akihiko Ouchi a.k.a 如月 翔也（from 歳月堂）'
             }
         },
         dialogs: {
@@ -230,6 +237,13 @@ const FALLBACK_LANGUAGES = {
         messages: {
             messageTitle: 'Message',
             ok: 'OK'
+        },
+        about: {
+            title: 'About Vinsert',
+            appName: 'Vinsert',
+            description: 'Vinsert Is New Simple Editor by Rust and Tauri',
+            version: 'Version 1.00',
+            author: 'Author : Akihiko Ouchi a.k.a show-ya kisaragi（from saigetsudo）'
         },
         fonts: {
             title: 'Font Settings',
@@ -465,7 +479,14 @@ const FALLBACK_LANGUAGES = {
         messages: {
             messageTitle: 'Message',
             ok: 'OK'
-        }
+        },
+        about: {
+            title: 'À propos de Vinsert',
+            appName: 'Vinsert',
+            description: 'Vinsert Is New Simple Editor by Rust and Tauri',
+            version: 'Version 1.00',
+            author: 'Author : Akihiko Ouchi a.k.a show-ya kisaragi（from saigetsudo）'
+      }
     }
 };
 

@@ -154,7 +154,7 @@
   "about": {
     "title": "À propos de Vinsert",
     "appName": "Vinsert",
-    "description": "Vinsert Is Simple Editor by Rust and Tauri",
+    "description": "Vinsert Is New Simple Editor by Rust and Tauri",
     "version": "Version 1.00",
     "author": "Author : Akihiko Ouchi a.k.a show-ya kisaragi（from saigetsudo）"
   }

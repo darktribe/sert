@@ -68,9 +68,9 @@
   "about": {
     "title": "Vinsertについて",
     "appName": "Vinsert",
-    "description": "Vinsert Is Simple Editor by Rust and Tauri",
+    "description": "Vinsert Is New Simple Editor by Rust and Tauri",
     "version": "Version 1.00",
-    "author": "Author : Akihiko Ouchi a.k.a 如月 翔也（from歳月堂）"
+    "author": "Author : Akihiko Ouchi a.k.a 如月 翔也（from 歳月堂）"
   },
   "fonts": {
     "title": "フォント設定",
