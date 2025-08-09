@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - メニュー制御
+ * Vinsert Editor - メニュー制御（プロダクションビルド対応版）
  * =====================================================
  */
 
@@ -42,7 +42,7 @@ export function closeAllMenus() {
 }
 
 /**
- * メニュー外クリック時の処理
+ * メニュー外クリック時の処理（プロダクションビルド対応版）
  */
 export function handleGlobalClick(e) {
     const menuItem = e.target.closest('.menu-item');
@@ -54,7 +54,8 @@ export function handleGlobalClick(e) {
     }
     
     // メニューオプション（.menu-option）がクリックされた場合、メニューを閉じる
-    if (e.target.classList.contains('menu-option')) {
+    // data-action属性の有無で判定（プロダクションビルド対応）
+    if (e.target.classList.contains('menu-option') || e.target.closest('.menu-option')) {
         setTimeout(() => {
             closeAllMenus();
         }, 100);

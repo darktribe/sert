@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - メインエントリーポイント（エラー修正版）
+ * Vinsert Editor - メインエントリーポイント（デバッグ強化版）
  * =====================================================
  */
 
@@ -84,6 +84,103 @@ async function loadExtensionFunctions() {
 }
 
 /**
+ * 動的イベントリスナーの設定（デバッグ強化版）
+ */
+function setupDynamicEventListeners() {
+    console.log('🔧 Setting up dynamic event listeners for production build...');
+    
+    // メニュー項目（data-menu属性）のイベントリスナー設定
+    const menuItems = document.querySelectorAll('.menu-item[data-menu]');
+    menuItems.forEach(item => {
+        const menuId = item.getAttribute('data-menu');
+        if (menuId) {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log(`🔧 Toggling menu: ${menuId}`);
+                if (window.toggleMenu && typeof window.toggleMenu === 'function') {
+                    window.toggleMenu(menuId);
+                } else {
+                    console.error('❌ toggleMenu function not found');
+                }
+            });
+            console.log(`✅ Added menu toggle listener for: ${menuId}`);
+        }
+    });
+    
+    // メニューオプション（data-action属性）のイベントリスナー設定（強化版）
+    const menuOptions = document.querySelectorAll('.menu-option[data-action]');
+    console.log(`🔍 Found ${menuOptions.length} menu options with data-action`);
+    
+    menuOptions.forEach((option, index) => {
+        const actionName = option.getAttribute('data-action');
+        if (actionName) {
+            console.log(`🔧 Setting up listener ${index + 1}: ${actionName}`);
+            
+            // イベントリスナーを追加（強化版）
+            const clickHandler = (e) => {
+                console.log(`🎯 MENU OPTION CLICKED: ${actionName}`);
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
+                console.log(`🔧 Executing action: ${actionName}`);
+                console.log(`🔍 Function exists: ${typeof window[actionName]}`);
+                
+                // グローバル関数を実行
+                if (window[actionName] && typeof window[actionName] === 'function') {
+                    try {
+                        console.log(`⚡ Calling ${actionName}()`);
+                        window[actionName]();
+                        console.log(`✅ Successfully executed: ${actionName}`);
+                    } catch (error) {
+                        console.error(`❌ Error executing ${actionName}:`, error);
+                    }
+                } else {
+                    console.error(`❌ Function not found: ${actionName}`);
+                    console.log('🔍 Available window functions:', 
+                        Object.keys(window).filter(key => 
+                            typeof window[key] === 'function' && 
+                            !key.startsWith('_') && 
+                            !key.includes('webkit') &&
+                            !key.includes('chrome')
+                        ).slice(0, 20)
+                    );
+                }
+            };
+            
+            // 複数のイベントに対応
+            option.addEventListener('click', clickHandler, true); // キャプチャフェーズ
+            option.addEventListener('click', clickHandler, false); // バブリングフェーズ
+            
+            // タッチイベントにも対応
+            option.addEventListener('touchend', clickHandler, true);
+            
+            // デバッグ用：要素にマウスオーバーした時のログ
+            option.addEventListener('mouseenter', () => {
+                console.log(`🖱️ Mouse over: ${actionName}`);
+            });
+            
+            // CSS確認用
+            const computedStyle = window.getComputedStyle(option);
+            console.log(`🎨 ${actionName} - pointer-events: ${computedStyle.pointerEvents}, z-index: ${computedStyle.zIndex}`);
+            
+            console.log(`✅ Added enhanced action listener for: ${actionName}`);
+        }
+    });
+    
+    // 全体的なクリックイベントの監視（デバッグ用）
+    document.addEventListener('click', (e) => {
+        console.log(`🖱️ Document click detected:`, e.target);
+        if (e.target.closest('.menu-option')) {
+            console.log(`🎯 Click on menu option detected:`, e.target.closest('.menu-option'));
+        }
+    }, true);
+    
+    console.log(`✅ Dynamic event listeners setup complete (${menuItems.length} menus, ${menuOptions.length} options)`);
+}
+
+/**
  * ページ読み込み時の初期化処理
  */
 document.addEventListener('DOMContentLoaded', async () => {
@@ -91,6 +188,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // アプリケーションの初期化
     await initializeApp();
+    
+    // 少し遅延してからイベントリスナーを設定
+    setTimeout(() => {
+        setupDynamicEventListeners();
+    }, 500);
     
     // 拡張機能の遅延初期化
     await loadExtensionFunctions();
@@ -104,8 +206,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 // フォールバック初期化
 if (document.readyState !== 'loading') {
     console.log('📄 DOM already loaded, initializing immediately...');
-    initializeApp().then(() => {
-        loadExtensionFunctions();
+    initializeApp().then(async () => {
+        setTimeout(() => {
+            setupDynamicEventListeners();
+        }, 500);
+        await loadExtensionFunctions();
+        initTypewriterMode();
     });
 }
 
