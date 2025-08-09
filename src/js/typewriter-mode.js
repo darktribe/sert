@@ -26,10 +26,7 @@ export function toggleTypewriterMode() {
     // 保存
     try {
         localStorage.setItem('vinsert-typewriter-mode', isEnabled ? 'true' : 'false');
-        console.log('💾 Typewriter mode setting saved:', isEnabled);
-    } catch (e) {
-        console.warn('⚠️ Could not save typewriter mode setting:', e);
-    }
+    } catch (e) {}
     
     if (isEnabled) {
         // パディング追加
@@ -174,7 +171,6 @@ export function initTypewriterMode() {
     try {
         // ローカルストレージから設定を読み込み
         const saved = localStorage.getItem('vinsert-typewriter-mode');
-        console.log('📂 Loading typewriter mode setting:', saved);
         if (saved === 'true') {
             isEnabled = true;
             

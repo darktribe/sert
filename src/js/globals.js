@@ -86,47 +86,19 @@ export let currentHighlightedLine = -1;
 
 export function setIsLineHighlightEnabled(enabled) {
     isLineHighlightEnabled = enabled;
+    // ローカルストレージに保存
+    try {
+        localStorage.setItem('sert-line-highlight', enabled ? 'true' : 'false');
+    } catch (error) {
+        console.warn('Could not save line highlight setting:', error);
+    }
 }
 
 export function setCurrentHighlightedLine(lineNumber) {
     currentHighlightedLine = lineNumber;
 }
 
-/**
- * 行ハイライト設定をローカルストレージに保存
- */
-export function saveLineHighlightToStorage(enabled) {
-    try {
-        localStorage.setItem('vinsert-line-highlight', enabled ? 'true' : 'false');
-        console.log(`💾 Line highlight saved to storage: ${enabled}`);
-    } catch (error) {
-        console.warn('⚠️ Could not save line highlight to localStorage:', error);
-    }
-}
-
-/**
- * ローカルストレージから行ハイライト設定を読み込み
- */
-export function loadLineHighlightFromStorage() {
-    try {
-        const saved = localStorage.getItem('vinsert-line-highlight');
-        if (saved !== null) {
-            const enabled = saved === 'true';
-            console.log(`📂 Line highlight loaded from storage: ${enabled}`);
-            return enabled;
-        }
-    } catch (error) {
-        console.warn('⚠️ Could not load line highlight from localStorage:', error);
-    }
-    
-    // デフォルト値を返す
-    return true;
-}
-
-/**
- * 行ハイライト設定を読み込む関数（後方互換性のため残す）
- * @deprecated loadLineHighlightFromStorage() を使用してください
- */
+// 行ハイライト設定を読み込む関数
 export function loadLineHighlightSetting() {
     try {
         const saved = localStorage.getItem('sert-line-highlight');
