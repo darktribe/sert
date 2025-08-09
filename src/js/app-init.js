@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - アプリケーション初期化（フォントサイズ表示対応版）
+ * Vinsert Editor - アプリケーション初期化（行ハイライト設定修正版）
  * =====================================================
  */
 
@@ -12,7 +12,6 @@ import { exitApp } from './app-exit.js';
 import { initializeI18n, t, updateElementText } from './locales.js';
 import { createLanguageSwitcher } from './language-switcher.js';
 import { loadFontSettings } from './font-settings.js';
-import { loadLineHighlightSetting } from './globals.js';
 import { initializeLineHighlight } from './line-highlight.js';
 import { initializeThemeSystem } from './theme-manager.js';
 import { initTypewriterMode } from './typewriter-mode.js';
@@ -202,9 +201,8 @@ export async function initializeApp() {
     console.log('🎨 Initializing font settings...');
     loadFontSettings();
     
-    // 行ハイライト設定の初期化
+    // 行ハイライト設定の初期化（修正版）
     console.log('🎨 Initializing line highlight settings...');
-    loadLineHighlightSetting();
     initializeLineHighlight();
     
     // タイプライターモード設定の初期化
@@ -224,29 +222,12 @@ export async function initializeApp() {
         console.error('❌ Theme system initialization failed:', error);
     }
     
-    // タイプライターモード設定の初期化
-    console.log('🖥️ Initializing typewriter mode settings...');
-    try {
-        const { initTypewriterMode } = await import('./typewriter-mode.js');
-        initTypewriterMode();
-        console.log('✅ Typewriter mode initialized successfully');
-    } catch (error) {
-        console.error('❌ Typewriter mode initialization failed:', error);
-    }
+    // タイプライターモード設定の初期化（重複削除）
     
     // イベントリスナーを設定
     setupEventListeners();
     
-    // 外部ファイルシステムの初期化を試行
-    console.log('🌐 Starting external file system initialization...');
-    try {
-        const { tryExternalFileSystem } = await import('./locales.js');
-        await tryExternalFileSystem();
-        console.log('✅ External file system initialization completed');
-    } catch (error) {
-        console.error('❌ External file system initialization failed:', error);
-        console.warn('⚠️ Using fallback system');
-    }
+    // 外部ファイルシステムの初期化を試行（重複削除）
     
     // 言語変更イベントリスナーを設定
     setupLanguageChangeListener();
@@ -287,6 +268,9 @@ export async function initializeApp() {
     console.log('  - 表示メニュー > フォントサイズ指定で直接数値入力できます');
     console.log('🖥️ タイプライターモード機能が有効になりました:');
     console.log('  - 表示メニュー > タイプライターモードで設定の切り替えができます');
+    console.log('🎨 行ハイライト機能が有効になりました:');
+    console.log('  - 表示メニュー > 行ハイライトで設定の切り替えができます');
+    console.log('  - 設定は自動的に保存・復元されます');
 }
 
 /**

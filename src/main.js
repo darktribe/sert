@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - メインエントリーポイント（修正版）
+ * Vinsert Editor - メインエントリーポイント（二重初期化防止版）
  * =====================================================
  */
 
@@ -17,6 +17,9 @@ import { exitApp } from './js/app-exit.js';
 import { toggleLineHighlight } from './js/line-highlight.js';
 import { showThemeDialog, showLanguageSettingsDialog } from './js/theme-manager.js';
 import { toggleTypewriterMode, initTypewriterMode } from './js/typewriter-mode.js';
+
+// 初期化状態の管理
+let isInitialized = false;
 
 // グローバル関数を即座に登録
 console.log('🔧 Registering core global functions...');
@@ -84,7 +87,7 @@ async function loadExtensionFunctions() {
 }
 
 /**
- * 動的イベントリスナーの設定（修正版）
+ * 動的イベントリスナーの設定
  */
 function setupDynamicEventListeners() {
     console.log('🔧 Setting up dynamic event listeners for production build...');
@@ -185,53 +188,61 @@ function setupDynamicEventListeners() {
 }
 
 /**
- * ページ読み込み時の初期化処理（修正版）
+ * アプリケーション初期化（二重実行防止版）
  */
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('📄 DOM loaded, starting initialization...');
+async function initializeAppOnce() {
+    if (isInitialized) {
+        console.log('⚠️ App already initialized, skipping...');
+        return;
+    }
     
-    // アプリケーションの初期化
-    await initializeApp();
+    console.log('📄 Starting app initialization...');
+    isInitialized = true;
     
-    // DOM要素が確実に準備されるまで少し待機
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    // イベントリスナーを設定
-    setupDynamicEventListeners();
-    
-    // 拡張機能の遅延初期化
-    await loadExtensionFunctions();
-    
-    // タイプライターモードの初期化（最後に実行、追加の遅延付き）
-    console.log('🖥️ Starting typewriter mode initialization...');
-    setTimeout(() => {
-        initTypewriterMode();
-    }, 500); // DOM完全準備後に実行
-    
-    console.log('🎯 App ready!');
-});
-
-// フォールバック初期化（修正版）
-if (document.readyState !== 'loading') {
-    console.log('📄 DOM already loaded, initializing immediately...');
-    initializeApp().then(async () => {
-        // DOM要素が確実に準備されるまで待機
-        await new Promise(resolve => setTimeout(resolve, 300));
+    try {
+        // アプリケーションの初期化
+        await initializeApp();
         
+        // DOM要素が確実に準備されるまで少し待機
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // イベントリスナーを設定
         setupDynamicEventListeners();
+        
+        // 拡張機能の遅延初期化
         await loadExtensionFunctions();
         
-        // タイプライターモードの初期化（フォールバック）
-        console.log('🖥️ Starting typewriter mode initialization (fallback)...');
-        try {
-            const { initTypewriterMode } = await import('./js/typewriter-mode.js');
-            setTimeout(() => {
+        // タイプライターモードの初期化（最後に実行）
+        console.log('🖥️ Starting typewriter mode initialization...');
+        setTimeout(() => {
+            try {
                 initTypewriterMode();
-            }, 300);
-        } catch (error) {
-            console.error('❌ Typewriter mode initialization failed (fallback):', error);
-        }
-    });
+                console.log('✅ Typewriter mode initialization completed');
+            } catch (error) {
+                console.error('❌ Typewriter mode initialization failed:', error);
+            }
+        }, 500);
+        
+        console.log('🎯 App ready!');
+        
+    } catch (error) {
+        console.error('❌ App initialization failed:', error);
+        isInitialized = false; // 失敗時はフラグをリセット
+    }
+}
+
+/**
+ * ページ読み込み時の初期化処理
+ */
+document.addEventListener('DOMContentLoaded', initializeAppOnce);
+
+/**
+ * フォールバック初期化（DOMContentLoadedが既に発火済みの場合）
+ */
+if (document.readyState !== 'loading') {
+    console.log('📄 DOM already loaded, initializing immediately...');
+    // 少し遅延させて確実にDOMContentLoadedイベントの後に実行
+    setTimeout(initializeAppOnce, 100);
 }
 
 console.log('📋 Main.js loaded successfully');
