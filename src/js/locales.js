@@ -19,6 +19,7 @@ function resetExternalSystemFlag() {
 let configDirectory = null;
 
 // ハードコードされた完全な言語データ（フォールバック用）
+// FALLBACK_LANGUAGES の ja オブジェクトの修正版（該当部分のみ）
 const FALLBACK_LANGUAGES = {
     ja: {
         _meta: { code: 'ja', name: '日本語', nativeName: '日本語', version: '1.0.0' },
@@ -143,14 +144,15 @@ const FALLBACK_LANGUAGES = {
                 noMatches: '置換する対象がありません',
                 replaceAllComplete: '全{count}件を置換しました',
                 regexError: '正規表現に問題があります。正規表現でなくその文字自体を検索したい場合、正規表現のチェックを外して下さい。'
-            },
-            about: {
-                title: 'Vinsertについて',
-                appName: 'Vinsert',
-                description: 'Vinsert Is New Simple Editor by Rust and Tauri',
-                version: 'Version 1.00',
-                author: 'Author : Akihiko Ouchi a.k.a 如月 翔也（from 歳月堂）'
             }
+        },
+        // about オブジェクトを search の外に移動（修正ポイント）
+        about: {
+            title: 'Vinsertについて',
+            appName: 'Vinsert',
+            description: 'Vinsert Is New Simple Editor by Rust and Tauri',
+            version: 'Version 1.00',
+            author: 'Author : Akihiko Ouchi a.k.a 如月 翔也（from 歳月堂）'
         },
         dialogs: {
             newFile: {
