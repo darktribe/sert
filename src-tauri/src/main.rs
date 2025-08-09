@@ -380,6 +380,67 @@ async fn write_file(path: String, content: String) -> Result<(), String> {
     }
 }
 
+/**
+ * フォルダを開く（クロスプラットフォーム対応）
+ */
+#[tauri::command]
+async fn open_folder(path: String) -> Result<(), String> {
+    println!("📁 Opening folder: {}", path);
+    
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        let status = Command::new("open")
+            .arg(&path)
+            .status()
+            .map_err(|e| format!("Failed to execute open command: {}", e))?;
+        
+        if status.success() {
+            println!("✅ Folder opened successfully (macOS)");
+            Ok(())
+        } else {
+            Err("Failed to open folder (macOS)".to_string())
+        }
+    }
+    
+    #[cfg(target_os = "windows")]
+    {
+        use std::process::Command;
+        let status = Command::new("explorer")
+            .arg(&path)
+            .status()
+            .map_err(|e| format!("Failed to execute explorer command: {}", e))?;
+        
+        if status.success() {
+            println!("✅ Folder opened successfully (Windows)");
+            Ok(())
+        } else {
+            Err("Failed to open folder (Windows)".to_string())
+        }
+    }
+    
+    #[cfg(target_os = "linux")]
+    {
+        use std::process::Command;
+        let status = Command::new("xdg-open")
+            .arg(&path)
+            .status()
+            .map_err(|e| format!("Failed to execute xdg-open command: {}", e))?;
+        
+        if status.success() {
+            println!("✅ Folder opened successfully (Linux)");
+            Ok(())
+        } else {
+            Err("Failed to open folder (Linux)".to_string())
+        }
+    }
+    
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+    {
+        Err("Unsupported operating system".to_string())
+    }
+}
+
 // =====================================================
 // メイン関数とアプリケーション設定
 // =====================================================
@@ -394,6 +455,7 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_opener::init())
         
         // Tauriコマンドの登録
         .invoke_handler(tauri::generate_handler![
@@ -413,7 +475,10 @@ fn main() {
             
             // ファイル操作
             read_file,
-            write_file
+            write_file,
+            
+            // フォルダを開く（カスタムコマンド）
+            open_folder
         ])
         
         // アプリケーション初期化処理

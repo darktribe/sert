@@ -1177,12 +1177,7 @@ export async function openExtensionFolder() {
     }
 }
 
-/**
- * アプリフォルダをシステムのファイラーで開く
- */
-/**
- * アプリフォルダをシステムのファイラーで開く
- */
+
 /**
  * アプリフォルダをシステムのファイラーで開く
  */
@@ -1192,13 +1187,11 @@ export async function openAppFolder() {
     
     try {
         // 必要なTauri APIが利用可能か確認
-        if (!window.__TAURI__ || !window.__TAURI__.path || !window.__TAURI__.shell || !window.__TAURI__.os) {
+        if (!window.__TAURI__ || !window.__TAURI__.path) {
             throw new Error('Required Tauri APIs not available');
         }
         
         const { appDataDir, join } = window.__TAURI__.path;
-        const { Command } = window.__TAURI__.shell;
-        const { platform } = window.__TAURI__.os;
         
         // アプリのデータディレクトリを取得
         const appData = await appDataDir();
@@ -1218,30 +1211,24 @@ export async function openAppFolder() {
             }
         }
         
-        // OSを検出してコマンドを選択
-        const currentPlatform = await platform();
-        console.log('🖥️ Platform detected:', currentPlatform);
+        // カスタムコマンドを使ってフォルダを開く
+        console.log('🖥️ Opening folder with custom command...');
         
-        let command;
-        if (currentPlatform === 'darwin' || currentPlatform === 'macos') {
-            // macOS
-            command = new Command('open', [configDir]);
-        } else if (currentPlatform === 'win32' || currentPlatform === 'windows') {
-            // Windows
-            command = new Command('explorer', [configDir]);
-        } else {
-            // Linux
-            command = new Command('xdg-open', [configDir]);
-        }
-        
-        console.log('🖥️ Executing command to open folder...');
-        const result = await command.execute();
-        
-        if (result.code === 0) {
-            console.log('✅ App folder opened successfully');
-        } else {
-            console.error('❌ Command failed:', result);
-            throw new Error(`Command failed with code ${result.code}: ${result.stderr || 'Unknown error'}`);
+        try {
+            if (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) {
+                console.log('🔍 Trying custom open_folder command...');
+                await window.__TAURI__.core.invoke('open_folder', { path: configDir });
+                console.log('✅ App folder opened successfully with custom command');
+            } else if (tauriInvoke) {
+                console.log('🔍 Trying tauriInvoke with open_folder...');
+                await tauriInvoke('open_folder', { path: configDir });
+                console.log('✅ App folder opened successfully with tauriInvoke');
+            } else {
+                throw new Error('Tauri invoke API not available');
+            }
+        } catch (commandError) {
+            console.error('❌ Custom command failed:', commandError);
+            throw new Error(`Failed to open folder: ${commandError.message}`);
         }
         
     } catch (error) {

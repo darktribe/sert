@@ -40,10 +40,10 @@
     "replace": "置換"
   },
   "extensionsMenu": {
-    "extensionSettings": "拡張機能設定",
+  "extensionSettings": "拡張機能設定",
     "languageSettings": "言語設定",
     "theme": "テーマ",
-    "openExtensionFolder": "拡張フォルダを開く"
+    "openAppFolder": "アプリフォルダを開く"
   },
   "editor": {
     "placeholder": "ここにテキストを入力してください..."

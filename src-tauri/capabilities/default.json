@@ -29,6 +29,10 @@
     "fs:allow-appdata-write-recursive",
     "fs:allow-appdata-read-recursive",
     "fs:allow-appdata-meta-recursive",
-    "fs:default"
+    "fs:default",
+    "opener:default",
+    "opener:allow-open-path",
+    "opener:allow-reveal-item-in-dir",
+    "opener:allow-open-url"
   ]
 }
