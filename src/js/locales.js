@@ -59,7 +59,8 @@ const FALLBACK_LANGUAGES = {
         extensionsMenu: {
             extensionSettings: '拡張機能設定',
             languageSettings: '言語設定',
-            theme: 'テーマ'
+            theme: 'テーマ',
+            openAppFolder: 'アプリフォルダを開く'
         },
         editor: {
             placeholder: 'ここにテキストを入力してください...'
@@ -206,7 +207,8 @@ const FALLBACK_LANGUAGES = {
         extensionsMenu: {
             extensionSettings: 'Extension Settings',
             languageSettings: 'Language Settings',
-            theme: 'Theme'
+            theme: 'Theme',
+            openAppFolder: 'Open App Folder'
         },
         editor: {
             placeholder: 'Please enter text here...'
@@ -353,7 +355,8 @@ const FALLBACK_LANGUAGES = {
         extensionsMenu: {
             extensionSettings: 'Paramètres d\'extension',
             languageSettings: 'Paramètres de langue',
-            theme: 'Thème'
+            theme: 'Thème',
+            openAppFolder: 'Ouvrir le dossier de l\'app'
         },
         editor: {
             placeholder: 'Veuillez saisir votre texte ici...'
