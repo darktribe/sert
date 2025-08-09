@@ -162,19 +162,40 @@ fn write_clipboard(text: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         use std::process::Command;
-        let mut child = Command::new("cmd")
-            .args(["/C", "echo", &text, "|", "clip"])
-            .spawn()
-            .map_err(|e| format!("Failed to spawn clipboard command: {}", e))?;
         
-        let status = child.wait()
-            .map_err(|e| format!("Failed to wait for clipboard command: {}", e))?;
+        // Windowsでは非同期実行でexplorerを起動
+        let result = Command::new("explorer")
+            .arg(&path)
+            .spawn();
         
-        if status.success() {
-            println!("✅ Clipboard write successful (Windows)");
-            Ok(())
-        } else {
-            Err("Clipboard write failed (Windows)".to_string())
+        match result {
+            Ok(mut child) => {
+                // プロセスが正常に起動したかチェック
+                match child.try_wait() {
+                    Ok(Some(status)) => {
+                        // 即座に終了した場合はステータスをチェック
+                        if status.success() {
+                            println!("✅ Folder opened successfully (Windows)");
+                            Ok(())
+                        } else {
+                            println!("⚠️ Explorer exited with non-zero status, but folder might have opened");
+                            Ok(()) // Windows explorerは既に開いているフォルダでも非ゼロで終了することがある
+                        }
+                    },
+                    Ok(None) => {
+                        // プロセスがまだ実行中（正常）
+                        println!("✅ Folder opened successfully (Windows)");
+                        Ok(())
+                    },
+                    Err(e) => {
+                        println!("⚠️ Could not check process status: {}, but explorer started", e);
+                        Ok(()) // プロセスは起動したので成功とみなす
+                    }
+                }
+            },
+            Err(e) => {
+                Err(format!("Failed to start explorer: {}", e))
+            }
         }
     }
     
