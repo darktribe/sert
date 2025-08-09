@@ -854,9 +854,11 @@ export async function tryExternalFileSystem() {
     console.log('🔍 tryExternalFileSystem called - forcing folder creation check');
     console.log('🔍 isExternalSystemEnabled after reset:', isExternalSystemEnabled);
     
-    // デバッグ用：常にフォルダ作成処理を実行
-    console.log('🔍 tryExternalFileSystem called - forcing folder creation check');
-    console.log('🔍 isExternalSystemEnabled before:', isExternalSystemEnabled);
+    // Tauri APIの確認を最初に実行
+    if (!window.__TAURI__ || !window.__TAURI__.path || !window.__TAURI__.fs) {
+        console.warn('⚠️ Tauri APIs not available, using fallback');
+        return false;
+    }
     
     // フラグに関係なく、フォルダの存在確認と作成を実行
     // if (isExternalSystemEnabled) {

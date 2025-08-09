@@ -16,7 +16,7 @@
             <!-- ファイルメニュー -->
             <div class="menu-item" onclick="toggleMenu('file-menu')">
                 <span data-i18n="menu.file">File</span>
-                <div class="dropdown-menu" id="file-menu">
+                <div id="file-menu" class="dropdown-menu">
                     <div class="menu-option" onclick="newFile()" data-i18n="fileMenu.new">New</div>
                     <div class="menu-option" onclick="openFile()" data-i18n="fileMenu.open">Open</div>
                     <div class="menu-option" onclick="saveFile()" data-i18n="fileMenu.save">Save</div>
@@ -79,6 +79,10 @@
                     <div class="menu-separator"></div>
                     <div class="menu-option" onclick="showLanguageSettingsDialog()" data-i18n="extensionsMenu.languageSettings">Language Settings</div>
                     <div class="menu-option" onclick="showThemeDialog()" data-i18n="extensionsMenu.theme">Theme</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" onclick="openAppFolder()" data-i18n="extensionsMenu.openAppFolder">Open App Folder</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" onclick="openAppFolder()" data-i18n="extensionsMenu.openAppFolder">Open App Folder</div>
                 </div>
             </div>
         </div>

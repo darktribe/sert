@@ -42,7 +42,8 @@
   "extensionsMenu": {
     "extensionSettings": "拡張機能設定",
     "languageSettings": "言語設定",
-    "theme": "テーマ"
+    "theme": "テーマ",
+    "openExtensionFolder": "拡張フォルダを開く"
   },
   "editor": {
     "placeholder": "ここにテキストを入力してください..."

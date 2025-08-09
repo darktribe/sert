@@ -1,85 +1,83 @@
 /*
  * =====================================================
- * Vinsert Editor - メインエントリーポイント（拡張機能対応版）
+ * Vinsert Editor - メインエントリーポイント（エラー修正版）
  * =====================================================
  */
 
+// 基本機能のインポート
 import { initializeApp } from './js/app-init.js';
 import { toggleMenu } from './js/menu-controller.js';
 import { newFile, openFile, saveFile, saveAsFile } from './js/file-operations.js';
 import { undo, redo } from './js/undo-redo.js';
 import { copy, cut, paste, selectAll } from './js/edit-operations.js';
-import { showSearchDialog, showReplaceDialog, findNext, findPrevious } from './js/search-replace.js';
+import { showSearchDialog, showReplaceDialog } from './js/search-replace.js';
 import { showFontSettingsDialog, showFontSizeInputDialog, increaseFontSize, decreaseFontSize } from './js/font-settings.js';
 import { exitApp } from './js/app-exit.js';
-import { createLanguageSwitcher, removeLanguageSwitcher, reinitializeLanguageSwitcher, refreshLanguages } from './js/language-switcher.js';
-import { changeLanguage, getCurrentLanguage, getAvailableLanguages } from './js/locales.js';
 import { toggleLineHighlight } from './js/line-highlight.js';
-import { initializeThemeSystem, showThemeDialog, showLanguageSettingsDialog, getAvailableThemes, getCurrentTheme, applyTheme } from './js/theme-manager.js';
+import { showThemeDialog, showLanguageSettingsDialog } from './js/theme-manager.js';
 import { toggleTypewriterMode, initTypewriterMode } from './js/typewriter-mode.js';
-import { initializeExtensionSystem, showExtensionSettingsDialog } from './js/extension-manager.js';
 
-// グローバル関数をウィンドウオブジェクトに登録
-console.log('🔧 Registering global functions...');
+// グローバル関数を即座に登録
+console.log('🔧 Registering core global functions...');
 
-// 基本機能
+// メニュー関連
 window.toggleMenu = toggleMenu;
+
+// ファイル操作
 window.newFile = newFile;
 window.openFile = openFile;
 window.saveFile = saveFile;
 window.saveAsFile = saveAsFile;
+window.exitApp = exitApp;
+
+// 編集操作
 window.undo = undo;
 window.redo = redo;
 window.copy = copy;
 window.cut = cut;
 window.paste = paste;
 window.selectAll = selectAll;
+
+// 検索・置換
 window.showSearchDialog = showSearchDialog;
 window.showReplaceDialog = showReplaceDialog;
-window.exitApp = exitApp;
-window.toggleLineHighlight = toggleLineHighlight;
-window.toggleTypewriterMode = toggleTypewriterMode;
 
-// テーマ機能
-window.showThemeDialog = showThemeDialog;
-window.showLanguageSettingsDialog = showLanguageSettingsDialog;
-window.getAvailableThemes = getAvailableThemes;
-window.getCurrentTheme = getCurrentTheme;
-window.applyTheme = applyTheme;
-
-// フォント設定機能
+// 表示・フォント
 window.showFontSettingsDialog = showFontSettingsDialog;
 window.showFontSizeInputDialog = showFontSizeInputDialog;
 window.increaseFontSize = increaseFontSize;
 window.decreaseFontSize = decreaseFontSize;
+window.toggleLineHighlight = toggleLineHighlight;
+window.toggleTypewriterMode = toggleTypewriterMode;
 
-// 言語切り替え機能
-window.createLanguageSwitcher = createLanguageSwitcher;
-window.removeLanguageSwitcher = removeLanguageSwitcher;
-window.reinitializeLanguageSwitcher = reinitializeLanguageSwitcher;
-window.refreshLanguages = refreshLanguages;
-window.changeLanguage = changeLanguage;
-window.getCurrentLanguage = getCurrentLanguage;
-window.getAvailableLanguages = getAvailableLanguages;
+// テーマ・言語
+window.showThemeDialog = showThemeDialog;
+window.showLanguageSettingsDialog = showLanguageSettingsDialog;
 
-// 拡張機能
-window.showExtensionSettingsDialog = showExtensionSettingsDialog;
+console.log('✅ Core functions registered');
 
-// デバッグ用関数
-window.testExtensionSystem = async function() {
-    console.log('🧪 Testing extension system...');
-    
+// 拡張機能の遅延読み込み
+async function loadExtensionFunctions() {
     try {
+        const { initializeExtensionSystem, showExtensionSettingsDialog, openAppFolder } = await import('./js/extension-manager.js');
+        
+        window.showExtensionSettingsDialog = showExtensionSettingsDialog;
+        window.openAppFolder = openAppFolder;
+        
+        // 拡張機能システム初期化
         const extensionInitialized = await initializeExtensionSystem();
-        console.log('Extension system initialized:', extensionInitialized);
-        
-        window.showExtensionSettingsDialog();
-        console.log('✅ Extension settings dialog opened');
-        
+        if (extensionInitialized) {
+            console.log('✅ Extension system initialized successfully');
+        } else {
+            console.log('⚠️ Extension system running in limited mode');
+        }
     } catch (error) {
-        console.error('❌ Extension system test failed:', error);
+        console.error('❌ Extension system loading failed:', error);
+        // フォールバック関数を設定
+        window.showExtensionSettingsDialog = () => alert('拡張機能システムが利用できません');
+        window.openAppFolder = () => alert('アプリフォルダ機能が利用できません');
     }
-};
+}
 
 /**
  * ページ読み込み時の初期化処理
@@ -90,19 +88,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // アプリケーションの初期化
     await initializeApp();
     
-    // 拡張機能システムの初期化
-    console.log('🧩 Initializing extension system...');
-    try {
-        const extensionInitialized = await initializeExtensionSystem();
-        if (extensionInitialized) {
-            console.log('✅ Extension system initialized successfully');
-        } else {
-            console.log('⚠️ Extension system running in limited mode');
-        }
-    } catch (error) {
-        console.error('❌ Extension system initialization error:', error);
-        console.log('⚠️ Extension features will be disabled');
-    }
+    // 拡張機能の遅延初期化
+    await loadExtensionFunctions();
     
     // タイプライターモードの初期化
     initTypewriterMode();
@@ -111,34 +98,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // フォールバック初期化
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', async () => {
-        console.log('📄 DOM loaded via readyState check...');
-        await initializeApp();
-    });
-} else {
+if (document.readyState !== 'loading') {
     console.log('📄 DOM already loaded, initializing immediately...');
-    initializeApp();
+    initializeApp().then(() => {
+        loadExtensionFunctions();
+    });
 }
 
-// グローバル関数の再登録（フォールバック）
-setTimeout(() => {
-    console.log('🔄 Fallback: Re-registering global functions...');
-    
-    window.saveFile = saveFile;
-    window.newFile = newFile;
-    window.openFile = openFile;
-    window.saveAsFile = saveAsFile;
-    window.showSearchDialog = showSearchDialog;
-    window.showReplaceDialog = showReplaceDialog;
-    window.showFontSettingsDialog = showFontSettingsDialog;
-    window.showFontSizeInputDialog = showFontSizeInputDialog;
-    window.increaseFontSize = increaseFontSize;
-    window.decreaseFontSize = decreaseFontSize;
-    window.refreshLanguages = refreshLanguages;
-    window.changeLanguage = changeLanguage;
-    window.createLanguageSwitcher = createLanguageSwitcher;
-    window.showExtensionSettingsDialog = showExtensionSettingsDialog;
-    
-    console.log('✅ Fallback registration complete');
-}, 1000);
+console.log('📋 Main.js loaded successfully');

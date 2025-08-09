@@ -42,7 +42,8 @@
   "extensionsMenu": {
     "extensionSettings": "Paramètres d'extension",
     "languageSettings": "Paramètres de langue",
-    "theme": "Thème"
+    "theme": "Thème",
+    "openExtensionFolder": "Ouvrir le dossier de l'app"
   },
   "editor": {
     "placeholder": "Veuillez saisir votre texte ici..."

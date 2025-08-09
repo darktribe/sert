@@ -42,7 +42,8 @@
   "extensionsMenu": {
     "extensionSettings": "Extension Settings",
     "languageSettings": "Language Settings",
-    "theme": "Theme"
+    "theme": "Theme",
+    "openExtensionFolder": "Open App Folder"
   },
   "editor": {
     "placeholder": "Please enter text here..."

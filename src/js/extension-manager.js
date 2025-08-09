@@ -5,8 +5,8 @@
  */
 
 import { editor, tauriInvoke } from './globals.js';
-import { t } from './locales.js';
 import { closeAllMenus } from './menu-controller.js';
+import { t } from './locales.js';
 
 // 拡張機能の状態管理
 let extensionState = {
@@ -1125,6 +1125,149 @@ function getCursorCoordinates(position) {
 export function getAvailableExtensions() {
     return [...extensionState.extensions];
 }
+
+/**
+ * 拡張機能フォルダをシステムのファイラーで開く
+ */
+export async function openExtensionFolder() {
+    console.log('📁 Opening extension folder...');
+    closeAllMenus();
+    
+    try {
+        if (window.__TAURI__ && window.__TAURI__.path && window.__TAURI__.shell) {
+            const { appDataDir, join } = window.__TAURI__.path;
+            const { open } = window.__TAURI__.shell;
+            
+            // アプリのデータディレクトリを取得
+            const appData = await appDataDir();
+            const configDir = await join(appData, 'vinsert');
+            const extensionDir = await join(configDir, 'extension');
+            
+            console.log('📁 Extension folder path:', extensionDir);
+            
+            // ディレクトリが存在するか確認
+            if (window.__TAURI__.fs) {
+                const { exists, mkdir } = window.__TAURI__.fs;
+                const dirExists = await exists(extensionDir);
+                
+                if (!dirExists) {
+                    console.log('📁 Creating extension directory...');
+                    await mkdir(extensionDir, { recursive: true });
+                }
+            }
+            
+            // ファイラーでフォルダを開く
+            await open(extensionDir);
+            console.log('✅ Extension folder opened successfully');
+            
+        } else {
+            throw new Error('Tauri APIs not available');
+        }
+    } catch (error) {
+        console.error('❌ Failed to open extension folder:', error);
+        
+        // エラーメッセージダイアログを表示
+        const message = `拡張機能フォルダを開けませんでした。\n\nエラー: ${error.message}\n\n手動でフォルダを確認してください：\n~/Library/Application Support/com.saigetsudo.vinsert/vinsert/extension/`;
+        
+        if (window.confirm) {
+            alert(message);
+        } else {
+            console.error('Alert not available:', message);
+        }
+    }
+}
+
+/**
+ * アプリフォルダをシステムのファイラーで開く
+ */
+/**
+ * アプリフォルダをシステムのファイラーで開く
+ */
+/**
+ * アプリフォルダをシステムのファイラーで開く
+ */
+export async function openAppFolder() {
+    console.log('📁 Opening app folder...');
+    closeAllMenus();
+    
+    try {
+        // 必要なTauri APIが利用可能か確認
+        if (!window.__TAURI__ || !window.__TAURI__.path || !window.__TAURI__.shell || !window.__TAURI__.os) {
+            throw new Error('Required Tauri APIs not available');
+        }
+        
+        const { appDataDir, join } = window.__TAURI__.path;
+        const { Command } = window.__TAURI__.shell;
+        const { platform } = window.__TAURI__.os;
+        
+        // アプリのデータディレクトリを取得
+        const appData = await appDataDir();
+        const configDir = await join(appData, 'vinsert');
+        
+        console.log('📁 App folder path:', configDir);
+        
+        // ディレクトリが存在するか確認・作成
+        if (window.__TAURI__.fs) {
+            const { exists, mkdir } = window.__TAURI__.fs;
+            const dirExists = await exists(configDir);
+            
+            if (!dirExists) {
+                console.log('📁 Creating app directory...');
+                await mkdir(configDir, { recursive: true });
+                console.log('✅ App directory created');
+            }
+        }
+        
+        // OSを検出してコマンドを選択
+        const currentPlatform = await platform();
+        console.log('🖥️ Platform detected:', currentPlatform);
+        
+        let command;
+        if (currentPlatform === 'darwin' || currentPlatform === 'macos') {
+            // macOS
+            command = new Command('open', [configDir]);
+        } else if (currentPlatform === 'win32' || currentPlatform === 'windows') {
+            // Windows
+            command = new Command('explorer', [configDir]);
+        } else {
+            // Linux
+            command = new Command('xdg-open', [configDir]);
+        }
+        
+        console.log('🖥️ Executing command to open folder...');
+        const result = await command.execute();
+        
+        if (result.code === 0) {
+            console.log('✅ App folder opened successfully');
+        } else {
+            console.error('❌ Command failed:', result);
+            throw new Error(`Command failed with code ${result.code}: ${result.stderr || 'Unknown error'}`);
+        }
+        
+    } catch (error) {
+        console.error('❌ Failed to open app folder:', error);
+        
+        // より詳細なエラーメッセージ
+        let errorMessage = 'Unknown error';
+        if (error && error.message) {
+            errorMessage = error.message;
+        } else if (typeof error === 'string') {
+            errorMessage = error;
+        } else if (error) {
+            errorMessage = JSON.stringify(error);
+        }
+        
+        const appDataPath = '~/Library/Application Support/com.saigetsudo.vinsert/vinsert/';
+        const message = `アプリフォルダを開けませんでした。\n\nエラー: ${errorMessage}\n\n手動でフォルダを確認してください：\n${appDataPath}\n\nFinderで以下のフォルダを開いてください：\n${appDataPath}`;
+        
+        if (window.alert) {
+            alert(message);
+        } else {
+            console.error('Alert not available:', message);
+        }
+    }
+}
+
 
 /**
  * 有効な拡張機能一覧を取得
