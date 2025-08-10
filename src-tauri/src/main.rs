@@ -5,12 +5,104 @@
  * =====================================================
  * Vinsert Editor - Rustバックエンド
  * Python拡張機能対応のシンプルなテキストエディタ
+ * Python.framework内蔵対応版
  * =====================================================
  */
 
+use std::env;
+use std::path::PathBuf;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use tauri::Manager;
+
+// =====================================================
+// Python環境初期化（macOS用Python.framework内蔵対応）
+// =====================================================
+
+#[cfg(target_os = "macos")]
+fn initialize_embedded_python() -> Result<(), Box<dyn std::error::Error>> {
+    println!("🐍 Initializing embedded Python environment for macOS...");
+    
+    // アプリケーションバンドル内のPythonパスを取得
+    let bundle_path = env::current_exe()?
+        .parent()
+        .ok_or("Could not get parent directory")?
+        .parent()
+        .ok_or("Could not get bundle directory")?
+        .to_path_buf();
+    
+    println!("📁 App bundle path: {:?}", bundle_path);
+    
+    // Python.frameworkの場所を確認（複数のパターンを試行）
+    let python_framework_paths = vec![
+        bundle_path.join("Frameworks").join("Python.framework").join("Versions").join("3.11"),
+        bundle_path.join("Contents").join("Frameworks").join("Python.framework").join("Versions").join("3.11"),
+        bundle_path.join("Resources").join("python").join("3.11"),
+    ];
+    
+    let mut python_home: Option<PathBuf> = None;
+    
+    for path in python_framework_paths {
+        if path.exists() {
+            println!("✅ Found Python framework at: {:?}", path);
+            python_home = Some(path);
+            break;
+        } else {
+            println!("❌ Python framework not found at: {:?}", path);
+        }
+    }
+    
+    if let Some(python_home) = python_home {
+        // Python環境変数を設定
+        let python_home_str = python_home.to_string_lossy();
+        let python_lib = python_home.join("lib");
+        let python_site_packages = python_lib.join("python3.11").join("site-packages");
+        
+        // PYTHONHOMEを設定
+        env::set_var("PYTHONHOME", python_home_str.as_ref());
+        println!("🏠 PYTHONHOME set to: {}", python_home_str);
+        
+        // PYTHONPATHを設定
+        let python_path = format!("{}:{}:{}",
+            python_lib.to_string_lossy(),
+            python_lib.join("python3.11").to_string_lossy(),
+            python_site_packages.to_string_lossy()
+        );
+        env::set_var("PYTHONPATH", &python_path);
+        println!("📚 PYTHONPATH set to: {}", python_path);
+        
+        // Python実行可能ファイルのパスを設定
+        let python_bin = python_home.join("bin").join("python3.11");
+        if python_bin.exists() {
+            env::set_var("PYTHON_EXECUTABLE", python_bin.to_string_lossy().as_ref());
+            println!("🐍 Python executable found: {:?}", python_bin);
+        }
+        
+        // dyldライブラリパスを設定（macOS用）
+        let dylib_path = python_lib.join("libpython3.11.dylib");
+        if dylib_path.exists() {
+            if let Ok(current_path) = env::var("DYLD_LIBRARY_PATH") {
+                env::set_var("DYLD_LIBRARY_PATH", format!("{}:{}", python_lib.to_string_lossy(), current_path));
+            } else {
+                env::set_var("DYLD_LIBRARY_PATH", python_lib.to_string_lossy().as_ref());
+            }
+            println!("🔗 DYLD_LIBRARY_PATH updated: {}", python_lib.to_string_lossy());
+        }
+        
+        println!("✅ Embedded Python environment configured successfully");
+    } else {
+        println!("⚠️ Embedded Python not found, falling back to system Python");
+        println!("💡 This is normal during development. Embedded Python is only available in built app bundles.");
+    }
+    
+    Ok(())
+}
+
+#[cfg(not(target_os = "macos"))]
+fn initialize_embedded_python() -> Result<(), Box<dyn std::error::Error>> {
+    println!("⚠️ Embedded Python is only supported on macOS. Using system Python.");
+    Ok(())
+}
 
 // =====================================================
 // Python統合機能（PyO3）
@@ -119,13 +211,38 @@ fn run_python_file(file_path: String) -> Result<String, String> {
 #[tauri::command]
 fn get_python_info() -> Result<String, String> {
     Python::with_gil(|py| {
-        let code = "import sys\nresult = sys.version";
+        let code = r#"
+import sys
+import os
+result = {
+    'version': sys.version,
+    'executable': sys.executable,
+    'path': sys.path,
+    'prefix': sys.prefix,
+    'pythonhome': os.environ.get('PYTHONHOME', 'Not set'),
+    'pythonpath': os.environ.get('PYTHONPATH', 'Not set')
+}
+"#;
         let locals = PyDict::new_bound(py);
         match py.run_bound(code, None, Some(&locals)) {
             Ok(_) => {
                 match locals.get_item("result") {
-                    Ok(Some(version)) => Ok(format!("Python version: {}", version)),
-                    _ => Err("Could not get version info".to_string()),
+                    Ok(Some(info)) => {
+                        // 辞書の内容を文字列として整形
+                        let version = info.get_item("version").unwrap().unwrap().to_string();
+                        let executable = info.get_item("executable").unwrap().unwrap().to_string();
+                        let prefix = info.get_item("prefix").unwrap().unwrap().to_string();
+                        let pythonhome = info.get_item("pythonhome").unwrap().unwrap().to_string();
+                        
+                        Ok(format!(
+                            "Python Version: {}\nExecutable: {}\nPrefix: {}\nPYTHONHOME: {}",
+                            version.trim_matches('"'),
+                            executable.trim_matches('"'),
+                            prefix.trim_matches('"'),
+                            pythonhome.trim_matches('"')
+                        ))
+                    },
+                    _ => Err("Could not get Python info".to_string()),
                 }
             },
             Err(e) => Err(format!("Failed to get Python info: {}", e)),
@@ -477,6 +594,12 @@ async fn open_folder(path: String) -> Result<(), String> {
 // =====================================================
 
 fn main() {
+    // Python環境の初期化（PyO3初期化の前に実行）
+    if let Err(e) = initialize_embedded_python() {
+        eprintln!("❌ Python environment initialization failed: {}", e);
+        eprintln!("⚠️ Continuing with system Python...");
+    }
+    
     // PyO3の初期化
     pyo3::prepare_freethreaded_python();
     
@@ -546,7 +669,7 @@ fn main() {
             
             // Python環境情報の表示
             match get_python_info() {
-                Ok(info) => println!("✅ {}", info),
+                Ok(info) => println!("✅ Python environment info:\n{}", info),
                 Err(e) => println!("❌ Python info error: {}", e),
             }
             

@@ -40,7 +40,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["dmg", "msi"],
+    "targets": ["dmg", "app"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -48,12 +48,17 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "resources": [
+      "python-runtime/**"
+    ],
+    "externalBin": [],
     "macOS": {
+      "frameworks": ["Python"],
       "entitlements": null,
       "exceptionDomain": "",
-      "frameworks": [],
       "providerShortName": null,
-      "signingIdentity": null
+      "signingIdentity": null,
+      "minimumSystemVersion": "10.15"
     },
     "windows": {
       "wix": {
