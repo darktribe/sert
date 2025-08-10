@@ -10,7 +10,18 @@
 
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
+use std::sync::Once;
 use tauri::Manager;
+
+static PYTHON_INIT: Once = Once::new();
+static mut PYTHON_TYPE: PythonType = PythonType::Unknown;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum PythonType {
+    Unknown,
+    Embedded,
+    System,
+}
 
 // =====================================================
 // Python統合機能（PyO3）
@@ -119,12 +130,19 @@ fn run_python_file(file_path: String) -> Result<String, String> {
 #[tauri::command]
 fn get_python_info() -> Result<String, String> {
     Python::with_gil(|py| {
+        let python_type = unsafe { PYTHON_TYPE };
+        let type_str = match python_type {
+            PythonType::Embedded => "EMBEDDED",
+            PythonType::System => "SYSTEM",
+            PythonType::Unknown => "UNKNOWN",
+        };
+        
         let code = "import sys\nresult = sys.version";
         let locals = PyDict::new_bound(py);
         match py.run_bound(code, None, Some(&locals)) {
             Ok(_) => {
                 match locals.get_item("result") {
-                    Ok(Some(version)) => Ok(format!("Python version: {}", version)),
+                    Ok(Some(version)) => Ok(format!("Python version: {} [{}]", version, type_str)),
                     _ => Err("Could not get version info".to_string()),
                 }
             },
@@ -476,9 +494,21 @@ async fn open_folder(path: String) -> Result<(), String> {
 // メイン関数とアプリケーション設定
 // =====================================================
 
-fn main() {
-    // PyO3の初期化
+fn initialize_python() -> PythonType {
+    // 現時点では常にシステムPythonを使用
+    // PyOxidizerの統合は手動ビルドで対応
     pyo3::prepare_freethreaded_python();
+    let python_type = PythonType::System;
+    println!("🐍 Using SYSTEM Python (PyOxidizer integration pending)");
+    python_type
+}
+
+fn main() {
+    // Pythonの初期化
+    let python_type = initialize_python();
+    unsafe {
+        PYTHON_TYPE = python_type;
+    }
     
     tauri::Builder::default()
         // プラグインの初期化
@@ -546,7 +576,23 @@ fn main() {
             
             // Python環境情報の表示
             match get_python_info() {
-                Ok(info) => println!("✅ {}", info),
+                Ok(info) => {
+                    println!("✅ {}", info);
+                    let python_type = unsafe { PYTHON_TYPE };
+                    match python_type {
+                        PythonType::Embedded => {
+                            println!("🎯 Python Type: EMBEDDED (アプリ内蔵)");
+                            println!("📦 This app includes Python interpreter");
+                        },
+                        PythonType::System => {
+                            println!("🎯 Python Type: SYSTEM (ユーザー環境)");
+                            println!("⚠️ Using user's Python installation");
+                        },
+                        _ => {
+                            println!("🎯 Python Type: UNKNOWN");
+                        }
+                    }
+                },
                 Err(e) => println!("❌ Python info error: {}", e),
             }
             

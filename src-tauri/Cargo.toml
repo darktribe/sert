@@ -10,6 +10,10 @@ edition = "2021"
 [build-dependencies]
 tauri-build = { version = "2.0", features = [] }
 
+[features]
+default = []
+embedded-python = []
+
 [dependencies]
 tauri = { version = "^2.0", features = ["devtools"] }
 tauri-plugin-shell = "^2.0"
@@ -19,7 +23,8 @@ tauri-plugin-dialog = "2.0"
 tauri-plugin-opener = "2.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-pyo3 = { version = "0.22.0", features = ["auto-initialize"] }
+pyo3 = { version = "0.22.0", features = ["extension-module"] }
+pyoxidizer = { version = "0.24" }
 tokio = { version = "1", features = ["full"] }
 clipboard = "0.5"
 
