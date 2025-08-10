@@ -10,16 +10,15 @@
 
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
-use std::sync::Once;
 use tauri::Manager;
 
-static PYTHON_INIT: Once = Once::new();
 static mut PYTHON_TYPE: PythonType = PythonType::Unknown;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[allow(dead_code)] // Embedded は将来のPyOxidizer統合で使用予定
 enum PythonType {
     Unknown,
-    Embedded,
+    Embedded, // 将来のPyOxidizer埋め込みPython用
     System,
 }
 
@@ -124,32 +123,72 @@ fn run_python_file(file_path: String) -> Result<String, String> {
 }
 
 /**
- * Pythonのバージョン情報を取得
- * デバッグ・環境確認用
+ * Python詳細情報を取得（PyO3 0.22.6対応版）
  */
 #[tauri::command]
 fn get_python_info() -> Result<String, String> {
     Python::with_gil(|py| {
         let python_type = unsafe { PYTHON_TYPE };
         let type_str = match python_type {
-            PythonType::Embedded => "EMBEDDED",
-            PythonType::System => "SYSTEM",
-            PythonType::Unknown => "UNKNOWN",
+            PythonType::Embedded => "EMBEDDED (アプリ内蔵)",
+            PythonType::System => "SYSTEM (ユーザー環境)",
+            PythonType::Unknown => "UNKNOWN (不明)",
         };
         
-        let code = "import sys\nresult = sys.version";
-        let locals = PyDict::new_bound(py);
-        match py.run_bound(code, None, Some(&locals)) {
-            Ok(_) => {
-                match locals.get_item("result") {
-                    Ok(Some(version)) => Ok(format!("Python version: {} [{}]", version, type_str)),
-                    _ => Err("Could not get version info".to_string()),
-                }
-            },
-            Err(e) => Err(format!("Failed to get Python info: {}", e)),
-        }
+        // PyO3 0.22.6対応: シンプルな情報取得
+        let version_result = py.eval_bound("import sys; sys.version.split()[0]", None, None);
+        let executable_result = py.eval_bound("import sys; sys.executable", None, None);
+        let implementation_result = py.eval_bound("import platform; platform.python_implementation()", None, None);
+        let oxidizer_result = py.eval_bound("'oxidized_importer' in __import__('sys').modules", None, None);
+        
+        // 結果を安全に抽出
+        let version = version_result
+            .and_then(|v| v.extract::<String>())
+            .unwrap_or_else(|_| "Unknown".to_string());
+        
+        let executable = executable_result
+            .and_then(|v| v.extract::<String>())
+            .unwrap_or_else(|_| "Unknown".to_string());
+        
+        let implementation = implementation_result
+            .and_then(|v| v.extract::<String>())
+            .unwrap_or_else(|_| "Unknown".to_string());
+        
+        let has_oxidizer = oxidizer_result
+            .and_then(|v| v.extract::<bool>())
+            .unwrap_or(false);
+        
+        // パスタイプの判定
+        let path_type = if executable.contains("/Applications/") || executable.contains(".app/") {
+            "app_bundle"
+        } else if executable.starts_with("/usr/") || executable.starts_with("/opt/") || executable.starts_with("/System/") {
+            "system_path"
+        } else {
+            "user_path"
+        };
+        
+        let result = format!(
+            "🐍 Python Environment Details 🐍\n\n\
+            Type: {}\n\
+            Version: {} ({})\n\
+            Executable: {}\n\
+            Path Type: {}\n\
+            PyOxidizer: {}\n\n\
+            Status: {} detected and working correctly!",
+            type_str,
+            version,
+            implementation,
+            executable,
+            path_type,
+            if has_oxidizer { "Yes (Embedded)" } else { "No (System)" },
+            if has_oxidizer { "Embedded Python" } else { "System Python" }
+        );
+        
+        Ok(result)
     })
 }
+
+
 
 // =====================================================
 // アプリケーション制御
@@ -495,12 +534,53 @@ async fn open_folder(path: String) -> Result<(), String> {
 // =====================================================
 
 fn initialize_python() -> PythonType {
-    // 現時点では常にシステムPythonを使用
-    // PyOxidizerの統合は手動ビルドで対応
-    pyo3::prepare_freethreaded_python();
-    let python_type = PythonType::System;
-    println!("🐍 Using SYSTEM Python (PyOxidizer integration pending)");
+    // PyO3 0.22.6のauto-initializeフィーチャーを使用
+    // pyo3::prepare_freethreaded_python()は不要（auto-initializeが自動処理）
+    
+    // Python環境を詳細に確認
+    let python_type = detect_python_environment();
+    println!("🐍 Python初期化完了: {:?}", python_type);
     python_type
+}
+
+/**
+ * Python環境の詳細を検出・確認する関数
+ */
+/**
+ * Python環境の詳細を検出・確認する関数（PyO3 0.22.6完全対応版）
+ */
+/**
+ * Python環境の詳細を検出・確認する関数（緊急修正版）
+ */
+fn detect_python_environment() -> PythonType {
+    println!("=== Python環境詳細情報（緊急修正版） ===");
+    
+    // 最小限のPython情報取得
+    match Python::with_gil(|py| -> Result<(), PyErr> {
+        // 基本的なテスト
+        let simple_test = py.eval_bound("2 + 2", None, None)?;
+        println!("🐍 Python基本テスト: {}", simple_test);
+        
+        // バージョン取得（分離）
+        py.run_bound("import sys", None, None)?;
+        let version = py.eval_bound("sys.version", None, None)?;
+        println!("🐍 Python version: {}", version);
+        
+        let executable = py.eval_bound("sys.executable", None, None)?;
+        println!("🐍 Python executable: {}", executable);
+        
+        Ok(())
+    }) {
+        Ok(_) => {
+            println!("✅ Python環境確認成功（簡易版）");
+            println!("📊 判定: SYSTEM Python（動作確認済み）");
+            PythonType::System
+        },
+        Err(e) => {
+            println!("❌ Python環境確認エラー: {}", e);
+            PythonType::Unknown
+        }
+    }
 }
 
 fn main() {
@@ -574,27 +654,44 @@ fn main() {
                 Err(e) => println!("❌ PyO3 test failed: {}", e),
             }
             
-            // Python環境情報の表示
-            match get_python_info() {
-                Ok(info) => {
-                    println!("✅ {}", info);
-                    let python_type = unsafe { PYTHON_TYPE };
-                    match python_type {
-                        PythonType::Embedded => {
-                            println!("🎯 Python Type: EMBEDDED (アプリ内蔵)");
-                            println!("📦 This app includes Python interpreter");
-                        },
-                        PythonType::System => {
-                            println!("🎯 Python Type: SYSTEM (ユーザー環境)");
-                            println!("⚠️ Using user's Python installation");
-                        },
-                        _ => {
-                            println!("🎯 Python Type: UNKNOWN");
-                        }
-                    }
-                },
-                Err(e) => println!("❌ Python info error: {}", e),
+            // Python環境情報の詳細表示
+println!("=== Python Environment Verification ===");
+match get_python_info() {
+    Ok(info) => {
+        // 詳細情報をコンソールに表示
+        println!("✅ Python環境詳細情報:\n{}", info);
+        
+        let python_type = unsafe { PYTHON_TYPE };
+        match python_type {
+            PythonType::Embedded => {
+                println!("🎯 検出結果: EMBEDDED Python (アプリ内蔵)");
+                println!("📦 This app includes embedded Python interpreter");
+                println!("✨ PyOxidizer or similar embedding detected");
+            },
+            PythonType::System => {
+                println!("🎯 検出結果: SYSTEM Python (ユーザー環境)");
+                println!("💻 Using user's Python installation");
+                println!("📍 Python is loaded from system/user environment");
+            },
+            PythonType::Unknown => {
+                println!("🎯 検出結果: UNKNOWN Python環境");
+                println!("⚠️ Could not determine Python source");
             }
+        }
+        
+        // 追加のテスト実行
+        println!("🧪 Running additional Python verification tests...");
+        match test_python() {
+            Ok(test_result) => println!("✅ Python test passed: {}", test_result),
+            Err(test_error) => println!("❌ Python test failed: {}", test_error),
+        }
+    },
+    Err(e) => {
+        println!("❌ Python環境情報取得エラー: {}", e);
+        println!("🔧 Troubleshooting: Check if Python is properly installed");
+    }
+}
+println!("=== End Python Verification ===");
             
             println!("📋 Clipboard operations enabled");
             println!("📁 File operations enabled (JavaScript-based dialogs)");

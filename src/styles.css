@@ -10,8 +10,8 @@
  * =====================================================
  */
 
-:root {
-  /* エディタ関連 */
+ :root {
+  /* 基本エディタテーマ（修正版） */
   --editor-bg-color: #1e1e1e;
   --editor-text-color: #d4d4d4;
   --editor-cursor-color: #ffffff;
@@ -34,7 +34,7 @@
   
   /* 行ハイライト関連 */
   --line-highlight-bg-color: rgba(255, 255, 255, 0.05);
-  
+
   /* プレビュー用 */
   --preview-editor-bg: var(--editor-bg-color);
   --preview-editor-text: var(--editor-text-color);
