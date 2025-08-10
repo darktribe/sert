@@ -135,28 +135,36 @@ fn get_python_info() -> Result<String, String> {
             PythonType::Unknown => "UNKNOWN (不明)",
         };
         
-        // PyO3 0.22.6対応: シンプルな情報取得
-        let version_result = py.eval_bound("import sys; sys.version.split()[0]", None, None);
-        let executable_result = py.eval_bound("import sys; sys.executable", None, None);
-        let implementation_result = py.eval_bound("import platform; platform.python_implementation()", None, None);
-        let oxidizer_result = py.eval_bound("'oxidized_importer' in __import__('sys').modules", None, None);
+        // sysモジュールをインポート
+        let sys = py.import_bound("sys").map_err(|e| format!("Failed to import sys: {}", e))?;
+        let platform = py.import_bound("platform").map_err(|e| format!("Failed to import platform: {}", e))?;
         
-        // 結果を安全に抽出
-        let version = version_result
+        // バージョン情報を取得
+        let version = sys
+            .getattr("version")
             .and_then(|v| v.extract::<String>())
             .unwrap_or_else(|_| "Unknown".to_string());
         
-        let executable = executable_result
+        // 実行ファイルパスを取得
+        let executable = sys
+            .getattr("executable")
             .and_then(|v| v.extract::<String>())
             .unwrap_or_else(|_| "Unknown".to_string());
         
-        let implementation = implementation_result
+        // Python実装を取得
+        let implementation = platform
+            .call_method0("python_implementation")
             .and_then(|v| v.extract::<String>())
             .unwrap_or_else(|_| "Unknown".to_string());
         
-        let has_oxidizer = oxidizer_result
-            .and_then(|v| v.extract::<bool>())
+        // PyOxidizerチェック
+        let has_oxidizer = sys
+            .getattr("modules")
+            .and_then(|modules| modules.contains("oxidized_importer"))
             .unwrap_or(false);
+        
+        // バージョン番号のみを抽出
+        let version_number = version.split_whitespace().next().unwrap_or("Unknown");
         
         // パスタイプの判定
         let path_type = if executable.contains("/Applications/") || executable.contains(".app/") {
@@ -176,7 +184,7 @@ fn get_python_info() -> Result<String, String> {
             PyOxidizer: {}\n\n\
             Status: {} detected and working correctly!",
             type_str,
-            version,
+            version_number,
             implementation,
             executable,
             path_type,
