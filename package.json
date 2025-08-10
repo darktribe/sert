@@ -9,8 +9,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
-    "tauri:build-with-python": "./scripts/build-with-python.sh"
+    "tauri:build": "tauri build"
   },
   "devDependencies": {
     "@tauri-apps/api": "^2.0.0",
