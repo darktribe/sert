@@ -48,9 +48,7 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [
-      "python-runtime/**"
-    ],
+    
     "externalBin": [],
     "macOS": {
       "frameworks": ["Python"],
