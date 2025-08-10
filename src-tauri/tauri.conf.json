@@ -40,7 +40,6 @@
   },
   "bundle": {
     "active": true,
-<<<<<<< HEAD
     "targets": ["dmg", "app"],
 =======
     "targets": ["app"],
