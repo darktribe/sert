@@ -6,6 +6,36 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-env-changed=PYO3_PYTHON");
     
+    // Linux用の組み込みフラグを設定
+    #[cfg(target_os = "linux")]
+    {
+        println!("cargo:warning=🐧 Setting up embedded Python for Linux");
+        println!("cargo:rustc-env=VINSERT_EMBEDDED_PYTHON=1");
+        
+        // システムPythonのパスを取得して設定
+        if let Ok(output) = Command::new("which").arg("python3").output() {
+            if output.status.success() {
+                let python_path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                println!("cargo:rustc-env=VINSERT_PYTHON_PATH={}", python_path);
+                println!("cargo:warning=🐍 Linux embedded Python: {}", python_path);
+            }
+        }
+    }
+    
+    // macOS用の組み込みフラグを設定
+    #[cfg(target_os = "macos")]
+    {
+        println!("cargo:warning=🍎 Setting up embedded Python for macOS");
+        println!("cargo:rustc-env=VINSERT_EMBEDDED_PYTHON=1");
+    }
+    
+    // Windows用の組み込みフラグを設定
+    #[cfg(target_os = "windows")]
+    {
+        println!("cargo:warning=🪟 Setting up embedded Python for Windows");
+        println!("cargo:rustc-env=VINSERT_EMBEDDED_PYTHON=1");
+    }
+    
     // PyO3用のPython設定
     setup_python();
     
@@ -23,6 +53,34 @@ fn setup_python() {
     // macOSでの設定
     if cfg!(target_os = "macos") {
         setup_macos_python();
+    }
+    
+    // Linux用の設定
+    #[cfg(target_os = "linux")]
+    {
+        setup_linux_python();
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn setup_linux_python() {
+    println!("cargo:warning=Setting up Python for Linux");
+    
+    // Ubuntu 24.04のPython 3.12を明示的に指定
+    if let Ok(output) = Command::new("which").arg("python3").output() {
+        if output.status.success() {
+            let python_path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            println!("cargo:rustc-env=PYO3_PYTHON={}", python_path);
+            println!("cargo:warning=🐍 Set PYO3_PYTHON to {}", python_path);
+            
+            // Python版本確認
+            if let Ok(version_output) = Command::new(&python_path).arg("--version").output() {
+                if version_output.status.success() {
+                    let version = String::from_utf8_lossy(&version_output.stdout);
+                    println!("cargo:warning=✅ Python version: {}", version.trim());
+                }
+            }
+        }
     }
 }
 
