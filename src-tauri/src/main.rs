@@ -542,9 +542,6 @@ fn initialize_python() -> PythonType {
 }
 
 /**
- * Python環境の詳細を検出・確認する関数
- */
-/**
  * Python環境の詳細を検出・確認する関数（PyO3 0.22.6完全対応版）
  */
 /**
@@ -717,44 +714,52 @@ fn main() {
                 Err(e) => println!("❌ PyO3 test failed: {}", e),
             }
             
-            // Python環境情報の詳細表示
-println!("=== Python Environment Verification ===");
-match get_python_info() {
-    Ok(info) => {
-        // 詳細情報をコンソールに表示
-        println!("✅ Python環境詳細情報:\n{}", info);
-        
-        let python_type = unsafe { PYTHON_TYPE };
-        match python_type {
-            PythonType::Embedded => {
-                println!("🎯 検出結果: EMBEDDED Python (アプリ内蔵)");
-                println!("📦 This app includes embedded Python interpreter");
-                println!("✨ PyOxidizer or similar embedding detected");
-            },
-            PythonType::System => {
-                println!("🎯 検出結果: SYSTEM Python (ユーザー環境)");
-                println!("💻 Using user's Python installation");
-                println!("📍 Python is loaded from system/user environment");
-            },
-            PythonType::Unknown => {
-                println!("🎯 検出結果: UNKNOWN Python環境");
-                println!("⚠️ Could not determine Python source");
+            // ===== 起動時にPython環境を明確に表示 =====
+            println!("");
+            println!("=== PYTHON環境検出結果 ===");
+            
+            let python_type = unsafe { PYTHON_TYPE };
+            match python_type {
+                PythonType::Embedded => {
+                    println!("🟢 使用中のPython: 【組み込みPython】");
+                    println!("   → アプリケーション内蔵のPythonインタープリターを使用");
+                    println!("   → ユーザーのPython環境に依存せず、独立して動作");
+                    println!("   → PyOxidizerまたは類似の組み込み技術を検出");
+                },
+                PythonType::System => {
+                    println!("🔵 使用中のPython: 【ユーザー環境Python】");
+                    println!("   → ユーザーがインストールしたPython環境を使用");
+                    println!("   → システムまたはHomebrewなどからPythonを読み込み");
+                    println!("   → 拡張機能はユーザー環境のPythonライブラリを利用可能");
+                },
+                PythonType::Unknown => {
+                    println!("🔴 使用中のPython: 【不明・エラー】");
+                    println!("   → Python環境の検出に失敗しました");
+                    println!("   → 拡張機能が正常に動作しない可能性があります");
+                }
             }
-        }
-        
-        // 追加のテスト実行
-        println!("🧪 Running additional Python verification tests...");
-        match test_python() {
-            Ok(test_result) => println!("✅ Python test passed: {}", test_result),
-            Err(test_error) => println!("❌ Python test failed: {}", test_error),
-        }
-    },
-    Err(e) => {
-        println!("❌ Python環境情報取得エラー: {}", e);
-        println!("🔧 Troubleshooting: Check if Python is properly installed");
-    }
-}
-println!("=== End Python Verification ===");
+            println!("========================");
+            println!("");
+            
+            // Python環境情報の詳細表示（詳細版）
+            println!("=== Python Environment Details ===");
+            match get_python_info() {
+                Ok(info) => {
+                    println!("✅ Python環境詳細情報:\n{}", info);
+                    
+                    // 追加のテスト実行
+                    println!("🧪 Running additional Python verification tests...");
+                    match test_python() {
+                        Ok(test_result) => println!("✅ Python test passed: {}", test_result),
+                        Err(test_error) => println!("❌ Python test failed: {}", test_error),
+                    }
+                },
+                Err(e) => {
+                    println!("❌ Python環境情報取得エラー: {}", e);
+                    println!("🔧 Troubleshooting: Check if Python is properly installed");
+                }
+            }
+            println!("=== End Python Details ===");
             
             println!("📋 Clipboard operations enabled");
             println!("📁 File operations enabled (JavaScript-based dialogs)");
