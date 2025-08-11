@@ -1,8 +1,16 @@
-[env]
+# macOS用のPython設定のみ（他のOSはPyO3のデフォルト検出を使用）
+[target.x86_64-apple-darwin.env]
 PYO3_PYTHON = "/opt/homebrew/opt/python@3.11/bin/python3.11"
 
-[build]
+[target.x86_64-apple-darwin.build]
 rustflags = [
     "-L", "/opt/homebrew/opt/python@3.11/lib",
     "-L", "/opt/homebrew/opt/python@3.11/Frameworks/Python.framework/Versions/3.11/lib"
+]
+
+# Linux用の静的リンク設定（追加）
+[target.x86_64-unknown-linux-gnu]
+rustflags = [
+    "-C", "link-arg=-Wl,--exclude-libs=ALL",
+    "-C", "link-arg=-static-libgcc"
 ]
