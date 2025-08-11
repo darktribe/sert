@@ -20,10 +20,16 @@ fn setup_python() {
         return;
     }
     
-    // macOSでの設定
+   // macOSでの設定
     if cfg!(target_os = "macos") {
         setup_macos_python();
     }
+    // ↓ この3行だけ追加
+    else {
+        // Windows/LinuxはPyO3のデフォルト検出に任せる
+        println!("cargo:warning=Using PyO3 default Python detection for non-macOS");
+    }
+    // Windows/LinuxはPyO3のデフォルト検出に任せる
 }
 
 fn setup_macos_python() {
