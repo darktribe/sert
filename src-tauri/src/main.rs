@@ -8,9 +8,9 @@
  * =====================================================
  */
 
+use tauri::Manager;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
-use tauri::Manager;
 use std::env;
 
 static mut PYTHON_TYPE: PythonType = PythonType::Unknown;
@@ -123,107 +123,69 @@ fn run_python_file(file_path: String) -> Result<String, String> {
 }
 
 /**
- * Python詳細情報を取得（PyO3 0.22.6対応版）
+ * Python詳細情報を取得（組み込み判定機能強化版）
  */
 #[tauri::command]
 fn get_python_info() -> Result<String, String> {
     Python::with_gil(|py| {
-        let python_type = unsafe { PYTHON_TYPE };
-        let type_str = match python_type {
-            PythonType::Embedded => "🔗 EMBEDDED (python-build-standalone組み込み)",
-            PythonType::System => "🖥️ SYSTEM (ユーザー環境)",
-            PythonType::Unknown => "❓ UNKNOWN (判定不能)",
-        };
-        
-        // 詳細情報を収集
+        // 基本情報を取得
         let sys = py.import_bound("sys").map_err(|e| format!("sysモジュール取得失敗: {}", e))?;
-        let platform = py.import_bound("platform").map_err(|e| format!("platformモジュール取得失敗: {}", e))?;
-        
-        // 基本情報
         let version = sys.getattr("version").and_then(|v| v.extract::<String>()).unwrap_or_else(|_| "Unknown".to_string());
         let executable = sys.getattr("executable").and_then(|v| v.extract::<String>()).unwrap_or_else(|_| "Unknown".to_string());
-        let implementation = platform.call_method0("python_implementation").and_then(|v| v.extract::<String>()).unwrap_or_else(|_| "Unknown".to_string());
         
-        // 組み込み環境の詳細判定
-        let has_oxidizer = sys.getattr("modules").and_then(|modules| modules.contains("oxidized_importer")).unwrap_or(false);
-        let is_frozen = sys.getattr("frozen").map(|f| !f.is_none()).unwrap_or(false);
-        
-        // ビルド時情報（ランタイムで取得）
-        let build_embedded = std::env::var("VINSERT_EMBEDDED_PYTHON")
-            .unwrap_or_else(|_| "0".to_string())
-            .parse::<i32>()
-            .unwrap_or(0) == 1;
-        let build_python_path = std::env::var("VINSERT_PYTHON_PATH")
-            .unwrap_or_else(|_| "設定なし".to_string());
-        
-        // パス情報分析
-        let path_analysis = if executable.contains("python-standalone") {
-            "✅ python-build-standalone"
-        } else if let Ok(current_exe) = std::env::current_exe() {
-            if let Some(exe_dir) = current_exe.parent() {
-                let exe_dir_str = exe_dir.to_string_lossy();
-                if executable.starts_with(exe_dir_str.as_ref()) {
-                    "✅ アプリケーション内部"
-                } else {
-                    "❌ 外部システム"
-                }
-            } else {
-                "❓ 不明"
-            }
+        // 組み込みPython判定
+        let is_embedded = detect_embedded_python(&executable);
+        let python_type = if is_embedded {
+            "🔗 EMBEDDED (組み込みPython)"
         } else {
-            "❓ 不明"
+            "🖥️ SYSTEM (システムPython)"
         };
         
-        // site-packages情報
-        let site_packages_info = sys.getattr("path")
+        // site-packagesのパス
+        let site_packages = sys.getattr("path")
             .and_then(|path_list| path_list.extract::<Vec<String>>())
-            .map(|paths| {
-                let embedded_paths = paths.iter().filter(|p| p.contains("python-standalone")).count();
-                if embedded_paths > 0 {
-                    format!("✅ 組み込み環境 ({}/{}パス)", embedded_paths, paths.len())
-                } else {
-                    format!("❌ システム環境 ({}パス)", paths.len())
-                }
-            })
-            .unwrap_or_else(|_| "❓ 取得失敗".to_string());
+            .unwrap_or_else(|_| vec![]);
         
-        let version_number = version.split_whitespace().next().unwrap_or("Unknown");
+        let site_packages_info = site_packages.iter()
+            .map(|p| format!("  - {}", p))
+            .collect::<Vec<_>>()
+            .join("\n");
         
         let result = format!(
-            "🐍 Python統合環境詳細レポート 🐍\n\n\
-            🔧 環境タイプ: {}\n\
-            📋 バージョン: {} ({})\n\
+            "🐍 Python環境情報 🐍\n\n\
+            📊 環境タイプ: {}\n\
+            📋 バージョン: {}\n\
             📁 実行ファイル: {}\n\
-            📊 パス判定: {}\n\
-            📦 site-packages: {}\n\n\
-            🛠️ ビルド時設定:\n\
-            ├─ 組み込みフラグ: {}\n\
-            └─ 指定パス: {}\n\n\
-            🔍 環境特徴:\n\
-            ├─ PyOxidizer: {}\n\
-            ├─ Frozen: {}\n\
-            └─ 実装: {}\n\n\
-            🎯 判定結果: {}",
-            type_str,
-            version_number,
-            implementation,
+            🎯 判定: {}\n\n\
+            📦 Python Path:\n{}\n",
+            python_type,
+            version,
             executable,
-            path_analysis,
-            site_packages_info,
-            if build_embedded { "✅ 有効" } else { "❌ 無効" },
-            build_python_path,
-            if has_oxidizer { "✅ 検出" } else { "❌ なし" },
-            if is_frozen { "✅ 検出" } else { "❌ なし" },
-            implementation,
-            match python_type {
-                PythonType::Embedded => "✅ 組み込みPython動作中",
-                PythonType::System => "🖥️ システムPython動作中", 
-                PythonType::Unknown => "❓ Python環境判定不能"
-            }
+            if is_embedded { "アプリケーション組み込み" } else { "システム環境" },
+            site_packages_info
         );
         
         Ok(result)
     })
+}
+
+fn detect_embedded_python(executable: &str) -> bool {
+    // 実行ファイルパスからの判定
+    if executable.contains("python-standalone") {
+        return true;
+    }
+    
+    // アプリケーションバンドル内かチェック
+    if let Ok(current_exe) = std::env::current_exe() {
+        if let Some(exe_dir) = current_exe.parent() {
+            let exe_dir_str = exe_dir.to_string_lossy();
+            if executable.starts_with(exe_dir_str.as_ref()) {
+                return true;
+            }
+        }
+    }
+    
+    false
 }
 
 // =====================================================
@@ -570,8 +532,8 @@ async fn open_folder(path: String) -> Result<(), String> {
 // =====================================================
 
 fn initialize_python() -> PythonType {
-    // PyO3 0.22.6のauto-initializeフィーチャーを使用
-    // pyo3::prepare_freethreaded_python()は不要（auto-initializeが自動処理）
+    // PyO3 0.22.6の初期化
+    // auto-initializeフィーチャーが有効な場合、初回のPython::with_gil()で自動初期化される
     
     // Python環境を詳細に確認
     let python_type = detect_python_environment();
