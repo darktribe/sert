@@ -5,12 +5,6 @@ const host = process.env.TAURI_DEV_HOST;
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
-  root: './src',
-  
-  build: {
-    outDir: '../dist',
-    emptyOutDir: true
-  },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
@@ -33,6 +27,4 @@ export default defineConfig(async () => ({
       ignored: ["**/src-tauri/**"],
     },
   },
-  
-  envPrefix: ['VITE_', 'TAURI_'],
 }));
