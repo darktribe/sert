@@ -17,6 +17,48 @@ import { initializeLineHighlight } from './line-highlight.js';
 import { initializeThemeSystem } from './theme-manager.js';
 import { initTypewriterMode } from './typewriter-mode.js';
 
+
+/**
+ * アプリ起動時にPython環境を判定してコンソールに表示
+ */
+async function checkPythonEnvironmentOnStartup() {
+    console.log('🐍 Python環境を確認中...');
+    
+    try {
+        if (window.__TAURI__ && window.__TAURI__.core) {
+            const pythonInfo = await window.__TAURI__.core.invoke('get_python_info');
+            
+            // 組み込みPython判定
+            const isEmbedded = pythonInfo.includes('EMBEDDED') || pythonInfo.includes('組み込みPython');
+            
+            console.log('\n' + '='.repeat(80));
+            if (isEmbedded) {
+                console.log('🟢 【組み込みPython環境】でアプリが動作中');
+                console.log('   ✓ アプリケーション内蔵のPython環境を使用');
+                console.log('   ✓ ユーザーのPython環境に依存しない独立動作');
+                console.log('   ✓ 拡張機能は組み込み環境で実行');
+            } else {
+                console.log('🔵 【ユーザー環境Python】でアプリが動作中');
+                console.log('   ✓ システムまたはユーザーインストールのPython環境を使用');
+                console.log('   ✓ 拡張機能はユーザー環境のライブラリを利用可能');
+                console.log('   ✓ ユーザーのPython環境に依存');
+            }
+            console.log('='.repeat(80) + '\n');
+            
+            // 詳細情報も表示（折りたたみ可能な形式）
+            console.groupCollapsed('📋 Python環境詳細情報 (クリックして展開)');
+            console.log(pythonInfo);
+            console.groupEnd();
+            
+        } else {
+            console.warn('⚠️ Tauri環境が利用できないため、Python環境判定をスキップしました');
+        }
+    } catch (error) {
+        console.error('❌ Python環境の判定に失敗:', error);
+        console.log('💡 アプリ起動時のPython環境確認でエラーが発生しました');
+    }
+}
+
 /**
  * Tauri APIの初期化
  * ウィンドウクローズイベントの設定も行う
@@ -169,6 +211,8 @@ export async function initializeApp() {
     }
     
     await initializeTauri();
+    // Python環境判定を起動時に実行してコンソールに表示
+    await checkPythonEnvironmentOnStartup();
     
     // 外部ファイルシステムの初期化を試行
     try {

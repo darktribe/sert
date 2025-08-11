@@ -193,6 +193,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     // アプリケーションの初期化
     await initializeApp();
     
+    // 起動完了後にもPython環境を確認表示（確実性のため）
+    setTimeout(async () => {
+        try {
+            if (window.__TAURI__ && window.__TAURI__.core && window.checkPythonEnvironment) {
+                console.log('🔄 起動完了 - Python環境最終確認:');
+                const envType = await window.getPythonType();
+                if (envType === 'EMBEDDED') {
+                    console.log('🟢 最終確認: 組み込みPython環境で動作中');
+                } else if (envType === 'SYSTEM') {
+                    console.log('🔵 最終確認: ユーザー環境Python環境で動作中');
+                } else {
+                    console.log('🔴 最終確認: Python環境判定が不明');
+                }
+            }
+        } catch (error) {
+            console.log('⚠️ 起動後Python環境確認でエラー:', error);
+        }
+    }, 1000);
+    
     // DOM要素が確実に準備されるまで少し待機
     await new Promise(resolve => setTimeout(resolve, 200));
     
@@ -233,5 +252,92 @@ if (document.readyState !== 'loading') {
         }
     });
 }
+
+// =====================================================
+// 開発者コンソール用デバッグ関数
+// =====================================================
+
+/**
+ * 開発者コンソールから Python環境を確認する関数
+ * ブラウザの開発者コンソールで window.checkPythonEnvironment() を実行
+ */
+window.checkPythonEnvironment = async function() {
+    console.log('🔍 Python環境を確認中...');
+    
+    try {
+        // 既存のTauriコマンドを利用してPython環境情報を取得
+        const pythonInfo = window.__TAURI__ && window.__TAURI__.core 
+            ? await window.__TAURI__.core.invoke('get_python_info')
+            : 'Tauri環境が利用できません';
+        
+        console.log('\n' + '='.repeat(60));
+        console.log('🐍 PYTHON環境診断結果');
+        console.log('='.repeat(60));
+        console.log(pythonInfo);
+        console.log('='.repeat(60) + '\n');
+        
+        // 組み込みPython かどうかの簡単な判定結果も表示
+        const isEmbedded = pythonInfo.includes('EMBEDDED') || pythonInfo.includes('組み込みPython');
+        
+        if (isEmbedded) {
+            console.log('🟢 結論: 組み込みPython を使用中');
+            console.log('   → アプリ内蔵のPython環境で動作しています');
+            console.log('   → ユーザーのPython環境に依存しません');
+        } else {
+            console.log('🔵 結論: ユーザー環境のPython を使用中');
+            console.log('   → システムまたはユーザーがインストールしたPython');
+            console.log('   → 拡張機能はユーザー環境のライブラリを利用可能');
+        }
+        
+        return pythonInfo;
+        
+    } catch (error) {
+        console.error('❌ Python環境の確認に失敗:', error);
+        console.log('💡 以下を確認してください:');
+        console.log('   1. Tauri環境で実行されているか');
+        console.log('   2. Python統合機能が正常に初期化されているか');
+        return null;
+    }
+};
+
+/**
+ * 簡易版Python環境確認（戻り値のみ）
+ */
+window.getPythonType = async function() {
+    try {
+        const info = await window.__TAURI__.core.invoke('get_python_info');
+        const isEmbedded = info.includes('EMBEDDED') || info.includes('組み込みPython');
+        return isEmbedded ? 'EMBEDDED' : 'SYSTEM';
+    } catch (error) {
+        console.error('Python type detection failed:', error);
+        return 'UNKNOWN';
+    }
+};
+
+/**
+ * 開発者向け詳細診断（Rust側の詳細情報）
+ */
+window.debugPythonEnvironment = async function() {
+    console.log('🔍 Python環境詳細診断を実行中...');
+    
+    try {
+        const debugInfo = await window.__TAURI__.core.invoke('debug_python_environment');
+        
+        console.log('\n' + debugInfo + '\n');
+        
+        return debugInfo;
+        
+    } catch (error) {
+        console.error('❌ 詳細診断に失敗:', error);
+        console.log('💡 debug_python_environment コマンドが登録されていない可能性があります');
+        return null;
+    }
+};
+
+// 起動時に利用方法をコンソールに表示
+console.log('\n🔧 開発者向けPython環境確認機能が利用可能です:');
+console.log('   window.checkPythonEnvironment() - 詳細情報表示');
+console.log('   window.getPythonType() - 簡易判定（EMBEDDED/SYSTEM）');
+console.log('   window.debugPythonEnvironment() - 詳細診断情報\n');
 
 console.log('📋 Main.js loaded successfully');

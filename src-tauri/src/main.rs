@@ -169,6 +169,117 @@ fn get_python_info() -> Result<String, String> {
     })
 }
 
+/**
+ * 開発者向け詳細Python環境診断
+ */
+#[tauri::command]
+fn debug_python_environment() -> Result<String, String> {
+    Python::with_gil(|py| {
+        let mut result = String::new();
+        
+        // 基本環境情報
+        result.push_str("🔍 PYTHON環境詳細診断\n");
+        result.push_str("=" .repeat(50).as_str());
+        result.push_str("\n\n");
+        
+        // Python実行ファイル情報
+        match py.import_bound("sys") {
+            Ok(sys) => {
+                let executable = sys.getattr("executable")
+                    .and_then(|v| v.extract::<String>())
+                    .unwrap_or_else(|_| "Unknown".to_string());
+                    
+                result.push_str(&format!("📁 Python実行ファイル: {}\n", executable));
+                
+                // 組み込み判定の詳細
+                let is_embedded = detect_embedded_python(&executable);
+                result.push_str(&format!("🎯 組み込み判定: {}\n", is_embedded));
+                
+                // 判定理由の詳細
+                result.push_str("🔍 判定根拠:\n");
+                
+                if executable.contains("python-standalone") {
+                    result.push_str("   ✓ パスに 'python-standalone' が含まれる\n");
+                }
+                
+                if let Ok(current_exe) = std::env::current_exe() {
+                    if let Some(exe_dir) = current_exe.parent() {
+                        let exe_dir_str = exe_dir.to_string_lossy();
+                        if executable.starts_with(exe_dir_str.as_ref()) {
+                            result.push_str("   ✓ アプリケーションディレクトリ内のPython\n");
+                        }
+                    }
+                }
+                
+                // 現在のアプリケーション情報
+                if let Ok(current_exe) = std::env::current_exe() {
+                    result.push_str(&format!("🏠 アプリ実行ファイル: {}\n", current_exe.display()));
+                    if let Some(exe_dir) = current_exe.parent() {
+                        result.push_str(&format!("📂 アプリディレクトリ: {}\n", exe_dir.display()));
+                    }
+                }
+                
+                result.push_str("\n");
+                
+                // Python version詳細
+                if let Ok(version) = sys.getattr("version").and_then(|v| v.extract::<String>()) {
+                    result.push_str(&format!("🐍 Pythonバージョン: {}\n", version));
+                }
+                
+                // Python path詳細
+                if let Ok(path_list) = sys.getattr("path").and_then(|p| p.extract::<Vec<String>>()) {
+                    result.push_str("📦 Python Path (上位5件):\n");
+                    for (i, path) in path_list.iter().take(5).enumerate() {
+                        result.push_str(&format!("   {}. {}\n", i + 1, path));
+                    }
+                    if path_list.len() > 5 {
+                        result.push_str(&format!("   ... 他{}件\n", path_list.len() - 5));
+                    }
+                }
+                
+            },
+            Err(e) => {
+                result.push_str(&format!("❌ sys モジュール取得エラー: {}\n", e));
+            }
+        }
+        
+        // 環境変数チェック
+        result.push_str("\n🌍 関連環境変数:\n");
+        let env_vars = ["PYO3_PYTHON", "PYTHONHOME", "PYTHONPATH"];
+        for var in &env_vars {
+            match std::env::var(var) {
+                Ok(value) => result.push_str(&format!("   {}: {}\n", var, value)),
+                Err(_) => result.push_str(&format!("   {}: (未設定)\n", var)),
+            }
+        }
+        
+        // 最終結論
+        result.push_str("\n🎯 最終結論:\n");
+        let python_type = unsafe { PYTHON_TYPE };
+        match python_type {
+            PythonType::Embedded => {
+                result.push_str("   🟢 【組み込みPython】を使用中\n");
+                result.push_str("   → アプリケーション内蔵のPython環境\n");
+                result.push_str("   → ユーザー環境に依存しない独立動作\n");
+            },
+            PythonType::System => {
+                result.push_str("   🔵 【システムPython】を使用中\n");
+                result.push_str("   → ユーザーがインストールしたPython環境\n");
+                result.push_str("   → 拡張機能はユーザー環境のライブラリを利用可能\n");
+            },
+            PythonType::Unknown => {
+                result.push_str("   🔴 【不明・エラー】\n");
+                result.push_str("   → Python環境の判定に失敗\n");
+            }
+        }
+        
+        result.push_str("\n");
+        result.push_str("=" .repeat(50).as_str());
+        
+        Ok(result)
+    })
+}
+
 fn detect_embedded_python(executable: &str) -> bool {
     // 実行ファイルパスからの判定
     if executable.contains("python-standalone") {
@@ -666,6 +777,7 @@ fn main() {
             evaluate_python_expression,
             run_python_file,
             get_python_info,
+            debug_python_environment,
             
             // アプリケーション制御
             exit_app,
