@@ -11,15 +11,15 @@
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use tauri::Manager;
+use std::env;
 
 static mut PYTHON_TYPE: PythonType = PythonType::Unknown;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-#[allow(dead_code)] // Embedded は将来のPyOxidizer統合で使用予定
 enum PythonType {
     Unknown,
-    Embedded, // 将来のPyOxidizer埋め込みPython用
-    System,
+    Embedded,    // python-build-standaloneによる組み込みPython
+    System,      // システム環境のPython
 }
 
 // =====================================================
@@ -130,73 +130,101 @@ fn get_python_info() -> Result<String, String> {
     Python::with_gil(|py| {
         let python_type = unsafe { PYTHON_TYPE };
         let type_str = match python_type {
-            PythonType::Embedded => "EMBEDDED (アプリ内蔵)",
-            PythonType::System => "SYSTEM (ユーザー環境)",
-            PythonType::Unknown => "UNKNOWN (不明)",
+            PythonType::Embedded => "🔗 EMBEDDED (python-build-standalone組み込み)",
+            PythonType::System => "🖥️ SYSTEM (ユーザー環境)",
+            PythonType::Unknown => "❓ UNKNOWN (判定不能)",
         };
         
-        // sysモジュールをインポート
-        let sys = py.import_bound("sys").map_err(|e| format!("Failed to import sys: {}", e))?;
-        let platform = py.import_bound("platform").map_err(|e| format!("Failed to import platform: {}", e))?;
+        // 詳細情報を収集
+        let sys = py.import_bound("sys").map_err(|e| format!("sysモジュール取得失敗: {}", e))?;
+        let platform = py.import_bound("platform").map_err(|e| format!("platformモジュール取得失敗: {}", e))?;
         
-        // バージョン情報を取得
-        let version = sys
-            .getattr("version")
-            .and_then(|v| v.extract::<String>())
-            .unwrap_or_else(|_| "Unknown".to_string());
+        // 基本情報
+        let version = sys.getattr("version").and_then(|v| v.extract::<String>()).unwrap_or_else(|_| "Unknown".to_string());
+        let executable = sys.getattr("executable").and_then(|v| v.extract::<String>()).unwrap_or_else(|_| "Unknown".to_string());
+        let implementation = platform.call_method0("python_implementation").and_then(|v| v.extract::<String>()).unwrap_or_else(|_| "Unknown".to_string());
         
-        // 実行ファイルパスを取得
-        let executable = sys
-            .getattr("executable")
-            .and_then(|v| v.extract::<String>())
-            .unwrap_or_else(|_| "Unknown".to_string());
+        // 組み込み環境の詳細判定
+        let has_oxidizer = sys.getattr("modules").and_then(|modules| modules.contains("oxidized_importer")).unwrap_or(false);
+        let is_frozen = sys.getattr("frozen").map(|f| !f.is_none()).unwrap_or(false);
         
-        // Python実装を取得
-        let implementation = platform
-            .call_method0("python_implementation")
-            .and_then(|v| v.extract::<String>())
-            .unwrap_or_else(|_| "Unknown".to_string());
+        // ビルド時情報（ランタイムで取得）
+        let build_embedded = std::env::var("VINSERT_EMBEDDED_PYTHON")
+            .unwrap_or_else(|_| "0".to_string())
+            .parse::<i32>()
+            .unwrap_or(0) == 1;
+        let build_python_path = std::env::var("VINSERT_PYTHON_PATH")
+            .unwrap_or_else(|_| "設定なし".to_string());
         
-        // PyOxidizerチェック
-        let has_oxidizer = sys
-            .getattr("modules")
-            .and_then(|modules| modules.contains("oxidized_importer"))
-            .unwrap_or(false);
+        // パス情報分析
+        let path_analysis = if executable.contains("python-standalone") {
+            "✅ python-build-standalone"
+        } else if let Ok(current_exe) = std::env::current_exe() {
+            if let Some(exe_dir) = current_exe.parent() {
+                let exe_dir_str = exe_dir.to_string_lossy();
+                if executable.starts_with(exe_dir_str.as_ref()) {
+                    "✅ アプリケーション内部"
+                } else {
+                    "❌ 外部システム"
+                }
+            } else {
+                "❓ 不明"
+            }
+        } else {
+            "❓ 不明"
+        };
         
-        // バージョン番号のみを抽出
+        // site-packages情報
+        let site_packages_info = sys.getattr("path")
+            .and_then(|path_list| path_list.extract::<Vec<String>>())
+            .map(|paths| {
+                let embedded_paths = paths.iter().filter(|p| p.contains("python-standalone")).count();
+                if embedded_paths > 0 {
+                    format!("✅ 組み込み環境 ({}/{}パス)", embedded_paths, paths.len())
+                } else {
+                    format!("❌ システム環境 ({}パス)", paths.len())
+                }
+            })
+            .unwrap_or_else(|_| "❓ 取得失敗".to_string());
+        
         let version_number = version.split_whitespace().next().unwrap_or("Unknown");
         
-        // パスタイプの判定
-        let path_type = if executable.contains("/Applications/") || executable.contains(".app/") {
-            "app_bundle"
-        } else if executable.starts_with("/usr/") || executable.starts_with("/opt/") || executable.starts_with("/System/") {
-            "system_path"
-        } else {
-            "user_path"
-        };
-        
         let result = format!(
-            "🐍 Python Environment Details 🐍\n\n\
-            Type: {}\n\
-            Version: {} ({})\n\
-            Executable: {}\n\
-            Path Type: {}\n\
-            PyOxidizer: {}\n\n\
-            Status: {} detected and working correctly!",
+            "🐍 Python統合環境詳細レポート 🐍\n\n\
+            🔧 環境タイプ: {}\n\
+            📋 バージョン: {} ({})\n\
+            📁 実行ファイル: {}\n\
+            📊 パス判定: {}\n\
+            📦 site-packages: {}\n\n\
+            🛠️ ビルド時設定:\n\
+            ├─ 組み込みフラグ: {}\n\
+            └─ 指定パス: {}\n\n\
+            🔍 環境特徴:\n\
+            ├─ PyOxidizer: {}\n\
+            ├─ Frozen: {}\n\
+            └─ 実装: {}\n\n\
+            🎯 判定結果: {}",
             type_str,
             version_number,
             implementation,
             executable,
-            path_type,
-            if has_oxidizer { "Yes (Embedded)" } else { "No (System)" },
-            if has_oxidizer { "Embedded Python" } else { "System Python" }
+            path_analysis,
+            site_packages_info,
+            if build_embedded { "✅ 有効" } else { "❌ 無効" },
+            build_python_path,
+            if has_oxidizer { "✅ 検出" } else { "❌ なし" },
+            if is_frozen { "✅ 検出" } else { "❌ なし" },
+            implementation,
+            match python_type {
+                PythonType::Embedded => "✅ 組み込みPython動作中",
+                PythonType::System => "🖥️ システムPython動作中", 
+                PythonType::Unknown => "❓ Python環境判定不能"
+            }
         );
         
         Ok(result)
     })
 }
-
-
 
 // =====================================================
 // アプリケーション制御
@@ -561,31 +589,96 @@ fn initialize_python() -> PythonType {
  * Python環境の詳細を検出・確認する関数（緊急修正版）
  */
 fn detect_python_environment() -> PythonType {
-    println!("=== Python環境詳細情報（緊急修正版） ===");
+    println!("=== Python環境詳細分析（組み込みPython対応版） ===");
     
-    // 最小限のPython情報取得
-    match Python::with_gil(|py| -> Result<(), PyErr> {
-        // 基本的なテスト
+    // ビルド時の組み込みPythonフラグをチェック（ランタイムで取得）
+    let is_embedded_build = std::env::var("VINSERT_EMBEDDED_PYTHON")
+        .unwrap_or_else(|_| "0".to_string())
+        .parse::<i32>()
+        .unwrap_or(0) == 1;
+    let embedded_python_path = std::env::var("VINSERT_PYTHON_PATH")
+        .unwrap_or_else(|_| "".to_string());
+    
+    println!("🔍 ビルド時の組み込みPythonフラグ: {}", is_embedded_build);
+    println!("🔍 組み込みPythonパス: {}", embedded_python_path);
+    
+    match Python::with_gil(|py| -> Result<PythonType, PyErr> {
+        // 基本的なPython動作テスト
         let simple_test = py.eval_bound("2 + 2", None, None)?;
-        println!("🐍 Python基本テスト: {}", simple_test);
+        println!("🐍 Python基本動作テスト: {}", simple_test);
         
-        // バージョン取得（分離）
-        py.run_bound("import sys", None, None)?;
-        let version = py.eval_bound("sys.version", None, None)?;
-        println!("🐍 Python version: {}", version);
+        // Python実行ファイルパスを取得
+        let sys = py.import_bound("sys")?;
+        let executable = sys.getattr("executable")?.extract::<String>()?;
+        println!("🐍 実行中のPython実行ファイル: {}", executable);
         
-        let executable = py.eval_bound("sys.executable", None, None)?;
-        println!("🐍 Python executable: {}", executable);
+        // 組み込みPython判定の複数の方法
+        let mut embedded_indicators = Vec::new();
         
-        Ok(())
+        // 1. ビルド時フラグによる判定
+        if is_embedded_build {
+            embedded_indicators.push("ビルド時組み込みフラグ");
+        }
+        
+        // 2. 実行ファイルパスによる判定
+        if executable.contains("python-standalone") || (!embedded_python_path.is_empty() && executable.contains(&embedded_python_path)) {
+            embedded_indicators.push("実行ファイルパスが組み込みPythonを示している");
+        }
+        
+        // 3. アプリケーション内部パスかチェック
+        if let Ok(current_exe) = std::env::current_exe() {
+            if let Some(exe_dir) = current_exe.parent() {
+                let exe_dir_str = exe_dir.to_string_lossy();
+                if executable.starts_with(exe_dir_str.as_ref()) {
+                    embedded_indicators.push("Pythonがアプリケーションディレクトリ内にある");
+                }
+            }
+        }
+        
+        // 4. PyOxidizer/組み込み環境の特徴を検出
+        if let Ok(modules) = sys.getattr("modules") {
+            if modules.contains("oxidized_importer").unwrap_or(false) {
+                embedded_indicators.push("PyOxidizer組み込み環境");
+            }
+        }
+        
+        // 5. frozen属性チェック
+        if let Ok(frozen) = sys.getattr("frozen") {
+            if !frozen.is_none() {
+                embedded_indicators.push("frozen属性が設定されている");
+            }
+        }
+        
+        // 6. site-packagesの場所をチェック
+        if let Ok(path_list) = sys.getattr("path") {
+            if let Ok(paths) = path_list.extract::<Vec<String>>() {
+                for path in &paths {
+                    if path.contains("python-standalone") {
+                        embedded_indicators.push("site-packagesが組み込みPython内にある");
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // 判定結果
+        if !embedded_indicators.is_empty() {
+            println!("✅ 組み込みPython検出指標:");
+            for indicator in &embedded_indicators {
+                println!("   - {}", indicator);
+            }
+            Ok(PythonType::Embedded)
+        } else {
+            println!("📍 システムPython検出 (組み込み指標なし)");
+            Ok(PythonType::System)
+        }
     }) {
-        Ok(_) => {
-            println!("✅ Python環境確認成功（簡易版）");
-            println!("📊 判定: SYSTEM Python（動作確認済み）");
-            PythonType::System
+        Ok(python_type) => {
+            println!("🎯 最終判定: {:?}", python_type);
+            python_type
         },
         Err(e) => {
-            println!("❌ Python環境確認エラー: {}", e);
+            println!("❌ Python環境検出エラー: {}", e);
             PythonType::Unknown
         }
     }
