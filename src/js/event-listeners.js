@@ -17,22 +17,26 @@ import { handleGlobalClick, handleMenuEscape } from './menu-controller.js';
 export function setupEventListeners() {
     console.log('Setting up event listeners...');
     
-    // テキスト入力関連
-    editor.addEventListener('input', handleInput);
-    editor.addEventListener('keydown', handleKeydown);
+    if (!editor) {
+        console.error('❌ Editor element not available');
+        return;
+    }
     
-    // スクロール・フォーカス関連
+    // キーボードイベントを最優先で設定
+    editor.addEventListener('keydown', handleKeydown, true);
+    console.log('✅ Keydown listener added (capture=true)');
+    
+    // 他のイベントリスナー
+    editor.addEventListener('input', handleInput);
     editor.addEventListener('scroll', () => {
         syncScroll();
-        // スクロール時にハイライトの位置も更新
         updateLineHighlight();
-        // スクロール時に空白文字マーカーも更新
         updateWhitespaceMarkersOnScroll();
     });
     editor.addEventListener('click', updateStatus);
     editor.addEventListener('keyup', updateStatus);
     
-    // IME（日本語入力）関連
+    // IME関連
     editor.addEventListener('compositionstart', handleCompositionStart);
     editor.addEventListener('compositionend', handleCompositionEnd);
     editor.addEventListener('compositionupdate', handleCompositionUpdate);
@@ -41,5 +45,5 @@ export function setupEventListeners() {
     document.addEventListener('click', handleGlobalClick);
     document.addEventListener('keydown', handleMenuEscape);
     
-    console.log('Event listeners set up successfully');
+    console.log('✅ Event listeners set up successfully');
 }

@@ -656,16 +656,13 @@ function initializeFallbackSystem() {
         { code: 'en', name: 'English', nativeName: 'English', version: '1.0.0' }
     ];
     
-    // デフォルト言語を設定
-    const preferredLanguage = loadLanguageFromStorage();
-    const selectedLang = FALLBACK_LANGUAGES[preferredLanguage] || FALLBACK_LANGUAGES['ja'];
-    const { _meta, ...langData } = selectedLang;
-    
+    // 日本語で初期化
+    const { _meta, ...langData } = FALLBACK_LANGUAGES['ja'];
     languageData = langData;
-    currentLanguage = _meta.code;
+    currentLanguage = 'ja';
     isExternalSystemEnabled = false;
     
-    console.log(`✅ Fallback i18n system initialized with language: ${_meta.name} (${currentLanguage})`);
+    console.log(`✅ Fallback i18n system initialized with Japanese`);
     console.log('📋 Available languages:', availableLanguages.map(l => `${l.nativeName} (${l.code})`));
 }
 
@@ -849,30 +846,21 @@ export async function changeLanguage(languageCode) {
 export async function initializeI18n() {
     console.log('🌐 Initializing i18n system...');
     
-    // まずフォールバックシステムを確実に初期化（外部システムが失敗した場合の備え）
-    initializeFallbackSystem();
-    console.log('🔄 Fallback system initialized as backup');
+    // 日本語で固定初期化
+    availableLanguages = [
+        { code: 'ja', name: '日本語', nativeName: '日本語', version: '1.0.0' },
+        { code: 'en', name: 'English', nativeName: 'English', version: '1.0.0' }
+    ];
     
-    // 外部ファイルシステムを試行（バックグラウンドで）
-    try {
-        console.log('🔍 Attempting to initialize external file system...');
-        await tryExternalFileSystem();
-    } catch (error) {
-        console.warn('⚠️ External file system not available, using fallback:', error);
-    }
+    const { _meta, ...langData } = FALLBACK_LANGUAGES['ja'];
+    languageData = langData;
+    currentLanguage = 'ja';
+    isExternalSystemEnabled = false;
     
+    console.log('✅ I18n initialized with Japanese');
     return true;
 }
 
-/**
- * 外部ファイルシステムを試行
- */
-/**
- * 外部ファイルシステムを初期化
- */
-/**
- * 外部ファイルシステムを初期化
- */
 /**
  * 外部ファイルシステムを安全に初期化（失敗してもアプリは継続）
  */

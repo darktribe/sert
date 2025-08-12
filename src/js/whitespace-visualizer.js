@@ -56,6 +56,8 @@ export function updateWhitespaceVisualizationMenuState(enabled) {
  * 空白文字可視化設定を初期化
  */
 export function initializeWhitespaceVisualization() {
+    console.log('👁️ Initializing whitespace visualization...');
+    
     // マーカーコンテナを作成
     createMarkersContainer();
     
@@ -69,7 +71,7 @@ export function initializeWhitespaceVisualization() {
         }, 100);
     }
     
-    console.log('👁️ Whitespace visualization initialized:', whitespaceVisualization);
+    console.log('✅ Whitespace visualization initialized:', whitespaceVisualization);
 }
 
 /**

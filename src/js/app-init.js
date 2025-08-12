@@ -203,141 +203,78 @@ function setupLanguageChangeListener() {
 export async function initializeApp() {
     console.log('Starting app initialization...');
     
-    // 多言語化システムの初期化
+    // 多言語化システムの初期化（日本語固定）
     console.log('🌐 Initializing i18n system...');
-    const i18nSuccess = await initializeI18n();
-    if (!i18nSuccess) {
-        console.error('❌ Failed to initialize i18n system');
-    }
+    await initializeI18n();
     
+    // Tauri API初期化
     await initializeTauri();
-    // Python環境判定を起動時に実行してコンソールに表示
+    
+    // Python環境判定
     await checkPythonEnvironmentOnStartup();
     
-    // 外部ファイルシステムの初期化を試行
-    try {
-        console.log('🌐 Starting external file system initialization...');
-        console.log('🔍 Importing locales module...');
-        const localesModule = await import('./locales.js');
-        console.log('✅ Locales module imported successfully');
-        console.log('🔍 Calling tryExternalFileSystem...');
-        await localesModule.tryExternalFileSystem();
-        console.log('✅ External file system initialization completed');
-    } catch (error) {
-        console.error('❌ External file system initialization failed:', error);
-        console.warn('⚠️ Using fallback system - app will continue normally');
-        // エラーがあってもフォールバックシステムで続行
-    }
-    
+    // エディタ要素の取得
     const editorElement = document.getElementById('editor');
     if (!editorElement) {
-        console.error('Editor element not found');
+        console.error('❌ Editor element not found');
         return;
     }
     
-    console.log('Editor element found, setting up...');
     setEditor(editorElement);
-    
-    // エディタの初期設定
     setCurrentContent(editorElement.value);
     initializeUndoStack();
     
-    // フォント設定の初期化
-    console.log('🎨 Initializing font settings...');
+    // 基本設定の初期化
     loadFontSettings();
-    
-    // 行ハイライト設定の初期化
-    console.log('🎨 Initializing line highlight settings...');
     loadLineHighlightSetting();
     initializeLineHighlight();
     
-    // 空白文字可視化設定の初期化
-    console.log('👁️ Initializing whitespace visualization settings...');
+    // 空白文字可視化の初期化
+    console.log('👁️ Initializing whitespace visualization...');
     try {
         loadWhitespaceVisualizationSetting();
-        // 動的インポートを使って安全に初期化
-        setTimeout(async () => {
-            try {
-                const { initializeWhitespaceVisualization } = await import('./whitespace-visualizer.js');
-                initializeWhitespaceVisualization();
-                console.log('✅ Whitespace visualization initialized successfully');
-            } catch (error) {
-                console.warn('⚠️ Whitespace visualization initialization failed:', error);
-            }
-        }, 500);
+        const whitespaceModule = await import('./whitespace-visualizer.js');
+        whitespaceModule.initializeWhitespaceVisualization();
+        console.log('✅ Whitespace visualization initialized');
     } catch (error) {
-        console.warn('⚠️ Whitespace visualization settings loading failed:', error);
+        console.warn('⚠️ Whitespace visualization failed:', error);
     }
     
-    // タイプライターモード設定の初期化
-    console.log('🖥️ Initializing typewriter mode settings...');
-    try {
-        initTypewriterMode();
-        console.log('✅ Typewriter mode initialized successfully');
-    } catch (error) {
-        console.error('❌ Typewriter mode initialization failed:', error);
-    }
-    
-    // テーマシステムの初期化
-    console.log('🎨 Initializing theme system...');
+    // テーマシステム初期化
     try {
         await initializeThemeSystem();
     } catch (error) {
-        console.error('❌ Theme system initialization failed:', error);
+        console.warn('⚠️ Theme system failed:', error);
     }
     
-    // タイプライターモード設定の初期化
-    console.log('🖥️ Initializing typewriter mode settings...');
+    // タイプライターモード初期化
     try {
-        const { initTypewriterMode } = await import('./typewriter-mode.js');
         initTypewriterMode();
-        console.log('✅ Typewriter mode initialized successfully');
     } catch (error) {
-        console.error('❌ Typewriter mode initialization failed:', error);
+        console.warn('⚠️ Typewriter mode failed:', error);
     }
     
-    // イベントリスナーを設定
+    // イベントリスナーの設定
     setupEventListeners();
     
-    // 外部ファイルシステムの初期化を試行
-    console.log('🌐 Starting external file system initialization...');
-    try {
-        const { tryExternalFileSystem } = await import('./locales.js');
-        await tryExternalFileSystem();
-        console.log('✅ External file system initialization completed');
-    } catch (error) {
-        console.error('❌ External file system initialization failed:', error);
-        console.warn('⚠️ Using fallback system');
-    }
-    
-    // 言語変更イベントリスナーを設定
+    // 言語変更イベントリスナー
     setupLanguageChangeListener();
     
-    // UIに多言語化を適用
+    // UI の多言語化適用
     applyI18nToUI();
-    
-    // 言語切り替えUIを作成（多言語化システム初期化後）
-    // 右上の言語セレクトボックスは無効化（メニューからのダイアログ形式に変更）
-    // console.log('🌐 Creating language switcher...');
-    // createLanguageSwitcher();
     
     // 初期UI更新
     updateLineNumbers();
     updateStatus();
-    
-    // フォントサイズ表示の初期化
-    console.log('🎨 Initializing font size display...');
     updateFontSizeDisplay();
-    
-    // 初期タイトル設定を追加
-    console.log('🏷️ Setting initial window title...');
     await updateWindowTitle();
     
-    // カーソルを1行目1列目に設定
+    // エディタにフォーカス
     editorElement.setSelectionRange(0, 0);
     editorElement.focus();
     
-    console.log('App initialization completed');
+    console.log('✅ App initialization completed');
+}
     
     // Tab機能の使用方法をコンソールに表示
     console.log('🔧 Tab機能が有効になりました:');
@@ -349,7 +286,6 @@ export async function initializeApp() {
     console.log('  - 表示メニュー > フォントサイズ指定で直接数値入力できます');
     console.log('🖥️ タイプライターモード機能が有効になりました:');
     console.log('  - 表示メニュー > タイプライターモードで設定の切り替えができます');
-}
 
 /**
  * ステータス更新時の多言語化対応（他のモジュールから呼び出される）

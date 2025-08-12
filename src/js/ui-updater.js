@@ -15,51 +15,19 @@ export function updateLineNumbers() {
     const lineNumbers = document.getElementById('line-numbers');
     if (!lineNumbers || !editor) return;
     
-    // グローバルに公開（タイプライターモードから呼び出せるように）
-    window.updateLineNumbers = updateLineNumbers;
-       
+    console.log('Updating line numbers...');
+    
     const lines = editor.value.split('\n');
     const lineCount = lines.length;
     
-    // 各論理行の物理的な高さを計算するための準備
-    const computedStyle = window.getComputedStyle(editor);
-    const lineHeight = parseFloat(computedStyle.lineHeight);
-    const editorWidth = editor.clientWidth - 
-                        parseFloat(computedStyle.paddingLeft) - 
-                        parseFloat(computedStyle.paddingRight);
-    
-    // フォントメトリクスを取得するための一時的なキャンバス
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    context.font = computedStyle.font;
-    
-    // 各行の行番号と高さを計算
+    // シンプルに行番号を生成
     let lineNumbersHTML = '';
-    let totalHeight = 0;
-    
-    for (let i = 0; i < lineCount; i++) {
-        const lineNumber = i + 1;
-        const lineText = lines[i];
-        
-        // 空行の場合は1行分の高さ
-        if (lineText === '') {
-            lineNumbersHTML += `<div class="line-number" style="height: ${lineHeight}px; line-height: ${lineHeight}px;">${lineNumber}</div>`;
-            totalHeight += lineHeight;
-            continue;
-        }
-        
-        // テキストの幅を計算して何行分になるか判定
-        const textWidth = context.measureText(lineText).width;
-        const wrappedLines = Math.max(1, Math.ceil(textWidth / editorWidth));
-        const lineBlockHeight = wrappedLines * lineHeight;
-        
-        // 行番号要素を作成（行番号は論理行の先頭に配置）
-        lineNumbersHTML += `<div class="line-number" style="height: ${lineBlockHeight}px; line-height: ${lineHeight}px;">${lineNumber}</div>`;
-        totalHeight += lineBlockHeight;
+    for (let i = 1; i <= lineCount; i++) {
+        lineNumbersHTML += `<div class="line-number">${i}</div>`;
     }
     
-    // 行番号をHTMLとして設定
     lineNumbers.innerHTML = lineNumbersHTML;
+    console.log(`Line numbers updated: ${lineCount} lines`);
     
     // スクロール位置を同期
     syncScroll();
@@ -220,7 +188,11 @@ function updateWhitespaceMarkersIfEnabled() {
     try {
         // 動的インポートで循環依存を避ける
         import('./whitespace-visualizer.js').then(module => {
-            module.updateWhitespaceMarkers();
+            if (module && module.updateWhitespaceMarkers) {
+                module.updateWhitespaceMarkers();
+            }
+        }).catch(() => {
+            // 空白文字可視化機能が無効な場合は何もしない
         });
     } catch (error) {
         // 空白文字可視化機能が無効な場合は何もしない
@@ -321,22 +293,6 @@ export async function updateWindowTitle() {
         } catch (fallbackError) {
             console.error('❌ Even fallback title update failed:', fallbackError);
         }
-    }
-}
-
-/**
- * 空白文字可視化が有効な場合のみマーカーを更新
- */
-function updateWhitespaceMarkersIfEnabled() {
-    try {
-        // 動的インポートで循環依存を避ける
-        import('./whitespace-visualizer.js').then(module => {
-            module.updateWhitespaceMarkers();
-        }).catch(() => {
-            // 空白文字可視化機能が無効な場合は何もしない
-        });
-    } catch (error) {
-        // 空白文字可視化機能が無効な場合は何もしない
     }
 }
 

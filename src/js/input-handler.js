@@ -28,7 +28,7 @@ async function updateWhitespaceMarkersIfNeeded() {
             module.updateWhitespaceMarkers();
         }
     } catch (error) {
-        // 空白文字可視化機能が無効な場合は何もしない
+        // 空白文字可視化機能が無効な場合は何もしない（エラーログは出さない）
     }
 }
 
