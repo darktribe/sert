@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - 空白文字可視化機能
+ * Vinsert Editor - 空白文字可視化機能（修正版）
  * =====================================================
  */
 
@@ -18,6 +18,10 @@ let whitespaceColors = {
     fullWidthSpace: { r: 100, g: 150, b: 255, a: 0.8 },  // デフォルト: 青
     tab: { r: 255, g: 165, b: 0, a: 0.7 }                // デフォルト: オレンジ
 };
+
+// 可視化マーカーのコンテナ
+let markersContainer = null;
+let updateScheduled = false;
 
 /**
  * 空白文字の色設定を更新
@@ -67,54 +71,6 @@ function getWhitespaceColors() {
     };
 }
 
-// 空白文字可視化の色設定
-let whitespaceColors = {
-    halfWidthSpace: { r: 128, g: 128, b: 128, a: 0.6 },  // デフォルト: グレー
-    fullWidthSpace: { r: 100, g: 150, b: 255, a: 0.8 },  // デフォルト: 青
-    tab: { r: 255, g: 165, b: 0, a: 0.7 }                // デフォルト: オレンジ
-};
-
-/**
- * 空白文字の色設定を更新
- */
-function updateWhitespaceColors(colors) {
-    whitespaceColors = { ...whitespaceColors, ...colors };
-    // ローカルストレージに保存
-    try {
-        localStorage.setItem('vinsert-whitespace-colors', JSON.stringify(whitespaceColors));
-        console.log('💾 Whitespace colors saved:', whitespaceColors);
-    } catch (error) {
-        console.warn('⚠️ Could not save whitespace colors:', error);
-    }
-}
-
-/**
- * 空白文字の色設定を読み込み
- */
-function loadWhitespaceColors() {
-    try {
-        const saved = localStorage.getItem('vinsert-whitespace-colors');
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            whitespaceColors = { ...whitespaceColors, ...parsed };
-            console.log('📂 Whitespace colors loaded:', whitespaceColors);
-        }
-    } catch (error) {
-        console.warn('⚠️ Could not load whitespace colors:', error);
-    }
-}
-
-/**
- * RGBA色文字列を生成
- */
-function getRGBA(colorObj) {
-    return `rgba(${colorObj.r}, ${colorObj.g}, ${colorObj.b}, ${colorObj.a})`;
-}
-
-// 可視化マーカーのコンテナ
-let markersContainer = null;
-let updateScheduled = false;
-
 /**
  * 空白文字可視化のオン・オフを切り替える
  */
@@ -152,7 +108,7 @@ export function updateWhitespaceVisualizationMenuState(enabled) {
 }
 
 /**
- * 空白文字可視化設定を初期化（色設定対応版）
+ * 空白文字可視化設定を初期化
  */
 export function initializeWhitespaceVisualization() {
     console.log('👁️ Initializing whitespace visualization...');
@@ -178,7 +134,7 @@ export function initializeWhitespaceVisualization() {
 }
 
 /**
- * マーカーコンテナを作成（スクロール同期版）
+ * マーカーコンテナを作成
  */
 function createMarkersContainer() {
     if (markersContainer) {
@@ -216,10 +172,7 @@ function createMarkersContainer() {
             }
         };
         
-        // スクロールイベントリスナーを追加
         editor.addEventListener('scroll', syncScroll);
-        
-        // 初期同期
         syncScroll();
     }
     
@@ -239,19 +192,16 @@ function removeAllMarkers() {
  * 空白文字マーカーを更新
  */
 export function updateWhitespaceMarkers() {
-    // 可視化が無効な場合は何もしない
     if (!whitespaceVisualization.enabled || !editor || !markersContainer) {
         return;
     }
     
-    // 重複する更新リクエストを防ぐ
     if (updateScheduled) {
         return;
     }
     
     updateScheduled = true;
     
-    // 次のフレームで実行（パフォーマンス最適化）
     requestAnimationFrame(() => {
         try {
             performWhitespaceMarkersUpdate();
@@ -264,10 +214,9 @@ export function updateWhitespaceMarkers() {
 }
 
 /**
- * 実際のマーカー更新処理（座標計算完全修正版）
+ * 実際のマーカー更新処理
  */
 function performWhitespaceMarkersUpdate() {
-    // 既存のマーカーをクリア
     removeAllMarkers();
     
     const content = editor.value;
@@ -276,31 +225,26 @@ function performWhitespaceMarkersUpdate() {
     }
     
     try {
-        // エディタのスタイル情報を取得
         const computedStyle = window.getComputedStyle(editor);
         const fontSize = parseFloat(computedStyle.fontSize);
         const lineHeight = parseFloat(computedStyle.lineHeight);
         const paddingLeft = parseFloat(computedStyle.paddingLeft);
         const paddingTop = parseFloat(computedStyle.paddingTop);
         
-        // 行番号エリアの幅を取得
         const lineNumbers = document.getElementById('line-numbers');
         const lineNumbersWidth = lineNumbers ? lineNumbers.offsetWidth : 0;
         
-        // フォントメトリクス計算用のキャンバス
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
         context.font = `${fontSize}px ${computedStyle.fontFamily}`;
         
-        // 文字幅の計算
         const spaceWidth = context.measureText(' ').width;
-        const tabWidth = spaceWidth * 4; // タブは4スペース分
+        const fullWidthSpaceWidth = context.measureText('　').width;
+        const tabWidth = spaceWidth * 4;
         
-        // スクロール位置を取得
         const scrollTop = editor.scrollTop;
         const scrollLeft = editor.scrollLeft;
         
-        // 表示可能範囲を計算（最適化のため）
         const editorHeight = editor.clientHeight;
         const visibleStartLine = Math.max(0, Math.floor(scrollTop / lineHeight) - 3);
         const visibleEndLine = Math.min(
@@ -308,53 +252,41 @@ function performWhitespaceMarkersUpdate() {
             Math.ceil((scrollTop + editorHeight) / lineHeight) + 3
         );
         
-        console.log(`👁️ Visible range: ${visibleStartLine} to ${visibleEndLine}, scrollTop: ${scrollTop}`);
-        
-        // マーカーコンテナをスクロールと同期
         if (markersContainer) {
             markersContainer.style.transform = `translate(${-scrollLeft}px, ${-scrollTop}px)`;
         }
         
-        // 行ごとに処理
         const lines = content.split('\n');
-        let currentY = paddingTop; // エディタコンテンツ内の絶対Y座標
+        let currentY = paddingTop;
         
         for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-            // 表示範囲外はスキップ（最適化）
             if (lineIndex < visibleStartLine || lineIndex > visibleEndLine) {
                 currentY += lineHeight;
                 continue;
             }
             
             const line = lines[lineIndex];
-            let currentX = paddingLeft + lineNumbersWidth; // エディタコンテンツ内の絶対X座標
+            let currentX = paddingLeft + lineNumbersWidth;
             
-            // 行内の各文字を処理
             for (let charIndex = 0; charIndex < line.length; charIndex++) {
                 const char = line[charIndex];
                 
-                // 空白文字の種類を判定
                 let markerType = null;
                 let charWidth = 0;
                 
                 if (char === '\u3000' && whitespaceVisualization.showFullWidthSpace) {
-                    // 全角スペース
                     markerType = 'fullwidth-space';
-                    charWidth = context.measureText('\u3000').width;
+                    charWidth = fullWidthSpaceWidth;
                 } else if (char === ' ' && whitespaceVisualization.showHalfWidthSpace) {
-                    // 半角スペース
                     markerType = 'halfwidth-space';
                     charWidth = spaceWidth;
                 } else if (char === '\t' && whitespaceVisualization.showTab) {
-                    // タブ文字
                     markerType = 'tab';
                     charWidth = tabWidth;
                 } else {
-                    // 通常の文字
                     charWidth = context.measureText(char).width;
                 }
                 
-                // マーカーを作成（エディタコンテンツ内の絶対座標で配置）
                 if (markerType) {
                     createWhitespaceMarker(markerType, currentX, currentY, charWidth, lineHeight);
                 }
@@ -366,37 +298,29 @@ function performWhitespaceMarkersUpdate() {
         }
     } catch (error) {
         console.error('❌ Error in performWhitespaceMarkersUpdate:', error);
-        console.error('Stack trace:', error.stack);
-        
-        // エラー時は全マーカーを削除して状態をクリア
         removeAllMarkers();
     }
 }
 
 /**
- * 空白文字マーカーを作成（新デザイン・色設定対応版）
+ * 空白文字マーカーを作成（改良版）
  */
 function createWhitespaceMarker(type, x, y, width, height) {
     try {
-        // 無効な値の検証
         if (!type || isNaN(x) || isNaN(y) || isNaN(width) || isNaN(height)) {
             console.warn('⚠️ Invalid marker parameters:', { type, x, y, width, height });
             return;
         }
         
-        // コンテナが存在しない場合はスキップ
         if (!markersContainer || !markersContainer.parentNode) {
             console.warn('⚠️ Markers container not available');
             return;
         }
         
-        // 色設定を取得
         const colors = getWhitespaceColors();
-        
         const marker = document.createElement('div');
         marker.className = `whitespace-marker whitespace-marker-${type}`;
         
-        // 基本スタイル（絶対座標で配置、スクロール位置は考慮しない）
         marker.style.cssText = `
             position: absolute;
             left: ${Math.round(x)}px;
@@ -410,20 +334,18 @@ function createWhitespaceMarker(type, x, y, width, height) {
             justify-content: center;
         `;
         
-        // マーカータイプ別のスタイル（新デザイン）
         switch (type) {
             case 'fullwidth-space':
                 // 全角スペース: 対角線入りの四角
                 marker.style.border = `1px solid ${colors.fullWidth}`;
-                marker.style.backgroundColor = `${colors.fullWidth}20`; // 透明度0.125
+                marker.style.backgroundColor = `${colors.fullWidth}20`;
                 
-                // 対角線を描画
                 const diagonal1 = document.createElement('div');
                 diagonal1.style.cssText = `
                     position: absolute;
                     top: 0;
                     left: 0;
-                    width: 100%;
+                    width: 141%;
                     height: 1px;
                     background: ${colors.fullWidth};
                     transform: rotate(45deg);
@@ -435,7 +357,7 @@ function createWhitespaceMarker(type, x, y, width, height) {
                     position: absolute;
                     top: 0;
                     right: 0;
-                    width: 100%;
+                    width: 141%;
                     height: 1px;
                     background: ${colors.fullWidth};
                     transform: rotate(-45deg);
@@ -448,26 +370,23 @@ function createWhitespaceMarker(type, x, y, width, height) {
                 
             case 'halfwidth-space':
                 // 半角スペース: 四角で囲んだ点
-                const dotSize = Math.min(width * 0.6, height * 0.4, 6);
+                const dotSize = Math.min(width * 0.5, height * 0.3, 4);
                 const dot = document.createElement('div');
                 dot.style.cssText = `
                     width: ${dotSize}px;
                     height: ${dotSize}px;
                     background: ${colors.halfWidth};
-                    border: 1px solid ${colors.halfWidth};
-                    border-radius: 1px;
+                    border-radius: 50%;
                 `;
                 
-                // 四角の枠
-                marker.style.border = `1px solid ${colors.halfWidth}40`; // 透明度0.25
-                marker.style.backgroundColor = `${colors.halfWidth}10`; // 透明度0.0625
-                
+                marker.style.border = `1px solid ${colors.halfWidth}`;
+                marker.style.backgroundColor = `${colors.halfWidth}10`;
                 marker.appendChild(dot);
                 break;
                 
             case 'tab':
                 // タブ文字: 矢印マーク
-                marker.style.backgroundColor = `${colors.tab}20`; // 透明度0.125
+                marker.style.backgroundColor = `${colors.tab}20`;
                 marker.style.borderBottom = `1px solid ${colors.tab}`;
                 
                 const tabArrow = document.createElement('div');
@@ -496,30 +415,25 @@ function createWhitespaceMarker(type, x, y, width, height) {
 }
 
 /**
- * スクロール時のマーカー更新（タイプライターモード対応・安定版）
+ * スクロール時のマーカー更新
  */
 export function updateWhitespaceMarkersOnScroll() {
     if (!whitespaceVisualization.enabled || !editor || !markersContainer) {
         return;
     }
     
-    // 重複する更新リクエストを防ぐ
     if (updateScheduled) {
         return;
     }
     
     updateScheduled = true;
     
-    // スクロール時は少し遅延を入れて安定化
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             try {
                 performWhitespaceMarkersUpdate();
-                console.log('👁️ Whitespace markers updated on scroll');
             } catch (error) {
                 console.error('❌ Error updating whitespace markers on scroll:', error);
-                
-                // エラー時はマーカーを一度クリアして次のフレームで再試行
                 removeAllMarkers();
                 setTimeout(() => {
                     try {
@@ -536,13 +450,12 @@ export function updateWhitespaceMarkersOnScroll() {
 }
 
 /**
- * 空白文字可視化設定ダイアログを表示（RGB色選択機能付き）
+ * RGB色選択機能付き空白文字可視化設定ダイアログを表示
  */
 export function showWhitespaceVisualizationDialog() {
     console.log('👁️ Opening enhanced whitespace visualization settings');
     closeAllMenus();
     
-    // 既存のダイアログがあれば削除
     const existingDialog = document.getElementById('whitespace-dialog-overlay');
     if (existingDialog) {
         document.body.removeChild(existingDialog);
@@ -563,18 +476,18 @@ function createEnhancedWhitespaceVisualizationDialog() {
     dialog.className = 'search-dialog whitespace-dialog enhanced-whitespace-dialog';
     
     dialog.innerHTML = `
-        <div class="search-dialog-header">${t('viewMenu.whitespaceSettings')}</div>
+        <div class="search-dialog-header">空白文字の設定</div>
         <div class="search-dialog-content">
             <div class="whitespace-settings-section">
                 <div class="search-checkbox-group">
                     <label class="search-checkbox-label">
                         <input type="checkbox" id="ws-enable-checkbox" ${whitespaceVisualization.enabled ? 'checked' : ''}>
-                        ${t('whitespace.enable')}
+                        空白文字の可視化を有効にする
                     </label>
                 </div>
                 
                 <div class="whitespace-type-settings">
-                    <h4 style="margin: 16px 0 12px 0; color: #cccccc;">${t('whitespace.typeSettings')}</h4>
+                    <h4 style="margin: 16px 0 12px 0; color: #cccccc;">表示する空白文字の種類</h4>
                     
                     <label class="search-checkbox-label">
                         <input type="checkbox" id="ws-halfwidth-checkbox" ${whitespaceVisualization.showHalfWidthSpace ? 'checked' : ''}>
@@ -630,7 +543,7 @@ function createEnhancedWhitespaceVisualizationDialog() {
                 </div>
                 
                 <div class="whitespace-preview-section">
-                    <label style="display: block; margin: 16px 0 8px 0; color: #cccccc;">${t('fonts.preview')}</label>
+                    <label style="display: block; margin: 16px 0 8px 0; color: #cccccc;">プレビュー</label>
                     <div class="whitespace-preview">
 function example() {
     console.log('Hello');　// 全角スペース
@@ -641,9 +554,9 @@ function example() {
             </div>
             
             <div class="search-button-group">
-                <button id="whitespace-apply-btn" class="search-button search-button-primary">${t('fonts.buttons.apply')}</button>
-                <button id="whitespace-reset-btn" class="search-button">${t('fonts.buttons.reset')}</button>
-                <button id="whitespace-cancel-btn" class="search-button search-button-cancel">${t('fonts.buttons.cancel')}</button>
+                <button id="whitespace-apply-btn" class="search-button search-button-primary">適用</button>
+                <button id="whitespace-reset-btn" class="search-button">リセット</button>
+                <button id="whitespace-cancel-btn" class="search-button search-button-cancel">キャンセル</button>
             </div>
         </div>
     `;
@@ -652,174 +565,14 @@ function example() {
     document.body.appendChild(dialogOverlay);
     
     setupEnhancedWhitespaceVisualizationDialogEvents(dialogOverlay);
-    
-    // 初期色プレビューを更新
     updateColorPreviews();
     
-    // 有効/無効チェックボックスにフォーカス
     setTimeout(() => {
         const enableCheckbox = document.getElementById('ws-enable-checkbox');
         if (enableCheckbox) {
             enableCheckbox.focus();
         }
     }, 100);
-}
-
-/**
- * 空白文字可視化設定ダイアログの作成
- */
-function createWhitespaceVisualizationDialog() {
-    const dialogOverlay = document.createElement('div');
-    dialogOverlay.id = 'whitespace-dialog-overlay';
-    dialogOverlay.className = 'search-dialog-overlay whitespace-dialog-overlay';
-    
-    const dialog = document.createElement('div');
-    dialog.className = 'search-dialog whitespace-dialog';
-    
-    dialog.innerHTML = `
-        <div class="search-dialog-header">${t('viewMenu.whitespaceSettings')}</div>
-        <div class="search-dialog-content">
-            <div class="whitespace-settings-section">
-                <div class="search-checkbox-group">
-                    <label class="search-checkbox-label">
-                        <input type="checkbox" id="ws-enable-checkbox" ${whitespaceVisualization.enabled ? 'checked' : ''}>
-                        ${t('whitespace.enable')}
-                    </label>
-                </div>
-                
-                <div class="whitespace-type-settings">
-                    <h4 style="margin: 16px 0 12px 0; color: #cccccc;">${t('whitespace.typeSettings')}</h4>
-                    
-                    <label class="search-checkbox-label">
-                        <input type="checkbox" id="ws-fullwidth-checkbox" ${whitespaceVisualization.showFullWidthSpace ? 'checked' : ''}>
-                        ${t('whitespace.fullWidthSpace')}
-                    </label>
-                    
-                    <label class="search-checkbox-label">
-                        <input type="checkbox" id="ws-halfwidth-checkbox" ${whitespaceVisualization.showHalfWidthSpace ? 'checked' : ''}>
-                        ${t('whitespace.halfWidthSpace')}
-                    </label>
-                    
-                    <label class="search-checkbox-label">
-                        <input type="checkbox" id="ws-tab-checkbox" ${whitespaceVisualization.showTab ? 'checked' : ''}>
-                        ${t('whitespace.tabCharacter')}
-                    </label>
-                </div>
-                
-                <div class="whitespace-preview-section">
-                    <label style="display: block; margin: 16px 0 8px 0; color: #cccccc;">${t('fonts.preview')}</label>
-                    <div class="whitespace-preview">
-function example() {
-    console.log('Hello');　// 全角スペース
-	return 42;    // タブ + 半角スペース
-}
-                    </div>
-                </div>
-            </div>
-            
-            <div class="search-button-group">
-                <button id="whitespace-apply-btn" class="search-button search-button-primary">${t('fonts.buttons.apply')}</button>
-                <button id="whitespace-cancel-btn" class="search-button search-button-cancel">${t('fonts.buttons.cancel')}</button>
-            </div>
-        </div>
-    `;
-    
-    dialogOverlay.appendChild(dialog);
-    document.body.appendChild(dialogOverlay);
-    
-    setupWhitespaceVisualizationDialogEvents(dialogOverlay);
-    
-    // 有効/無効チェックボックスにフォーカス
-    setTimeout(() => {
-        const enableCheckbox = document.getElementById('ws-enable-checkbox');
-        if (enableCheckbox) {
-            enableCheckbox.focus();
-        }
-    }, 100);
-}
-
-/**
- * 空白文字可視化設定ダイアログのイベント設定
- */
-function setupWhitespaceVisualizationDialogEvents(dialogOverlay) {
-    const enableCheckbox = document.getElementById('ws-enable-checkbox');
-    const fullwidthCheckbox = document.getElementById('ws-fullwidth-checkbox');
-    const halfwidthCheckbox = document.getElementById('ws-halfwidth-checkbox');
-    const tabCheckbox = document.getElementById('ws-tab-checkbox');
-    const applyBtn = document.getElementById('whitespace-apply-btn');
-    const cancelBtn = document.getElementById('whitespace-cancel-btn');
-    
-    // 一時的な設定を保存（キャンセル時の復元用）
-    const originalSettings = { ...whitespaceVisualization };
-    
-    // 有効/無効チェックボックスの変更
-    enableCheckbox.addEventListener('change', () => {
-        const enabled = enableCheckbox.checked;
-        fullwidthCheckbox.disabled = !enabled;
-        halfwidthCheckbox.disabled = !enabled;
-        tabCheckbox.disabled = !enabled;
-        
-        // 見た目の更新
-        const typeSettings = document.querySelector('.whitespace-type-settings');
-        if (typeSettings) {
-            typeSettings.style.opacity = enabled ? '1' : '0.5';
-        }
-    });
-    
-    // 初期状態の設定
-    enableCheckbox.dispatchEvent(new Event('change'));
-    
-    // 適用ボタン
-    applyBtn.addEventListener('click', () => {
-        const newSettings = {
-            enabled: enableCheckbox.checked,
-            showFullWidthSpace: fullwidthCheckbox.checked,
-            showHalfWidthSpace: halfwidthCheckbox.checked,
-            showTab: tabCheckbox.checked
-        };
-        
-        setWhitespaceVisualization(newSettings);
-        updateWhitespaceVisualizationMenuState(newSettings.enabled);
-        
-        if (newSettings.enabled) {
-            updateWhitespaceMarkers();
-        } else {
-            removeAllMarkers();
-        }
-        
-        closeWhitespaceVisualizationDialog(dialogOverlay);
-        console.log('✅ Whitespace visualization settings applied:', newSettings);
-    });
-    
-    // キャンセルボタン
-    cancelBtn.addEventListener('click', () => {
-        // 元の設定に戻す
-        setWhitespaceVisualization(originalSettings);
-        closeWhitespaceVisualizationDialog(dialogOverlay);
-        console.log('❌ Whitespace visualization settings cancelled');
-    });
-    
-    // ESCキーでキャンセル
-    function handleKeyDown(e) {
-        if (e.key === 'Escape') {
-            setWhitespaceVisualization(originalSettings);
-            closeWhitespaceVisualizationDialog(dialogOverlay);
-        }
-    }
-    
-    document.addEventListener('keydown', handleKeyDown);
-    
-    // オーバーレイクリックでキャンセル
-    dialogOverlay.addEventListener('click', (e) => {
-        if (e.target === dialogOverlay) {
-            setWhitespaceVisualization(originalSettings);
-            closeWhitespaceVisualizationDialog(dialogOverlay);
-        }
-    });
-    
-    dialogOverlay.addEventListener('remove', () => {
-        document.removeEventListener('keydown', handleKeyDown);
-    });
 }
 
 /**
@@ -853,38 +606,31 @@ function setupEnhancedWhitespaceVisualizationDialogEvents(dialogOverlay) {
     const resetBtn = document.getElementById('whitespace-reset-btn');
     const cancelBtn = document.getElementById('whitespace-cancel-btn');
     
-    // 一時的な設定を保存（キャンセル時の復元用）
     const originalSettings = { ...whitespaceVisualization };
     const originalColors = JSON.parse(JSON.stringify(whitespaceColors));
     
-    // 有効/無効チェックボックスの変更
     enableCheckbox.addEventListener('change', () => {
         const enabled = enableCheckbox.checked;
         fullwidthCheckbox.disabled = !enabled;
         halfwidthCheckbox.disabled = !enabled;
         tabCheckbox.disabled = !enabled;
         
-        // 色設定の有効/無効
         const colorInputs = document.querySelectorAll('.color-inputs input');
         colorInputs.forEach(input => input.disabled = !enabled);
         
-        // 見た目の更新
         const typeSettings = document.querySelector('.whitespace-type-settings');
         const colorSettings = document.querySelector('.whitespace-color-settings');
         if (typeSettings) typeSettings.style.opacity = enabled ? '1' : '0.5';
         if (colorSettings) colorSettings.style.opacity = enabled ? '1' : '0.5';
     });
     
-    // 色入力フィールドの変更イベント
     const colorInputs = document.querySelectorAll('.color-inputs input');
     colorInputs.forEach(input => {
         input.addEventListener('input', updateColorPreviews);
     });
     
-    // リセットボタン
     resetBtn.addEventListener('click', () => {
         if (confirm('色設定をデフォルトに戻しますか？')) {
-            // デフォルト色をフィールドに設定
             document.getElementById('halfwidth-r').value = 128;
             document.getElementById('halfwidth-g').value = 128;
             document.getElementById('halfwidth-b').value = 128;
@@ -904,10 +650,8 @@ function setupEnhancedWhitespaceVisualizationDialogEvents(dialogOverlay) {
         }
     });
     
-    // 初期状態の設定
     enableCheckbox.dispatchEvent(new Event('change'));
     
-    // 適用ボタン
     applyBtn.addEventListener('click', () => {
         const newSettings = {
             enabled: enableCheckbox.checked,
@@ -951,16 +695,13 @@ function setupEnhancedWhitespaceVisualizationDialogEvents(dialogOverlay) {
         console.log('✅ Enhanced whitespace visualization settings applied:', newSettings, newColors);
     });
     
-    // キャンセルボタン
     cancelBtn.addEventListener('click', () => {
-        // 元の設定に戻す
         setWhitespaceVisualization(originalSettings);
         updateWhitespaceColors(originalColors);
         closeWhitespaceVisualizationDialog(dialogOverlay);
         console.log('❌ Enhanced whitespace visualization settings cancelled');
     });
     
-    // ESCキーでキャンセル
     function handleKeyDown(e) {
         if (e.key === 'Escape') {
             setWhitespaceVisualization(originalSettings);
@@ -971,7 +712,6 @@ function setupEnhancedWhitespaceVisualizationDialogEvents(dialogOverlay) {
     
     document.addEventListener('keydown', handleKeyDown);
     
-    // オーバーレイクリックでキャンセル
     dialogOverlay.addEventListener('click', (e) => {
         if (e.target === dialogOverlay) {
             setWhitespaceVisualization(originalSettings);
@@ -992,7 +732,6 @@ function closeWhitespaceVisualizationDialog(dialogOverlay) {
     try {
         document.body.removeChild(dialogOverlay);
         
-        // エディタにフォーカスを戻す
         setTimeout(() => {
             if (editor && editor.focus) {
                 editor.focus();

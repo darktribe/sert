@@ -233,8 +233,7 @@ export async function initializeApp() {
     console.log('👁️ Initializing whitespace visualization...');
     try {
         loadWhitespaceVisualizationSetting();
-        const whitespaceModule = await import('./whitespace-visualizer.js');
-        whitespaceModule.initializeWhitespaceVisualization();
+        initializeWhitespaceVisualization();
         console.log('✅ Whitespace visualization initialized');
     } catch (error) {
         console.warn('⚠️ Whitespace visualization failed:', error);

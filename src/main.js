@@ -17,6 +17,7 @@ import { exitApp } from './js/app-exit.js';
 import { toggleLineHighlight } from './js/line-highlight.js';
 import { showThemeDialog, showLanguageSettingsDialog } from './js/theme-manager.js';
 import { toggleTypewriterMode } from './js/typewriter-mode.js';
+import { toggleWhitespaceVisualization, showWhitespaceVisualizationDialog } from './js/whitespace-visualizer.js';
 
 console.log('🔧 Registering global functions...');
 
@@ -44,25 +45,10 @@ window.toggleLineHighlight = toggleLineHighlight;
 window.showThemeDialog = showThemeDialog;
 window.showLanguageSettingsDialog = showLanguageSettingsDialog;
 window.toggleTypewriterMode = toggleTypewriterMode;
+window.toggleWhitespaceVisualization = toggleWhitespaceVisualization;
+window.showWhitespaceVisualizationDialog = showWhitespaceVisualizationDialog;
 
-// 空白文字可視化機能
-window.toggleWhitespaceVisualization = async function() {
-    try {
-        const { toggleWhitespaceVisualization } = await import('./js/whitespace-visualizer.js');
-        toggleWhitespaceVisualization();
-    } catch (error) {
-        console.warn('⚠️ Whitespace visualization not available:', error);
-    }
-};
 
-window.showWhitespaceVisualizationDialog = async function() {
-    try {
-        const { showWhitespaceVisualizationDialog } = await import('./js/whitespace-visualizer.js');
-        showWhitespaceVisualizationDialog();
-    } catch (error) {
-        console.warn('⚠️ Whitespace visualization dialog not available:', error);
-    }
-};
 
 console.log('✅ Global functions registered');
 
