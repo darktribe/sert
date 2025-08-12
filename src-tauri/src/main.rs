@@ -198,11 +198,6 @@ fn debug_python_environment() -> Result<String, String> {
                 // 判定理由の詳細
                 result.push_str("🔍 判定根拠:\n");
                 
-                // ビルド時フラグチェック
-                if std::env::var("VINSERT_EMBEDDED_PYTHON").unwrap_or_else(|_| "0".to_string()) == "1" {
-                    result.push_str("   ✓ ビルド時組み込みフラグが設定されている\n");
-                }
-                
                 if executable.contains("python-standalone") {
                     result.push_str("   ✓ パスに 'python-standalone' が含まれる\n");
                 }
@@ -250,7 +245,7 @@ fn debug_python_environment() -> Result<String, String> {
         
         // 環境変数チェック
         result.push_str("\n🌍 関連環境変数:\n");
-        let env_vars = ["PYO3_PYTHON", "PYTHONHOME", "PYTHONPATH", "VINSERT_EMBEDDED_PYTHON", "VINSERT_PYTHON_PATH"];
+        let env_vars = ["PYO3_PYTHON", "PYTHONHOME", "PYTHONPATH"];
         for var in &env_vars {
             match std::env::var(var) {
                 Ok(value) => result.push_str(&format!("   {}: {}\n", var, value)),
@@ -286,11 +281,6 @@ fn debug_python_environment() -> Result<String, String> {
 }
 
 fn detect_embedded_python(executable: &str) -> bool {
-    // ビルド時の組み込みフラグをチェック（最優先）
-    if std::env::var("VINSERT_EMBEDDED_PYTHON").unwrap_or_else(|_| "0".to_string()) == "1" {
-        return true;
-    }
-    
     // 実行ファイルパスからの判定
     if executable.contains("python-standalone") {
         return true;
@@ -394,7 +384,7 @@ fn write_clipboard(text: String) -> Result<(), String> {
         use std::io::Write;
         
         // xclipを試行
-        let child = Command::new("xclip")
+        let mut child = Command::new("xclip")
             .args(["-selection", "clipboard"])
             .stdin(Stdio::piped())
             .spawn();
