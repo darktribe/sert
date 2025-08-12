@@ -70,9 +70,9 @@
   "whitespace": {
     "enable": "Enable whitespace visualization",
     "typeSettings": "Types of whitespace to display", 
-    "fullWidthSpace": "Full-width space (　) - shown in light blue",
-    "halfWidthSpace": "Half-width space ( ) - shown as gray dot",
-    "tabCharacter": "Tab character (→) - shown as orange arrow",
+    "fullWidthSpace": "Full-width space (　) - diagonal square",
+    "halfWidthSpace": "Half-width space ( ) - dotted square",
+    "tabCharacter": "Tab character (→) - arrow mark",
     "colorSettings": "Color Settings (RGB)",
     "halfWidthSpaceColor": "Half-width space color",
     "fullWidthSpaceColor": "Full-width space color",
