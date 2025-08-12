@@ -156,17 +156,9 @@
   "whitespace": {
     "enable": "Activer la visualisation des espaces",
     "typeSettings": "Types d'espaces à afficher",
-    "fullWidthSpace": "Espace pleine largeur (　) - carré diagonal",
-    "halfWidthSpace": "Espace demi-largeur ( ) - carré pointillé", 
-    "tabCharacter": "Caractère de tabulation (→) - flèche",
-    "colorSettings": "Paramètres de couleur (RGB)",
-    "halfWidthSpaceColor": "Couleur de l'espace demi-largeur",
-    "fullWidthSpaceColor": "Couleur de l'espace pleine largeur",
-    "tabColor": "Couleur de tabulation",
-    "rgbR": "R",
-    "rgbG": "G", 
-    "rgbB": "B",
-    "opacity": "Opacité"
+    "fullWidthSpace": "Espace pleine largeur (　) - affiché en bleu clair",
+    "halfWidthSpace": "Espace demi-largeur ( ) - affiché comme point gris", 
+    "tabCharacter": "Caractère de tabulation (→) - affiché comme flèche orange"
   },
   "about": {
     "title": "À propos de Vinsert",

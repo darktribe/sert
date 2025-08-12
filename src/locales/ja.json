@@ -68,19 +68,11 @@
     "ok": "OK"
   },
   "whitespace": {
-  "enable": "空白文字の可視化を有効にする",
-  "typeSettings": "表示する空白文字の種類",
-  "fullWidthSpace": "全角スペース（　）- 対角線入りの四角",
-  "halfWidthSpace": "半角スペース（ ）- 四角で囲んだ点",
-  "tabCharacter": "タブ文字（→）- 矢印マーク",
-  "colorSettings": "色設定（RGB）",
-  "halfWidthSpaceColor": "半角スペースの色",
-  "fullWidthSpaceColor": "全角スペースの色", 
-  "tabColor": "タブの色",
-  "rgbR": "R",
-  "rgbG": "G", 
-  "rgbB": "B",
-  "opacity": "透明度"
+    "enable": "空白文字の可視化を有効にする",
+    "typeSettings": "表示する空白文字の種類",
+    "fullWidthSpace": "全角スペース（　）- 薄い青で表示",
+    "halfWidthSpace": "半角スペース（ ）- グレーのドットで表示",
+    "tabCharacter": "タブ文字（→）- オレンジの矢印で表示"
   },
   "about": {
     "title": "Vinsertについて",
