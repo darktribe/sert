@@ -31,6 +31,7 @@ export function setupEventListeners() {
     editor.addEventListener('scroll', () => {
         syncScroll();
         updateLineHighlight();
+        // 空白文字マーカーの更新（即座に）
         updateWhitespaceMarkersOnScroll();
     });
     editor.addEventListener('click', updateStatus);

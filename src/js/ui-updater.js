@@ -205,7 +205,11 @@ function updateWhitespaceMarkersIfEnabled() {
 export function updateWhitespaceMarkersOnScroll() {
     try {
         import('./whitespace-visualizer.js').then(module => {
-            module.updateWhitespaceMarkersOnScroll();
+            if (module && module.updateWhitespaceMarkersOnScroll) {
+                module.updateWhitespaceMarkersOnScroll();
+            }
+        }).catch(() => {
+            // 空白文字可視化機能が無効な場合は何もしない
         });
     } catch (error) {
         // 空白文字可視化機能が無効な場合は何もしない

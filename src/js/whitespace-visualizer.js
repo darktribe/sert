@@ -101,6 +101,9 @@ function createMarkersContainer() {
         overflow: hidden;
     `;
     
+    // エディタのスクロール位置と同期するためのスタイル
+    markersContainer.style.transform = 'translateZ(0)'; // ハードウェアアクセラレーション
+    
     editorContainer.appendChild(markersContainer);
     console.log('✅ Whitespace markers container created');
 }
@@ -174,25 +177,28 @@ function performWhitespaceMarkersUpdate() {
     const spaceWidth = context.measureText(' ').width;
     const tabWidth = spaceWidth * 4; // タブは4スペース分
     
-    // 現在の表示可能範囲を計算（パフォーマンス最適化）
+    // スクロール位置を取得
     const scrollTop = editor.scrollTop;
+    const scrollLeft = editor.scrollLeft;
+    
+    // 表示可能範囲を計算（パフォーマンス最適化）
     const editorHeight = editor.clientHeight;
-    const visibleStart = Math.max(0, Math.floor(scrollTop / lineHeight) - 2);
-    const visibleEnd = Math.min(content.split('\n').length, Math.ceil((scrollTop + editorHeight) / lineHeight) + 2);
+    const visibleStartLine = Math.max(0, Math.floor(scrollTop / lineHeight) - 2);
+    const visibleEndLine = Math.min(content.split('\n').length, Math.ceil((scrollTop + editorHeight) / lineHeight) + 2);
     
     // 行ごとに処理
     const lines = content.split('\n');
     let currentY = paddingTop;
     
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-        // 表示範囲外の行はスキップ
-        if (lineIndex < visibleStart || lineIndex > visibleEnd) {
+        // 表示範囲外の行はスキップ（Y位置は更新）
+        if (lineIndex < visibleStartLine || lineIndex > visibleEndLine) {
             currentY += lineHeight;
             continue;
         }
         
         const line = lines[lineIndex];
-        let currentX = paddingLeft + lineNumbersWidth;
+        let currentX = paddingLeft + lineNumbersWidth - scrollLeft; // スクロール位置を考慮
         
         // 行内の各文字を処理
         for (let charIndex = 0; charIndex < line.length; charIndex++) {
@@ -219,9 +225,10 @@ function performWhitespaceMarkersUpdate() {
                 charWidth = context.measureText(char).width;
             }
             
-            // マーカーを作成
+            // マーカーを作成（スクロール位置を考慮した絶対位置）
             if (markerType) {
-                createWhitespaceMarker(markerType, currentX, currentY - scrollTop, charWidth, lineHeight);
+                const absoluteY = currentY - scrollTop; // スクロール位置を考慮
+                createWhitespaceMarker(markerType, currentX, absoluteY, charWidth, lineHeight);
             }
             
             currentX += charWidth;
@@ -238,7 +245,7 @@ function createWhitespaceMarker(type, x, y, width, height) {
     const marker = document.createElement('div');
     marker.className = `whitespace-marker whitespace-marker-${type}`;
     
-    // 基本スタイル
+    // 基本スタイル（位置はスクロールを考慮済み）
     marker.style.cssText = `
         position: absolute;
         left: ${x}px;
@@ -247,6 +254,7 @@ function createWhitespaceMarker(type, x, y, width, height) {
         height: ${height}px;
         pointer-events: none;
         z-index: 6;
+        will-change: transform;
     `;
     
     // マーカータイプ別のスタイル
@@ -315,8 +323,18 @@ function createWhitespaceMarker(type, x, y, width, height) {
  * スクロール時のマーカー更新
  */
 export function updateWhitespaceMarkersOnScroll() {
-    if (whitespaceVisualization.enabled) {
-        updateWhitespaceMarkers();
+    if (whitespaceVisualization.enabled && !updateScheduled) {
+        // スクロール時は即座に更新
+        updateScheduled = true;
+        requestAnimationFrame(() => {
+            try {
+                performWhitespaceMarkersUpdate();
+            } catch (error) {
+                console.error('❌ Error updating whitespace markers on scroll:', error);
+            } finally {
+                updateScheduled = false;
+            }
+        });
     }
 }
 

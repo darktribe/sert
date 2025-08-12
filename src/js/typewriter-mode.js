@@ -156,11 +156,22 @@ function centerCurrentLine() {
     const targetScrollTop = markerRelativeTop - editorCenter + (parseFloat(editorStyle.lineHeight) / 2);
     
     // スクロールを実行
-    editorElement.scrollTop = Math.max(0, targetScrollTop);
+    editor.scrollTop = Math.max(0, targetScrollTop);
     
     // 行番号を同期
     if (lineNumbersElement) {
-        lineNumbersElement.scrollTop = editorElement.scrollTop;
+        lineNumbersElement.scrollTop = editor.scrollTop;
+    }
+    
+    // 空白文字マーカーも更新
+    try {
+        import('./whitespace-visualizer.js').then(module => {
+            if (module && module.updateWhitespaceMarkersOnScroll) {
+                module.updateWhitespaceMarkersOnScroll();
+            }
+        });
+    } catch (error) {
+        // エラーは無視
     }
 }
 
