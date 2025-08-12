@@ -72,7 +72,15 @@
     "typeSettings": "表示する空白文字の種類",
     "fullWidthSpace": "全角スペース（　）- 薄い青で表示",
     "halfWidthSpace": "半角スペース（ ）- グレーのドットで表示",
-    "tabCharacter": "タブ文字（→）- オレンジの矢印で表示"
+    "tabCharacter": "タブ文字（→）- オレンジの矢印で表示",
+    "colorSettings": "色設定（RGB）",
+    "halfWidthSpaceColor": "半角スペースの色",
+    "fullWidthSpaceColor": "全角スペースの色", 
+    "tabColor": "タブの色",
+    "rgbR": "R",
+    "rgbG": "G", 
+    "rgbB": "B",
+    "opacity": "透明度"
   },
   "about": {
     "title": "Vinsertについて",
