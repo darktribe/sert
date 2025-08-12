@@ -12,7 +12,7 @@ import { exitApp } from './app-exit.js';
 import { initializeI18n, t, updateElementText } from './locales.js';
 import { createLanguageSwitcher } from './language-switcher.js';
 import { loadFontSettings } from './font-settings.js';
-import { loadLineHighlightSetting } from './globals.js';
+import { loadLineHighlightSetting, loadWhitespaceVisualizationSetting } from './globals.js';
 import { initializeLineHighlight } from './line-highlight.js';
 import { initializeThemeSystem } from './theme-manager.js';
 import { initTypewriterMode } from './typewriter-mode.js';
@@ -250,6 +250,24 @@ export async function initializeApp() {
     console.log('🎨 Initializing line highlight settings...');
     loadLineHighlightSetting();
     initializeLineHighlight();
+    
+    // 空白文字可視化設定の初期化
+    console.log('👁️ Initializing whitespace visualization settings...');
+    try {
+        loadWhitespaceVisualizationSetting();
+        // 動的インポートを使って安全に初期化
+        setTimeout(async () => {
+            try {
+                const { initializeWhitespaceVisualization } = await import('./whitespace-visualizer.js');
+                initializeWhitespaceVisualization();
+                console.log('✅ Whitespace visualization initialized successfully');
+            } catch (error) {
+                console.warn('⚠️ Whitespace visualization initialization failed:', error);
+            }
+        }, 500);
+    } catch (error) {
+        console.warn('⚠️ Whitespace visualization settings loading failed:', error);
+    }
     
     // タイプライターモード設定の初期化
     console.log('🖥️ Initializing typewriter mode settings...');

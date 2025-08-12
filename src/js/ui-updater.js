@@ -208,6 +208,36 @@ export function updateStatus() {
     
     // 行ハイライトも更新
     updateLineHighlight();
+    
+    // 空白文字可視化も更新
+    updateWhitespaceMarkersIfEnabled();
+}
+
+/**
+ * 空白文字可視化が有効な場合のみマーカーを更新
+ */
+function updateWhitespaceMarkersIfEnabled() {
+    try {
+        // 動的インポートで循環依存を避ける
+        import('./whitespace-visualizer.js').then(module => {
+            module.updateWhitespaceMarkers();
+        });
+    } catch (error) {
+        // 空白文字可視化機能が無効な場合は何もしない
+    }
+}
+
+/**
+ * スクロール時の空白文字マーカー更新
+ */
+export function updateWhitespaceMarkersOnScroll() {
+    try {
+        import('./whitespace-visualizer.js').then(module => {
+            module.updateWhitespaceMarkersOnScroll();
+        });
+    } catch (error) {
+        // 空白文字可視化機能が無効な場合は何もしない
+    }
 }
 
 /**
@@ -291,6 +321,22 @@ export async function updateWindowTitle() {
         } catch (fallbackError) {
             console.error('❌ Even fallback title update failed:', fallbackError);
         }
+    }
+}
+
+/**
+ * 空白文字可視化が有効な場合のみマーカーを更新
+ */
+function updateWhitespaceMarkersIfEnabled() {
+    try {
+        // 動的インポートで循環依存を避ける
+        import('./whitespace-visualizer.js').then(module => {
+            module.updateWhitespaceMarkers();
+        }).catch(() => {
+            // 空白文字可視化機能が無効な場合は何もしない
+        });
+    } catch (error) {
+        // 空白文字可視化機能が無効な場合は何もしない
     }
 }
 

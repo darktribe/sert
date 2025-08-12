@@ -26,6 +26,8 @@ export function setupEventListeners() {
         syncScroll();
         // スクロール時にハイライトの位置も更新
         updateLineHighlight();
+        // スクロール時に空白文字マーカーも更新
+        updateWhitespaceMarkersOnScroll();
     });
     editor.addEventListener('click', updateStatus);
     editor.addEventListener('keyup', updateStatus);

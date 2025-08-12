@@ -15,6 +15,7 @@ import { showAboutDialog } from './js/dialog-utils.js';
 import { showFontSettingsDialog, showFontSizeInputDialog, increaseFontSize, decreaseFontSize } from './js/font-settings.js';
 import { exitApp } from './js/app-exit.js';
 import { toggleLineHighlight } from './js/line-highlight.js';
+// 空白文字可視化機能（遅延読み込み）
 import { showThemeDialog, showLanguageSettingsDialog } from './js/theme-manager.js';
 import { toggleTypewriterMode, initTypewriterMode } from './js/typewriter-mode.js';
 
@@ -52,6 +53,25 @@ window.showFontSizeInputDialog = showFontSizeInputDialog;
 window.increaseFontSize = increaseFontSize;
 window.decreaseFontSize = decreaseFontSize;
 window.toggleLineHighlight = toggleLineHighlight;
+// 空白文字可視化機能（動的読み込み）
+window.toggleWhitespaceVisualization = async function() {
+    try {
+        const { toggleWhitespaceVisualization } = await import('./js/whitespace-visualizer.js');
+        toggleWhitespaceVisualization();
+    } catch (error) {
+        console.warn('⚠️ Whitespace visualization not available:', error);
+    }
+};
+
+window.showWhitespaceVisualizationDialog = async function() {
+    try {
+        const { showWhitespaceVisualizationDialog } = await import('./js/whitespace-visualizer.js');
+        showWhitespaceVisualizationDialog();
+    } catch (error) {
+        console.warn('⚠️ Whitespace visualization dialog not available:', error);
+    }
+};
+window.showWhitespaceVisualizationDialog = showWhitespaceVisualizationDialog;
 window.toggleTypewriterMode = toggleTypewriterMode;
 
 // テーマ・言語

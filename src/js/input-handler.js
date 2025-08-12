@@ -19,6 +19,20 @@ import { saveToUndoStack } from './undo-redo.js';
 import { updateLineNumbers, updateStatus } from './ui-updater.js';
 
 /**
+ * 空白文字可視化マーカーを必要に応じて更新
+ */
+async function updateWhitespaceMarkersIfNeeded() {
+    try {
+        const module = await import('./whitespace-visualizer.js');
+        if (module && module.updateWhitespaceMarkers) {
+            module.updateWhitespaceMarkers();
+        }
+    } catch (error) {
+        // 空白文字可視化機能が無効な場合は何もしない
+    }
+}
+
+/**
  * テキスト入力時の処理
  * アンドゥ履歴の管理と画面更新を行う
  */
@@ -34,6 +48,10 @@ export function handleInput(e) {
         setIsUndoRedoOperation(false);
         updateLineNumbers();
         updateStatus();
+        updateWhitespaceMarkersIfNeeded();
+    
+        // 空白文字可視化マーカーも更新
+        updateWhitespaceMarkersIfNeeded();
         return;
     }
 
@@ -42,6 +60,7 @@ export function handleInput(e) {
         console.log('Skipping history - IME composing');
         updateLineNumbers();
         updateStatus();
+        updateWhitespaceMarkersIfNeeded();
         return;
     }
 
@@ -51,6 +70,7 @@ export function handleInput(e) {
         setCurrentContent(editor.value);
         updateLineNumbers();
         updateStatus();
+        updateWhitespaceMarkersIfNeeded();
         return;
     }
 
