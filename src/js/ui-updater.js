@@ -182,37 +182,51 @@ export function updateStatus() {
 }
 
 /**
- * 空白文字可視化が有効な場合のみマーカーを更新
+ * 空白文字可視化が有効な場合のみマーカーを更新（安定版）
  */
 function updateWhitespaceMarkersIfEnabled() {
     try {
         // 動的インポートで循環依存を避ける
         import('./whitespace-visualizer.js').then(module => {
             if (module && module.updateWhitespaceMarkers) {
-                module.updateWhitespaceMarkers();
+                // 通常の更新は少し遅延させて安定化
+                setTimeout(() => {
+                    try {
+                        module.updateWhitespaceMarkers();
+                    } catch (updateError) {
+                        console.warn('⚠️ Whitespace markers update failed:', updateError);
+                    }
+                }, 50);
             }
-        }).catch(() => {
-            // 空白文字可視化機能が無効な場合は何もしない
+        }).catch((error) => {
+            // 空白文字可視化機能が無効な場合は何もしない（エラーログも出さない）
         });
     } catch (error) {
-        // 空白文字可視化機能が無効な場合は何もしない
+        // エラーは無視（空白文字可視化はオプション機能のため）
+        console.warn('⚠️ Whitespace markers update error:', error);
     }
 }
 
 /**
- * スクロール時の空白文字マーカー更新
+ * スクロール時の空白文字マーカー更新（安定版）
  */
 export function updateWhitespaceMarkersOnScroll() {
     try {
         import('./whitespace-visualizer.js').then(module => {
             if (module && module.updateWhitespaceMarkersOnScroll) {
-                module.updateWhitespaceMarkersOnScroll();
+                // スクロール時の更新は即座に実行（ただしエラーハンドリング付き）
+                try {
+                    module.updateWhitespaceMarkersOnScroll();
+                } catch (updateError) {
+                    console.warn('⚠️ Scroll-triggered whitespace update failed:', updateError);
+                }
             }
         }).catch(() => {
             // 空白文字可視化機能が無効な場合は何もしない
         });
     } catch (error) {
-        // 空白文字可視化機能が無効な場合は何もしない
+        // エラーは無視
+        console.warn('⚠️ Whitespace scroll update error:', error);
     }
 }
 

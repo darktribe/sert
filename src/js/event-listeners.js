@@ -31,8 +31,13 @@ export function setupEventListeners() {
     editor.addEventListener('scroll', () => {
         syncScroll();
         updateLineHighlight();
-        // 空白文字マーカーの更新（即座に）
-        updateWhitespaceMarkersOnScroll();
+        // 空白文字可視化マーカーの更新（安全版）
+        try {
+            updateWhitespaceMarkersOnScroll();
+        } catch (error) {
+            // エラーは無視（オプション機能のため）
+            console.warn('⚠️ Whitespace marker update failed on scroll:', error);
+        }
     });
     editor.addEventListener('click', updateStatus);
     editor.addEventListener('keyup', updateStatus);

@@ -163,15 +163,22 @@ function centerCurrentLine() {
         lineNumbersElement.scrollTop = editor.scrollTop;
     }
     
-    // 空白文字マーカーも更新
+    // 空白文字マーカーも更新（頻度を制限）
     try {
-        import('./whitespace-visualizer.js').then(module => {
-            if (module && module.updateWhitespaceMarkersOnScroll) {
-                module.updateWhitespaceMarkersOnScroll();
-            }
-        });
+        // タイプライターモードでは更新頻度を制限
+        if (!window._lastWhitespaceUpdate || Date.now() - window._lastWhitespaceUpdate > 150) {
+            import('./whitespace-visualizer.js').then(module => {
+                if (module && module.updateWhitespaceMarkersOnScroll) {
+                    module.updateWhitespaceMarkersOnScroll();
+                    window._lastWhitespaceUpdate = Date.now();
+                }
+            }).catch(() => {
+                // 空白文字可視化機能が無効な場合は何もしない
+            });
+        }
     } catch (error) {
-        // エラーは無視
+        // エラーは無視（空白文字可視化はオプション機能のため）
+        console.warn('⚠️ Whitespace marker update failed in typewriter mode:', error);
     }
 }
 

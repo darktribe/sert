@@ -148,6 +148,9 @@ export function updateWhitespaceMarkers() {
 /**
  * 実際のマーカー更新処理
  */
+/**
+ * 実際のマーカー更新処理（タイプライターモード対応版）
+ */
 function performWhitespaceMarkersUpdate() {
     // 既存のマーカーをクリア
     removeAllMarkers();
@@ -157,185 +160,255 @@ function performWhitespaceMarkersUpdate() {
         return;
     }
     
-    // エディタのスタイル情報を取得
-    const computedStyle = window.getComputedStyle(editor);
-    const fontSize = parseFloat(computedStyle.fontSize);
-    const lineHeight = parseFloat(computedStyle.lineHeight);
-    const paddingLeft = parseFloat(computedStyle.paddingLeft);
-    const paddingTop = parseFloat(computedStyle.paddingTop);
-    
-    // 行番号エリアの幅を取得
-    const lineNumbers = document.getElementById('line-numbers');
-    const lineNumbersWidth = lineNumbers ? lineNumbers.offsetWidth : 0;
-    
-    // フォントメトリクス計算用のキャンバス
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    context.font = `${fontSize}px ${computedStyle.fontFamily}`;
-    
-    // 文字幅の計算
-    const spaceWidth = context.measureText(' ').width;
-    const tabWidth = spaceWidth * 4; // タブは4スペース分
-    
-    // スクロール位置を取得
-    const scrollTop = editor.scrollTop;
-    const scrollLeft = editor.scrollLeft;
-    
-    // 表示可能範囲を計算（パフォーマンス最適化）
-    const editorHeight = editor.clientHeight;
-    const visibleStartLine = Math.max(0, Math.floor(scrollTop / lineHeight) - 2);
-    const visibleEndLine = Math.min(content.split('\n').length, Math.ceil((scrollTop + editorHeight) / lineHeight) + 2);
-    
-    // 行ごとに処理
-    const lines = content.split('\n');
-    let currentY = paddingTop;
-    
-    for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-        // 表示範囲外の行はスキップ（Y位置は更新）
-        if (lineIndex < visibleStartLine || lineIndex > visibleEndLine) {
+    try {
+        // エディタのスタイル情報を取得
+        const computedStyle = window.getComputedStyle(editor);
+        const fontSize = parseFloat(computedStyle.fontSize);
+        const lineHeight = parseFloat(computedStyle.lineHeight);
+        let paddingLeft = parseFloat(computedStyle.paddingLeft);
+        let paddingTop = parseFloat(computedStyle.paddingTop);
+        
+        // タイプライターモードの検出とpadding調整
+        const isTypewriterMode = paddingTop > 20; // 通常は10px、タイプライターモードでは画面の半分
+        if (isTypewriterMode) {
+            console.log('👁️ Typewriter mode detected, adjusting calculations');
+        }
+        
+        // 行番号エリアの幅を取得
+        const lineNumbers = document.getElementById('line-numbers');
+        const lineNumbersWidth = lineNumbers ? lineNumbers.offsetWidth : 0;
+        
+        // フォントメトリクス計算用のキャンバス
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        context.font = `${fontSize}px ${computedStyle.fontFamily}`;
+        
+        // 文字幅の計算
+        const spaceWidth = context.measureText(' ').width;
+        const tabWidth = spaceWidth * 4; // タブは4スペース分
+        
+        // スクロール位置を取得
+        const scrollTop = editor.scrollTop;
+        const scrollLeft = editor.scrollLeft;
+        
+        // 表示可能範囲を計算（タイプライターモード考慮）
+        const editorHeight = editor.clientHeight;
+        const effectiveTop = isTypewriterMode ? scrollTop - paddingTop + 20 : scrollTop;
+        const effectiveHeight = editorHeight + (isTypewriterMode ? paddingTop * 2 : 0);
+        
+        // 安全な表示範囲を大きめに取る
+        const visibleStartLine = Math.max(0, Math.floor(effectiveTop / lineHeight) - 5);
+        const visibleEndLine = Math.min(
+            content.split('\n').length, 
+            Math.ceil((effectiveTop + effectiveHeight) / lineHeight) + 5
+        );
+        
+        console.log(`👁️ Visible range: ${visibleStartLine} to ${visibleEndLine}, scrollTop: ${scrollTop}, isTypewriter: ${isTypewriterMode}`);
+        
+        // 行ごとに処理
+        const lines = content.split('\n');
+        let currentY = paddingTop; // 実際のpadding値を使用
+        
+        for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+            // 表示範囲の判定をより緩く
+            if (lineIndex < visibleStartLine - 2 || lineIndex > visibleEndLine + 2) {
+                currentY += lineHeight;
+                continue;
+            }
+            
+            const line = lines[lineIndex];
+            let currentX = paddingLeft + lineNumbersWidth - scrollLeft;
+            
+            // 行内の各文字を処理
+            for (let charIndex = 0; charIndex < line.length; charIndex++) {
+                const char = line[charIndex];
+                
+                // 空白文字の種類を判定
+                let markerType = null;
+                let charWidth = 0;
+                
+                if (char === '\u3000' && whitespaceVisualization.showFullWidthSpace) {
+                    // 全角スペース
+                    markerType = 'fullwidth-space';
+                    charWidth = context.measureText('\u3000').width;
+                } else if (char === ' ' && whitespaceVisualization.showHalfWidthSpace) {
+                    // 半角スペース
+                    markerType = 'halfwidth-space';
+                    charWidth = spaceWidth;
+                } else if (char === '\t' && whitespaceVisualization.showTab) {
+                    // タブ文字
+                    markerType = 'tab';
+                    charWidth = tabWidth;
+                } else {
+                    // 通常の文字
+                    charWidth = context.measureText(char).width;
+                }
+                
+                // マーカーを作成（スクロール位置とpadding を正しく考慮）
+                if (markerType) {
+                    // タイプライターモードでのY座標計算を修正
+                    const absoluteY = currentY - scrollTop;
+                    
+                    // 画面内に表示される範囲のみマーカーを作成
+                    if (absoluteY > -lineHeight && absoluteY < editorHeight + lineHeight) {
+                        createWhitespaceMarker(markerType, currentX, absoluteY, charWidth, lineHeight);
+                    }
+                }
+                
+                currentX += charWidth;
+            }
+            
             currentY += lineHeight;
-            continue;
         }
+    } catch (error) {
+        console.error('❌ Error in performWhitespaceMarkersUpdate:', error);
+        console.error('Stack trace:', error.stack);
         
-        const line = lines[lineIndex];
-        let currentX = paddingLeft + lineNumbersWidth - scrollLeft; // スクロール位置を考慮
-        
-        // 行内の各文字を処理
-        for (let charIndex = 0; charIndex < line.length; charIndex++) {
-            const char = line[charIndex];
-            
-            // 空白文字の種類を判定
-            let markerType = null;
-            let charWidth = 0;
-            
-            if (char === '\u3000' && whitespaceVisualization.showFullWidthSpace) {
-                // 全角スペース
-                markerType = 'fullwidth-space';
-                charWidth = context.measureText('\u3000').width;
-            } else if (char === ' ' && whitespaceVisualization.showHalfWidthSpace) {
-                // 半角スペース
-                markerType = 'halfwidth-space';
-                charWidth = spaceWidth;
-            } else if (char === '\t' && whitespaceVisualization.showTab) {
-                // タブ文字
-                markerType = 'tab';
-                charWidth = tabWidth;
-            } else {
-                // 通常の文字
-                charWidth = context.measureText(char).width;
-            }
-            
-            // マーカーを作成（スクロール位置を考慮した絶対位置）
-            if (markerType) {
-                const absoluteY = currentY - scrollTop; // スクロール位置を考慮
-                createWhitespaceMarker(markerType, currentX, absoluteY, charWidth, lineHeight);
-            }
-            
-            currentX += charWidth;
-        }
-        
-        currentY += lineHeight;
+        // エラー時は全マーカーを削除して状態をクリア
+        removeAllMarkers();
     }
 }
 
 /**
- * 空白文字マーカーを作成
+ * 空白文字マーカーを作成（エラーハンドリング強化版）
  */
 function createWhitespaceMarker(type, x, y, width, height) {
-    const marker = document.createElement('div');
-    marker.className = `whitespace-marker whitespace-marker-${type}`;
-    
-    // 基本スタイル（位置はスクロールを考慮済み）
-    marker.style.cssText = `
-        position: absolute;
-        left: ${x}px;
-        top: ${y}px;
-        width: ${width}px;
-        height: ${height}px;
-        pointer-events: none;
-        z-index: 6;
-        will-change: transform;
-    `;
-    
-    // マーカータイプ別のスタイル
-    switch (type) {
-        case 'fullwidth-space':
-            // 全角スペース: 薄い青の背景
-            marker.style.backgroundColor = 'rgba(100, 150, 255, 0.2)';
-            marker.style.border = '1px solid rgba(100, 150, 255, 0.4)';
-            
-            // 中央にドット
-            const fullwidthDot = document.createElement('div');
-            fullwidthDot.style.cssText = `
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                width: 4px;
-                height: 4px;
-                background-color: rgba(100, 150, 255, 0.8);
-                border-radius: 50%;
-                transform: translate(-50%, -50%);
-            `;
-            marker.appendChild(fullwidthDot);
-            break;
-            
-        case 'halfwidth-space':
-            // 半角スペース: 薄いグレーのドット
-            const halfwidthDot = document.createElement('div');
-            halfwidthDot.style.cssText = `
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                width: 2px;
-                height: 2px;
-                background-color: rgba(128, 128, 128, 0.6);
-                border-radius: 50%;
-                transform: translate(-50%, -50%);
-            `;
-            marker.appendChild(halfwidthDot);
-            break;
-            
-        case 'tab':
-            // タブ文字: 矢印マーク
-            marker.style.backgroundColor = 'rgba(255, 165, 0, 0.1)';
-            marker.style.borderBottom = '1px solid rgba(255, 165, 0, 0.5)';
-            
-            const tabArrow = document.createElement('div');
-            tabArrow.style.cssText = `
-                position: absolute;
-                top: 50%;
-                left: 2px;
-                color: rgba(255, 165, 0, 0.7);
-                font-size: ${Math.max(10, height * 0.6)}px;
-                line-height: 1;
-                transform: translateY(-50%);
-                font-family: monospace;
-            `;
-            tabArrow.textContent = '→';
-            marker.appendChild(tabArrow);
-            break;
+    try {
+        // 無効な値の検証
+        if (!type || isNaN(x) || isNaN(y) || isNaN(width) || isNaN(height)) {
+            console.warn('⚠️ Invalid marker parameters:', { type, x, y, width, height });
+            return;
+        }
+        
+        // コンテナが存在しない場合はスキップ
+        if (!markersContainer || !markersContainer.parentNode) {
+            console.warn('⚠️ Markers container not available');
+            return;
+        }
+        
+        const marker = document.createElement('div');
+        marker.className = `whitespace-marker whitespace-marker-${type}`;
+        
+        // 基本スタイル（位置はスクロールを考慮済み）
+        marker.style.cssText = `
+            position: absolute;
+            left: ${Math.round(x)}px;
+            top: ${Math.round(y)}px;
+            width: ${Math.round(width)}px;
+            height: ${Math.round(height)}px;
+            pointer-events: none;
+            z-index: 6;
+            will-change: transform;
+        `;
+        
+        // マーカータイプ別のスタイル
+        switch (type) {
+            case 'fullwidth-space':
+                // 全角スペース: 薄い青の背景
+                marker.style.backgroundColor = 'rgba(100, 150, 255, 0.2)';
+                marker.style.border = '1px solid rgba(100, 150, 255, 0.4)';
+                
+                // 中央にドット
+                const fullwidthDot = document.createElement('div');
+                fullwidthDot.style.cssText = `
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    width: 4px;
+                    height: 4px;
+                    background-color: rgba(100, 150, 255, 0.8);
+                    border-radius: 50%;
+                    transform: translate(-50%, -50%);
+                `;
+                marker.appendChild(fullwidthDot);
+                break;
+                
+            case 'halfwidth-space':
+                // 半角スペース: 薄いグレーのドット
+                const halfwidthDot = document.createElement('div');
+                halfwidthDot.style.cssText = `
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    width: 2px;
+                    height: 2px;
+                    background-color: rgba(128, 128, 128, 0.6);
+                    border-radius: 50%;
+                    transform: translate(-50%, -50%);
+                `;
+                marker.appendChild(halfwidthDot);
+                break;
+                
+            case 'tab':
+                // タブ文字: 矢印マーク
+                marker.style.backgroundColor = 'rgba(255, 165, 0, 0.1)';
+                marker.style.borderBottom = '1px solid rgba(255, 165, 0, 0.5)';
+                
+                const tabArrow = document.createElement('div');
+                tabArrow.style.cssText = `
+                    position: absolute;
+                    top: 50%;
+                    left: 2px;
+                    color: rgba(255, 165, 0, 0.7);
+                    font-size: ${Math.max(10, Math.round(height * 0.6))}px;
+                    line-height: 1;
+                    transform: translateY(-50%);
+                    font-family: monospace;
+                `;
+                tabArrow.textContent = '→';
+                marker.appendChild(tabArrow);
+                break;
+                
+            default:
+                console.warn('⚠️ Unknown marker type:', type);
+                return;
+        }
+        
+        markersContainer.appendChild(marker);
+        
+    } catch (error) {
+        console.error('❌ Error creating whitespace marker:', error, { type, x, y, width, height });
     }
-    
-    markersContainer.appendChild(marker);
 }
 
 /**
- * スクロール時のマーカー更新
+ * スクロール時のマーカー更新（タイプライターモード対応・安定版）
  */
 export function updateWhitespaceMarkersOnScroll() {
-    if (whitespaceVisualization.enabled && !updateScheduled) {
-        // スクロール時は即座に更新
-        updateScheduled = true;
+    if (!whitespaceVisualization.enabled || !editor || !markersContainer) {
+        return;
+    }
+    
+    // 重複する更新リクエストを防ぐ
+    if (updateScheduled) {
+        return;
+    }
+    
+    updateScheduled = true;
+    
+    // スクロール時は少し遅延を入れて安定化
+    requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             try {
                 performWhitespaceMarkersUpdate();
+                console.log('👁️ Whitespace markers updated on scroll');
             } catch (error) {
                 console.error('❌ Error updating whitespace markers on scroll:', error);
+                
+                // エラー時はマーカーを一度クリアして次のフレームで再試行
+                removeAllMarkers();
+                setTimeout(() => {
+                    try {
+                        performWhitespaceMarkersUpdate();
+                    } catch (retryError) {
+                        console.error('❌ Retry also failed:', retryError);
+                    }
+                }, 100);
             } finally {
                 updateScheduled = false;
             }
         });
-    }
+    });
 }
 
 /**
