@@ -578,8 +578,7 @@ async function ensureConfigDirectory() {
             
             // 親ディレクトリも含めて再帰的に作成
             await mkdir(configDirectory, { 
-                recursive: true,
-                mode: 0o755
+                recursive: true
             });
             
             // 作成確認
@@ -623,8 +622,7 @@ async function ensureLocalesDirectory() {
             console.log('📁 Creating locales directory:', localesDirectory);
             
             await mkdir(localesDirectory, { 
-                recursive: true,
-                mode: 0o755
+                recursive: true
             });
             
             // 作成確認
@@ -868,7 +866,7 @@ export async function tryExternalFileSystem() {
     // 必ずフラグをリセットしてから開始
     resetExternalSystemFlag();
     
-    console.log('🔍 tryExternalFileSystem called - forcing folder creation check');
+    console.log('🔍 tryExternalFileSystem called - initializing folder structure');
     console.log('🔍 isExternalSystemEnabled after reset:', isExternalSystemEnabled);
     
     // Tauri APIの確認を最初に実行
@@ -877,18 +875,8 @@ export async function tryExternalFileSystem() {
         return false;
     }
     
-    // フラグに関係なく、フォルダの存在確認と作成を実行
-    // if (isExternalSystemEnabled) {
-    //     console.log('⚠️ External system already enabled, skipping');
-    //     return;
-    // }
-    
     try {
         console.log('📂 Initializing external file system...');
-        console.log('🔍 Checking Tauri APIs...');
-        console.log('🔍 window.__TAURI__:', !!window.__TAURI__);
-        console.log('🔍 window.__TAURI__.path:', !!window.__TAURI__?.path);
-        console.log('🔍 window.__TAURI__.fs:', !!window.__TAURI__?.fs);
         
         // 設定ディレクトリを取得・作成
         console.log('🔍 Getting config directory...');
@@ -902,7 +890,8 @@ export async function tryExternalFileSystem() {
         const configCreated = await ensureConfigDirectory();
         console.log('📁 Config directory creation result:', configCreated);
         if (!configCreated) {
-            throw new Error(`設定ファイル保存場所（${configDirectory}）が開けませんでした`);
+            console.warn(`⚠️ Config directory could not be created: ${configDirectory}`);
+            // エラーにせず続行
         }
         console.log('✅ Config directory confirmed');
         
@@ -912,12 +901,15 @@ export async function tryExternalFileSystem() {
             throw new Error('Locales directory not available');
         }
         
+        console.log('📁 Creating locales directory...');
         await ensureLocalesDirectory();
         
-        // 言語ファイルを作成
+        // 言語ファイルを作成（重要：必ず実行）
+        console.log('📝 Creating language files...');
         await createLanguageFiles();
         
         // 外部言語ファイルを読み込み
+        console.log('📖 Loading external languages...');
         await loadExternalLanguages();
         
         isExternalSystemEnabled = true;
@@ -928,18 +920,14 @@ export async function tryExternalFileSystem() {
         console.log('🗂️ Config directory should be at:', configDirectory);
         console.log('🗂️ Locales directory should be at:', localesDirectory);
         
+        return true;
+        
     } catch (error) {
         console.error('❌ External file system initialization failed:', error);
         
         // フォールバックシステムで継続（alertは表示しない）
         console.log('🔄 Falling back to internal language system');
         isExternalSystemEnabled = false;
-        
-        // エラーの詳細をコンソールに記録
-        if (error.message.includes('が開けませんでした')) {
-            console.error('📁 Directory creation failed:', error.message);
-            console.log('💡 The app will continue using built-in language data');
-        }
         
         return false;
     }

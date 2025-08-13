@@ -221,6 +221,7 @@ function performWhitespaceMarkersUpdate() {
             
             // 行内の各文字を処理（Tab幅を正しく計算）
 let linePosition = 0; // 行内の文字位置（タブストップ計算用）
+// 行内の各文字を処理（Tab幅は常に4文字分固定）
 for (let charIndex = 0; charIndex < line.length; charIndex++) {
     const char = line[charIndex];
     
@@ -232,24 +233,17 @@ for (let charIndex = 0; charIndex < line.length; charIndex++) {
         // 全角スペース
         markerType = 'fullwidth-space';
         charWidth = context.measureText('\u3000').width;
-        linePosition += 2; // 全角は2文字分
     } else if (char === ' ' && whitespaceVisualization.showHalfWidthSpace) {
         // 半角スペース
         markerType = 'halfwidth-space';
         charWidth = spaceWidth;
-        linePosition += 1;
     } else if (char === '\t' && whitespaceVisualization.showTab) {
-        // タブ文字 - 次のタブストップ（4の倍数）まで進む
+        // タブ文字 - 常に固定幅4文字分
         markerType = 'tab';
-        const tabStop = 4;
-        const spacesToNextTabStop = tabStop - (linePosition % tabStop);
-        charWidth = spaceWidth * spacesToNextTabStop;
-        linePosition += spacesToNextTabStop;
+        charWidth = spaceWidth * 4; // 常に4文字分の固定幅
     } else {
         // 通常の文字
         charWidth = context.measureText(char).width;
-        // ASCII文字は1、それ以外（日本語等）は2文字分として計算
-        linePosition += (char.charCodeAt(0) < 256) ? 1 : 2;
     }
                 
                 if (char === '\u3000' && whitespaceVisualization.showFullWidthSpace) {
@@ -388,29 +382,30 @@ function createWhitespaceMarker(type, x, y, width, height) {
                     marker.appendChild(halfwidthDot);
                     break;
                 
-            case 'tab':
-                // タブ文字: 矢印マーク（設定色使用）
-                const tabColor = whitespaceVisualization.colors.tab;
-                const tabColorAlpha = tabColor + '1A'; // 10%透明度
-                const tabColorBorder = tabColor + '80'; // 50%透明度
-                
-                marker.style.backgroundColor = tabColorAlpha;
-                marker.style.borderBottom = `1px solid ${tabColorBorder}`;
-                
-                const tabArrow = document.createElement('div');
-                tabArrow.style.cssText = `
-                    position: absolute;
-                    top: 50%;
-                    left: 2px;
-                    color: ${tabColor};
-                    font-size: ${Math.max(10, Math.round(height * 0.6))}px;
-                    line-height: 1;
-                    transform: translateY(-50%);
-                    font-family: monospace;
-                `;
-                tabArrow.textContent = '→';
-                marker.appendChild(tabArrow);
-                break;
+                    case 'tab':
+                        // タブ文字: 矢印マーク（設定色使用）- 常に4文字分の幅
+                        const tabColor = whitespaceVisualization.colors.tab;
+                        const tabColorAlpha = tabColor + '1A'; // 10%透明度
+                        const tabColorBorder = tabColor + '80'; // 50%透明度
+                        
+                        marker.style.backgroundColor = tabColorAlpha;
+                        marker.style.borderBottom = `1px solid ${tabColorBorder}`;
+                        marker.style.boxSizing = 'border-box';
+                        
+                        const tabArrow = document.createElement('div');
+                        tabArrow.style.cssText = `
+                            position: absolute;
+                            top: 50%;
+                            left: 2px;
+                            color: ${tabColor};
+                            font-size: ${Math.max(10, Math.round(height * 0.6))}px;
+                            line-height: 1;
+                            transform: translateY(-50%);
+                            font-family: monospace;
+                        `;
+                        tabArrow.textContent = '→';
+                        marker.appendChild(tabArrow);
+                        break;
                 
             default:
                 console.warn('⚠️ Unknown marker type:', type);

@@ -207,6 +207,19 @@ export async function initializeApp() {
     console.log('🌐 Initializing i18n system...');
     await initializeI18n();
     
+    // 外部言語ファイルシステムの初期化（localeフォルダ作成）
+    console.log('📁 Initializing external language file system...');
+    try {
+        const localesModule = await import('./locales.js');
+        if (localesModule.tryExternalFileSystem) {
+            await localesModule.tryExternalFileSystem();
+            console.log('✅ External language file system initialized');
+        }
+    } catch (error) {
+        console.warn('⚠️ External language file system initialization failed:', error);
+        // エラーが発生しても続行（フォールバックシステムを使用）
+    }
+    
     // Tauri API初期化
     await initializeTauri();
     
