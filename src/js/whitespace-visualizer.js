@@ -219,24 +219,40 @@ function performWhitespaceMarkersUpdate() {
             const line = lines[lineIndex];
             let currentX = paddingLeft + lineNumbersWidth - scrollLeft;
             
-            // 行内の各文字を処理
+            // 行内の各文字を処理（連続スペース対応版）
             for (let charIndex = 0; charIndex < line.length; charIndex++) {
                 const char = line[charIndex];
                 
                 // 空白文字の種類を判定
                 let markerType = null;
                 let charWidth = 0;
+                let skipChars = 0; // 連続スペース処理用
                 
                 if (char === '\u3000' && whitespaceVisualization.showFullWidthSpace) {
                     // 全角スペース
                     markerType = 'fullwidth-space';
                     charWidth = context.measureText('\u3000').width;
                 } else if (char === ' ' && whitespaceVisualization.showHalfWidthSpace) {
-                    // 半角スペース
-                    markerType = 'halfwidth-space';
-                    charWidth = spaceWidth;
+                    // 連続する4つのスペースをタブとして扱う
+                    if (charIndex + 3 < line.length && 
+                        line.substring(charIndex, charIndex + 4) === '    ') {
+                        // 4つの連続スペース = タブ
+                        if (whitespaceVisualization.showTab) {
+                            markerType = 'tab';
+                            charWidth = spaceWidth * 4;
+                            skipChars = 3; // 残り3文字をスキップ
+                        } else {
+                            // タブ表示が無効な場合は通常の半角スペースとして処理
+                            markerType = 'halfwidth-space';
+                            charWidth = spaceWidth;
+                        }
+                    } else {
+                        // 単独の半角スペース
+                        markerType = 'halfwidth-space';
+                        charWidth = spaceWidth;
+                    }
                 } else if (char === '\t' && whitespaceVisualization.showTab) {
-                    // タブ文字
+                    // 実際のタブ文字（念のため残す）
                     markerType = 'tab';
                     charWidth = tabWidth;
                 } else {
@@ -256,6 +272,11 @@ function performWhitespaceMarkersUpdate() {
                 }
                 
                 currentX += charWidth;
+                
+                // 連続スペースの場合、残りの文字をスキップ
+                if (skipChars > 0) {
+                    charIndex += skipChars;
+                }
             }
             
             currentY += lineHeight;
