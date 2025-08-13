@@ -304,27 +304,49 @@ function createWhitespaceMarker(type, x, y, width, height) {
         // マーカータイプ別のスタイル
         switch (type) {
             case 'fullwidth-space':
-                // 全角スペース: 薄い青の背景
-                marker.style.backgroundColor = 'rgba(100, 150, 255, 0.2)';
-                marker.style.border = '1px solid rgba(100, 150, 255, 0.4)';
+                // 全角スペース: 対角線入りの四角
+                marker.style.backgroundColor = 'transparent';
+                marker.style.border = '1px solid rgba(100, 150, 255, 0.6)';
                 
-                // 中央にドット
-                const fullwidthDot = document.createElement('div');
-                fullwidthDot.style.cssText = `
+                // SVGで対角線を描画
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.style.cssText = `
                     position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    width: 4px;
-                    height: 4px;
-                    background-color: rgba(100, 150, 255, 0.8);
-                    border-radius: 50%;
-                    transform: translate(-50%, -50%);
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    pointer-events: none;
                 `;
-                marker.appendChild(fullwidthDot);
+                svg.setAttribute('viewBox', `0 0 ${Math.round(width)} ${Math.round(height)}`);
+                
+                const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line1.setAttribute('x1', '1');
+                line1.setAttribute('y1', '1');
+                line1.setAttribute('x2', (Math.round(width) - 1).toString());
+                line1.setAttribute('y2', (Math.round(height) - 1).toString());
+                line1.setAttribute('stroke', 'rgba(100, 150, 255, 0.7)');
+                line1.setAttribute('stroke-width', '1');
+                
+                const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line2.setAttribute('x1', (Math.round(width) - 1).toString());
+                line2.setAttribute('y1', '1');
+                line2.setAttribute('x2', '1');
+                line2.setAttribute('y2', (Math.round(height) - 1).toString());
+                line2.setAttribute('stroke', 'rgba(100, 150, 255, 0.7)');
+                line2.setAttribute('stroke-width', '1');
+                
+                svg.appendChild(line1);
+                svg.appendChild(line2);
+                marker.appendChild(svg);
                 break;
                 
             case 'halfwidth-space':
-                // 半角スペース: 薄いグレーのドット
+                // 半角スペース: 四角で囲んだ点
+                marker.style.backgroundColor = 'transparent';
+                marker.style.border = '1px solid rgba(128, 128, 128, 0.5)';
+                
+                // 中央の点
                 const halfwidthDot = document.createElement('div');
                 halfwidthDot.style.cssText = `
                     position: absolute;
@@ -332,15 +354,14 @@ function createWhitespaceMarker(type, x, y, width, height) {
                     left: 50%;
                     width: 2px;
                     height: 2px;
-                    background-color: rgba(128, 128, 128, 0.6);
-                    border-radius: 50%;
+                    background-color: rgba(128, 128, 128, 0.8);
                     transform: translate(-50%, -50%);
                 `;
                 marker.appendChild(halfwidthDot);
                 break;
                 
             case 'tab':
-                // タブ文字: 矢印マーク
+                // タブ文字: 矢印マーク（現在の形式維持）
                 marker.style.backgroundColor = 'rgba(255, 165, 0, 0.1)';
                 marker.style.borderBottom = '1px solid rgba(255, 165, 0, 0.5)';
                 

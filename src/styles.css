@@ -236,6 +236,13 @@ body, html {
   /* スクロールバーを非表示にしつつスクロール可能にする */
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE/Edge */
+  
+  /* タブ幅を4文字分に設定（エディタと同期） */
+  tab-size: 4;
+  -moz-tab-size: 4;
+  -webkit-tab-size: 4;
+  -o-tab-size: 4;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Webkit系ブラウザのスクロールバー非表示 */
@@ -267,7 +274,7 @@ body, html {
   padding: 10px;
   resize: none;
   
-  white-space: pre-wrap;
+  white-space: pre;
   overflow-wrap: break-word;
   word-wrap: break-word;
   overflow-x: hidden;
@@ -276,6 +283,12 @@ body, html {
   tab-size: 4;
   -moz-tab-size: 4;
   -webkit-tab-size: 4;
+  -o-tab-size: 4;
+  
+  /* タブ幅を確実に4文字分にするための追加設定 */
+  font-variant-numeric: tabular-nums;
+  word-spacing: normal;
+  letter-spacing: normal;
   
   position: relative;
   z-index: 2;
