@@ -219,42 +219,26 @@ function performWhitespaceMarkersUpdate() {
             const line = lines[lineIndex];
             let currentX = paddingLeft + lineNumbersWidth - scrollLeft;
             
-            // 行内の各文字を処理（連続スペース対応版）
+            // 行内の各文字を処理（Tab幅固定対応）
             for (let charIndex = 0; charIndex < line.length; charIndex++) {
                 const char = line[charIndex];
                 
                 // 空白文字の種類を判定
                 let markerType = null;
                 let charWidth = 0;
-                let skipChars = 0; // 連続スペース処理用
                 
                 if (char === '\u3000' && whitespaceVisualization.showFullWidthSpace) {
                     // 全角スペース
                     markerType = 'fullwidth-space';
                     charWidth = context.measureText('\u3000').width;
                 } else if (char === ' ' && whitespaceVisualization.showHalfWidthSpace) {
-                    // 連続する4つのスペースをタブとして扱う
-                    if (charIndex + 3 < line.length && 
-                        line.substring(charIndex, charIndex + 4) === '    ') {
-                        // 4つの連続スペース = タブ
-                        if (whitespaceVisualization.showTab) {
-                            markerType = 'tab';
-                            charWidth = spaceWidth * 4;
-                            skipChars = 3; // 残り3文字をスキップ
-                        } else {
-                            // タブ表示が無効な場合は通常の半角スペースとして処理
-                            markerType = 'halfwidth-space';
-                            charWidth = spaceWidth;
-                        }
-                    } else {
-                        // 単独の半角スペース
-                        markerType = 'halfwidth-space';
-                        charWidth = spaceWidth;
-                    }
+                    // 半角スペース
+                    markerType = 'halfwidth-space';
+                    charWidth = spaceWidth;
                 } else if (char === '\t' && whitespaceVisualization.showTab) {
-                    // 実際のタブ文字（念のため残す）
+                    // タブ文字 - 固定幅4文字分
                     markerType = 'tab';
-                    charWidth = tabWidth;
+                    charWidth = spaceWidth * 4; // 固定で4文字分
                 } else {
                     // 通常の文字
                     charWidth = context.measureText(char).width;
@@ -272,11 +256,6 @@ function performWhitespaceMarkersUpdate() {
                 }
                 
                 currentX += charWidth;
-                
-                // 連続スペースの場合、残りの文字をスキップ
-                if (skipChars > 0) {
-                    charIndex += skipChars;
-                }
             }
             
             currentY += lineHeight;
@@ -325,9 +304,9 @@ function createWhitespaceMarker(type, x, y, width, height) {
         // マーカータイプ別のスタイル
         switch (type) {
             case 'fullwidth-space':
-                // 全角スペース: 対角線入りの四角
+                // 全角スペース: 対角線入りの四角（設定色使用）
                 marker.style.backgroundColor = 'transparent';
-                marker.style.border = '1px solid rgba(100, 150, 255, 0.6)';
+                marker.style.border = `1px solid ${whitespaceVisualization.colors.fullWidthSpace}`;
                 
                 // SVGで対角線を描画
                 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -346,7 +325,7 @@ function createWhitespaceMarker(type, x, y, width, height) {
                 line1.setAttribute('y1', '1');
                 line1.setAttribute('x2', (Math.round(width) - 1).toString());
                 line1.setAttribute('y2', (Math.round(height) - 1).toString());
-                line1.setAttribute('stroke', 'rgba(100, 150, 255, 0.7)');
+                line1.setAttribute('stroke', whitespaceVisualization.colors.fullWidthSpace);
                 line1.setAttribute('stroke-width', '1');
                 
                 const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -354,7 +333,7 @@ function createWhitespaceMarker(type, x, y, width, height) {
                 line2.setAttribute('y1', '1');
                 line2.setAttribute('x2', '1');
                 line2.setAttribute('y2', (Math.round(height) - 1).toString());
-                line2.setAttribute('stroke', 'rgba(100, 150, 255, 0.7)');
+                line2.setAttribute('stroke', whitespaceVisualization.colors.fullWidthSpace);
                 line2.setAttribute('stroke-width', '1');
                 
                 svg.appendChild(line1);
@@ -362,36 +341,42 @@ function createWhitespaceMarker(type, x, y, width, height) {
                 marker.appendChild(svg);
                 break;
                 
-            case 'halfwidth-space':
-                // 半角スペース: 四角で囲んだ点
-                marker.style.backgroundColor = 'transparent';
-                marker.style.border = '1px solid rgba(128, 128, 128, 0.5)';
-                
-                // 中央の点
-                const halfwidthDot = document.createElement('div');
-                halfwidthDot.style.cssText = `
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    width: 2px;
-                    height: 2px;
-                    background-color: rgba(128, 128, 128, 0.8);
-                    transform: translate(-50%, -50%);
-                `;
-                marker.appendChild(halfwidthDot);
-                break;
+                case 'halfwidth-space':
+                    // 半角スペース: 四角で囲んだ点（設定色使用）
+                    marker.style.backgroundColor = 'transparent';
+                    marker.style.border = `1px solid ${whitespaceVisualization.colors.halfWidthSpace}`;
+                    marker.style.boxSizing = 'border-box';
+                    
+                    // 中央の点
+                    const halfwidthDot = document.createElement('div');
+                    halfwidthDot.style.cssText = `
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        width: 3px;
+                        height: 3px;
+                        background-color: ${whitespaceVisualization.colors.halfWidthSpace};
+                        border-radius: 1px;
+                        transform: translate(-50%, -50%);
+                    `;
+                    marker.appendChild(halfwidthDot);
+                    break;
                 
             case 'tab':
-                // タブ文字: 矢印マーク（現在の形式維持）
-                marker.style.backgroundColor = 'rgba(255, 165, 0, 0.1)';
-                marker.style.borderBottom = '1px solid rgba(255, 165, 0, 0.5)';
+                // タブ文字: 矢印マーク（設定色使用）
+                const tabColor = whitespaceVisualization.colors.tab;
+                const tabColorAlpha = tabColor + '1A'; // 10%透明度
+                const tabColorBorder = tabColor + '80'; // 50%透明度
+                
+                marker.style.backgroundColor = tabColorAlpha;
+                marker.style.borderBottom = `1px solid ${tabColorBorder}`;
                 
                 const tabArrow = document.createElement('div');
                 tabArrow.style.cssText = `
                     position: absolute;
                     top: 50%;
                     left: 2px;
-                    color: rgba(255, 165, 0, 0.7);
+                    color: ${tabColor};
                     font-size: ${Math.max(10, Math.round(height * 0.6))}px;
                     line-height: 1;
                     transform: translateY(-50%);
@@ -491,23 +476,40 @@ function createWhitespaceVisualizationDialog() {
                     </label>
                 </div>
                 
-                <div class="whitespace-type-settings">
-                    <h4 style="margin: 16px 0 12px 0; color: #cccccc;">${t('whitespace.typeSettings')}</h4>
+                <div class="whitespace-color-settings">
+                    <h4 style="margin: 16px 0 12px 0; color: #cccccc;">色設定 / Color Settings</h4>
                     
-                    <label class="search-checkbox-label">
-                        <input type="checkbox" id="ws-fullwidth-checkbox" ${whitespaceVisualization.showFullWidthSpace ? 'checked' : ''}>
-                        ${t('whitespace.fullWidthSpace')}
-                    </label>
-                    
-                    <label class="search-checkbox-label">
-                        <input type="checkbox" id="ws-halfwidth-checkbox" ${whitespaceVisualization.showHalfWidthSpace ? 'checked' : ''}>
-                        ${t('whitespace.halfWidthSpace')}
-                    </label>
-                    
-                    <label class="search-checkbox-label">
-                        <input type="checkbox" id="ws-tab-checkbox" ${whitespaceVisualization.showTab ? 'checked' : ''}>
-                        ${t('whitespace.tabCharacter')}
-                    </label>
+                    <div class="color-setting-group">
+                        <div class="color-setting-row">
+                            <label style="display: inline-block; width: 100px;">全角スペース:</label>
+                            <input type="color" id="ws-fullwidth-color" value="${whitespaceVisualization.colors.fullWidthSpace}">
+                            <div class="rgb-inputs">
+                                <span>R:</span><input type="number" id="ws-fullwidth-r" min="0" max="255" class="rgb-input">
+                                <span>G:</span><input type="number" id="ws-fullwidth-g" min="0" max="255" class="rgb-input">
+                                <span>B:</span><input type="number" id="ws-fullwidth-b" min="0" max="255" class="rgb-input">
+                            </div>
+                        </div>
+                        
+                        <div class="color-setting-row">
+                            <label style="display: inline-block; width: 100px;">半角スペース:</label>
+                            <input type="color" id="ws-halfwidth-color" value="${whitespaceVisualization.colors.halfWidthSpace}">
+                            <div class="rgb-inputs">
+                                <span>R:</span><input type="number" id="ws-halfwidth-r" min="0" max="255" class="rgb-input">
+                                <span>G:</span><input type="number" id="ws-halfwidth-g" min="0" max="255" class="rgb-input">
+                                <span>B:</span><input type="number" id="ws-halfwidth-b" min="0" max="255" class="rgb-input">
+                            </div>
+                        </div>
+                        
+                        <div class="color-setting-row">
+                            <label style="display: inline-block; width: 100px;">タブ:</label>
+                            <input type="color" id="ws-tab-color" value="${whitespaceVisualization.colors.tab}">
+                            <div class="rgb-inputs">
+                                <span>R:</span><input type="number" id="ws-tab-r" min="0" max="255" class="rgb-input">
+                                <span>G:</span><input type="number" id="ws-tab-g" min="0" max="255" class="rgb-input">
+                                <span>B:</span><input type="number" id="ws-tab-b" min="0" max="255" class="rgb-input">
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="whitespace-preview-section">
@@ -553,8 +555,83 @@ function setupWhitespaceVisualizationDialogEvents(dialogOverlay) {
     const applyBtn = document.getElementById('whitespace-apply-btn');
     const cancelBtn = document.getElementById('whitespace-cancel-btn');
     
+    // 色設定要素を取得
+    const fullwidthColorPicker = document.getElementById('ws-fullwidth-color');
+    const halfwidthColorPicker = document.getElementById('ws-halfwidth-color');
+    const tabColorPicker = document.getElementById('ws-tab-color');
+    
+    // RGB入力要素を取得
+    const fullwidthRGB = {
+        r: document.getElementById('ws-fullwidth-r'),
+        g: document.getElementById('ws-fullwidth-g'),
+        b: document.getElementById('ws-fullwidth-b')
+    };
+    const halfwidthRGB = {
+        r: document.getElementById('ws-halfwidth-r'),
+        g: document.getElementById('ws-halfwidth-g'),
+        b: document.getElementById('ws-halfwidth-b')
+    };
+    const tabRGB = {
+        r: document.getElementById('ws-tab-r'),
+        g: document.getElementById('ws-tab-g'),
+        b: document.getElementById('ws-tab-b')
+    };
+    
     // 一時的な設定を保存（キャンセル時の復元用）
     const originalSettings = { ...whitespaceVisualization };
+    
+    // 色とRGB入力の初期化と連動設定
+    function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : null;
+    }
+    
+    function rgbToHex(r, g, b) {
+        return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    }
+    
+    function setupColorSync(colorPicker, rgbInputs) {
+        // 初期値設定
+        const initialRgb = hexToRgb(colorPicker.value);
+        if (initialRgb) {
+            rgbInputs.r.value = initialRgb.r;
+            rgbInputs.g.value = initialRgb.g;
+            rgbInputs.b.value = initialRgb.b;
+        }
+        
+        // カラーピッカーからRGB入力へ
+        colorPicker.addEventListener('input', () => {
+            const rgb = hexToRgb(colorPicker.value);
+            if (rgb) {
+                rgbInputs.r.value = rgb.r;
+                rgbInputs.g.value = rgb.g;
+                rgbInputs.b.value = rgb.b;
+            }
+        });
+        
+        // RGB入力からカラーピッカーへ
+        [rgbInputs.r, rgbInputs.g, rgbInputs.b].forEach(input => {
+            input.addEventListener('input', () => {
+                const r = parseInt(rgbInputs.r.value) || 0;
+                const g = parseInt(rgbInputs.g.value) || 0;
+                const b = parseInt(rgbInputs.b.value) || 0;
+                colorPicker.value = rgbToHex(
+                    Math.max(0, Math.min(255, r)),
+                    Math.max(0, Math.min(255, g)),
+                    Math.max(0, Math.min(255, b))
+                );
+            });
+        });
+    }
+    
+    // 各色設定の連動を設定
+    setupColorSync(fullwidthColorPicker, fullwidthRGB);
+    setupColorSync(halfwidthColorPicker, halfwidthRGB);
+    setupColorSync(tabColorPicker, tabRGB);
     
     // 有効/無効チェックボックスの変更
     enableCheckbox.addEventListener('change', () => {
@@ -579,7 +656,12 @@ function setupWhitespaceVisualizationDialogEvents(dialogOverlay) {
             enabled: enableCheckbox.checked,
             showFullWidthSpace: fullwidthCheckbox.checked,
             showHalfWidthSpace: halfwidthCheckbox.checked,
-            showTab: tabCheckbox.checked
+            showTab: tabCheckbox.checked,
+            colors: {
+                fullWidthSpace: fullwidthColorPicker.value,
+                halfWidthSpace: halfwidthColorPicker.value,
+                tab: tabColorPicker.value
+            }
         };
         
         setWhitespaceVisualization(newSettings);

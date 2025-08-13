@@ -214,7 +214,7 @@ export async function handleKeydown(e) {
 function handleTab(start, end, value) {
     console.log('Inserting tab character');
     
-    // タブ文字を挿入
+    // 実際のタブ文字を挿入
     const tabCharacter = '\t';
     const newValue = value.substring(0, start) + tabCharacter + value.substring(end);
     

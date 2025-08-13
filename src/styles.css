@@ -1476,3 +1476,79 @@ body, html {
       padding: 4px 8px;
   }
 }
+
+/* 色設定用スタイル */
+.whitespace-color-settings {
+  margin: 16px 0;
+  padding: 12px;
+  background-color: rgba(55, 55, 61, 0.3);
+  border-radius: 4px;
+  border-left: 3px solid #007acc;
+}
+
+.color-setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.color-setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.color-setting-row > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.color-setting-row label {
+  color: #cccccc;
+  font-size: 14px;
+}
+
+.color-setting-row input[type="color"] {
+  width: 40px;
+  height: 25px;
+  border: 1px solid #3e3e40;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.rgb-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.rgb-inputs span {
+  color: #cccccc;
+  font-size: 12px;
+  min-width: 15px;
+}
+
+.rgb-input {
+  width: 50px;
+  padding: 4px 6px;
+  border: 1px solid #3e3e40;
+  border-radius: 3px;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 12px;
+  text-align: center;
+}
+
+.rgb-input:focus {
+  outline: none;
+  border-color: #007acc;
+  box-shadow: 0 0 0 1px rgba(0, 122, 204, 0.3);
+}

@@ -119,7 +119,12 @@ export let whitespaceVisualization = {
     enabled: false,
     showFullWidthSpace: true,   // 全角スペース
     showHalfWidthSpace: true,   // 半角スペース  
-    showTab: true               // タブ文字
+    showTab: true,              // タブ文字
+    colors: {
+        fullWidthSpace: '#6496FF',  // 全角スペース色
+        halfWidthSpace: '#808080',  // 半角スペース色
+        tab: '#FFA500'              // タブ色
+    }
 };
 
 // 空白文字可視化設定の更新
