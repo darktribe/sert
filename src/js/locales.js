@@ -52,7 +52,9 @@ const FALLBACK_LANGUAGES = {
             increaseFontSize: 'フォントサイズを大きく',
             decreaseFontSize: 'フォントサイズを小さく',
             lineHighlight: '行ハイライト',
-            typewriterMode: 'タイプライターモード'
+            typewriterMode: 'タイプライターモード',
+            whitespaceVisualization: '空白文字の可視化',
+            whitespaceSettings: '空白文字の設定'
         },
         searchMenu: {
             find: '検索',
@@ -209,7 +211,9 @@ const FALLBACK_LANGUAGES = {
             increaseFontSize: 'Increase Font Size',
             decreaseFontSize: 'Decrease Font Size',
             lineHighlight: 'Line Highlight',
-            typewriterMode: 'Typewriter Mode'
+            typewriterMode: 'Typewriter Mode',
+            whitespaceVisualization: 'Whitespace Visualization',
+            whitespaceSettings: 'Whitespace Settings'
         },
         searchMenu: {
             find: 'Find',
@@ -365,7 +369,9 @@ const FALLBACK_LANGUAGES = {
             increaseFontSize: 'Augmenter la taille de police',
             decreaseFontSize: 'Diminuer la taille de police',
             lineHighlight: 'Surbrillance de ligne',
-            typewriterMode: 'Mode machine à écrire'
+            typewriterMode: 'Mode machine à écrire',
+            whitespaceVisualization: 'Visualisation des espaces',
+            whitespaceSettings: 'Paramètres des espaces'
         },
         searchMenu: {
             find: 'Rechercher',
@@ -938,11 +944,14 @@ export async function tryExternalFileSystem() {
  */
 async function createLanguageFiles() {
     if (!window.__TAURI__?.fs || !localesDirectory) {
+        console.warn('⚠️ Cannot create language files: Tauri FS or directory not available');
         return;
     }
     
     const { exists, writeTextFile } = window.__TAURI__.fs;
     const { join } = window.__TAURI__.path;
+    
+    console.log('📝 Creating language files in:', localesDirectory);
     
     for (const [langCode, langData] of Object.entries(FALLBACK_LANGUAGES)) {
         try {
@@ -950,13 +959,18 @@ async function createLanguageFiles() {
             const fileExists = await exists(filePath);
             
             if (!fileExists) {
-                console.log(`📝 Creating language file: ${langCode}.json`);
+                console.log(`📝 Creating language file: ${langCode}.json at ${filePath}`);
                 await writeTextFile(filePath, JSON.stringify(langData, null, 2));
+                console.log(`✅ Created ${langCode}.json successfully`);
+            } else {
+                console.log(`📄 Language file already exists: ${langCode}.json`);
             }
         } catch (error) {
             console.error(`❌ Failed to create ${langCode}.json:`, error);
         }
     }
+    
+    console.log('✅ Language file creation process completed');
 }
 
 /**

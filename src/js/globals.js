@@ -121,9 +121,9 @@ export let whitespaceVisualization = {
     showHalfWidthSpace: true,   // 半角スペース  
     showTab: true,              // タブ文字
     colors: {
-        fullWidthSpace: '#6496FF',  // 全角スペース色
-        halfWidthSpace: '#808080',  // 半角スペース色
-        tab: '#FFA500'              // タブ色
+        fullWidthSpace: '#FFA500',  // 全角スペース色（オレンジ）
+        halfWidthSpace: '#FFA500',  // 半角スペース色（オレンジ）
+        tab: '#FFA500'              // タブ色（オレンジ）
     }
 };
 

@@ -220,31 +220,41 @@ function performWhitespaceMarkersUpdate() {
             let currentX = paddingLeft + lineNumbersWidth - scrollLeft;
             
             // 行内の各文字を処理（Tab幅を正しく計算）
-let linePosition = 0; // 行内の文字位置（タブストップ計算用）
-// 行内の各文字を処理（Tab幅は常に4文字分固定）
-for (let charIndex = 0; charIndex < line.length; charIndex++) {
-    const char = line[charIndex];
-    
-    // 空白文字の種類を判定
-    let markerType = null;
-    let charWidth = 0;
-    
-    if (char === '\u3000' && whitespaceVisualization.showFullWidthSpace) {
-        // 全角スペース
-        markerType = 'fullwidth-space';
-        charWidth = context.measureText('\u3000').width;
-    } else if (char === ' ' && whitespaceVisualization.showHalfWidthSpace) {
-        // 半角スペース
-        markerType = 'halfwidth-space';
-        charWidth = spaceWidth;
-    } else if (char === '\t' && whitespaceVisualization.showTab) {
-        // タブ文字 - 常に固定幅4文字分
-        markerType = 'tab';
-        charWidth = spaceWidth * 4; // 常に4文字分の固定幅
-    } else {
-        // 通常の文字
-        charWidth = context.measureText(char).width;
-    }
+            let linePosition = 0; // 行内の文字位置（タブストップ計算用）
+            // 行内の各文字を処理（タブストップを正しく計算）
+        let columnPosition = 0; // 現在の列位置（タブストップ計算用）
+        
+        for (let charIndex = 0; charIndex < line.length; charIndex++) {
+            const char = line[charIndex];
+            
+            // 空白文字の種類を判定
+            let markerType = null;
+            let charWidth = 0;
+            
+            if (char === '\u3000' && whitespaceVisualization.showFullWidthSpace) {
+                // 全角スペース
+                markerType = 'fullwidth-space';
+                charWidth = context.measureText('\u3000').width;
+                columnPosition += 2; // 全角は2列分
+            } else if (char === ' ' && whitespaceVisualization.showHalfWidthSpace) {
+                // 半角スペース
+                markerType = 'halfwidth-space';
+                charWidth = spaceWidth;
+                columnPosition += 1;
+            } else if (char === '\t' && whitespaceVisualization.showTab) {
+                // タブ文字 - 次のタブストップまでの幅を計算
+                markerType = 'tab';
+                const tabSize = 4;
+                const spacesToNextTabStop = tabSize - (columnPosition % tabSize);
+                charWidth = spaceWidth * spacesToNextTabStop;
+                columnPosition += spacesToNextTabStop;
+            } else {
+                // 通常の文字
+                charWidth = context.measureText(char).width;
+                // 文字幅から列数を推定（半角は1、全角は2）
+                const charColumns = char.charCodeAt(0) < 256 ? 1 : 2;
+                columnPosition += charColumns;
+            }
                 
                 if (char === '\u3000' && whitespaceVisualization.showFullWidthSpace) {
                     // 全角スペース
