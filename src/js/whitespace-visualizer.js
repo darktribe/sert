@@ -219,13 +219,38 @@ function performWhitespaceMarkersUpdate() {
             const line = lines[lineIndex];
             let currentX = paddingLeft + lineNumbersWidth - scrollLeft;
             
-            // 行内の各文字を処理（Tab幅固定対応）
-            for (let charIndex = 0; charIndex < line.length; charIndex++) {
-                const char = line[charIndex];
-                
-                // 空白文字の種類を判定
-                let markerType = null;
-                let charWidth = 0;
+            // 行内の各文字を処理（Tab幅を正しく計算）
+let linePosition = 0; // 行内の文字位置（タブストップ計算用）
+for (let charIndex = 0; charIndex < line.length; charIndex++) {
+    const char = line[charIndex];
+    
+    // 空白文字の種類を判定
+    let markerType = null;
+    let charWidth = 0;
+    
+    if (char === '\u3000' && whitespaceVisualization.showFullWidthSpace) {
+        // 全角スペース
+        markerType = 'fullwidth-space';
+        charWidth = context.measureText('\u3000').width;
+        linePosition += 2; // 全角は2文字分
+    } else if (char === ' ' && whitespaceVisualization.showHalfWidthSpace) {
+        // 半角スペース
+        markerType = 'halfwidth-space';
+        charWidth = spaceWidth;
+        linePosition += 1;
+    } else if (char === '\t' && whitespaceVisualization.showTab) {
+        // タブ文字 - 次のタブストップ（4の倍数）まで進む
+        markerType = 'tab';
+        const tabStop = 4;
+        const spacesToNextTabStop = tabStop - (linePosition % tabStop);
+        charWidth = spaceWidth * spacesToNextTabStop;
+        linePosition += spacesToNextTabStop;
+    } else {
+        // 通常の文字
+        charWidth = context.measureText(char).width;
+        // ASCII文字は1、それ以外（日本語等）は2文字分として計算
+        linePosition += (char.charCodeAt(0) < 256) ? 1 : 2;
+    }
                 
                 if (char === '\u3000' && whitespaceVisualization.showFullWidthSpace) {
                     // 全角スペース
@@ -342,21 +367,22 @@ function createWhitespaceMarker(type, x, y, width, height) {
                 break;
                 
                 case 'halfwidth-space':
-                    // 半角スペース: 四角で囲んだ点（設定色使用）
+                    // 半角スペース: 薄い枠と中央の点
                     marker.style.backgroundColor = 'transparent';
-                    marker.style.border = `1px solid ${whitespaceVisualization.colors.halfWidthSpace}`;
+                    marker.style.border = `1px solid ${whitespaceVisualization.colors.halfWidthSpace}40`; // 25%透明度
                     marker.style.boxSizing = 'border-box';
-                    
-                    // 中央の点
+                    marker.style.opacity = '0.6';
+    
+                // 中央の点
                     const halfwidthDot = document.createElement('div');
                     halfwidthDot.style.cssText = `
                         position: absolute;
                         top: 50%;
                         left: 50%;
-                        width: 3px;
-                        height: 3px;
+                        width: 2px;
+                        height: 2px;
                         background-color: ${whitespaceVisualization.colors.halfWidthSpace};
-                        border-radius: 1px;
+                        border-radius: 50%;
                         transform: translate(-50%, -50%);
                     `;
                     marker.appendChild(halfwidthDot);
@@ -481,8 +507,10 @@ function createWhitespaceVisualizationDialog() {
                     
                     <div class="color-setting-group">
                         <div class="color-setting-row">
-                            <label style="display: inline-block; width: 100px;">全角スペース:</label>
-                            <input type="color" id="ws-fullwidth-color" value="${whitespaceVisualization.colors.fullWidthSpace}">
+                            <div>
+                                <label style="display: inline-block; width: 100px;">全角スペース:</label>
+                                <input type="color" id="ws-fullwidth-color" value="${whitespaceVisualization.colors.fullWidthSpace}">
+                            </div>
                             <div class="rgb-inputs">
                                 <span>R:</span><input type="number" id="ws-fullwidth-r" min="0" max="255" class="rgb-input">
                                 <span>G:</span><input type="number" id="ws-fullwidth-g" min="0" max="255" class="rgb-input">
@@ -491,8 +519,10 @@ function createWhitespaceVisualizationDialog() {
                         </div>
                         
                         <div class="color-setting-row">
-                            <label style="display: inline-block; width: 100px;">半角スペース:</label>
-                            <input type="color" id="ws-halfwidth-color" value="${whitespaceVisualization.colors.halfWidthSpace}">
+                            <div>
+                                <label style="display: inline-block; width: 100px;">半角スペース:</label>
+                                <input type="color" id="ws-halfwidth-color" value="${whitespaceVisualization.colors.halfWidthSpace}">
+                            </div>
                             <div class="rgb-inputs">
                                 <span>R:</span><input type="number" id="ws-halfwidth-r" min="0" max="255" class="rgb-input">
                                 <span>G:</span><input type="number" id="ws-halfwidth-g" min="0" max="255" class="rgb-input">
@@ -501,8 +531,10 @@ function createWhitespaceVisualizationDialog() {
                         </div>
                         
                         <div class="color-setting-row">
-                            <label style="display: inline-block; width: 100px;">タブ:</label>
-                            <input type="color" id="ws-tab-color" value="${whitespaceVisualization.colors.tab}">
+                            <div>
+                                <label style="display: inline-block; width: 100px;">タブ:</label>
+                                <input type="color" id="ws-tab-color" value="${whitespaceVisualization.colors.tab}">
+                            </div>
                             <div class="rgb-inputs">
                                 <span>R:</span><input type="number" id="ws-tab-r" min="0" max="255" class="rgb-input">
                                 <span>G:</span><input type="number" id="ws-tab-g" min="0" max="255" class="rgb-input">
@@ -549,9 +581,6 @@ function example() {
  */
 function setupWhitespaceVisualizationDialogEvents(dialogOverlay) {
     const enableCheckbox = document.getElementById('ws-enable-checkbox');
-    const fullwidthCheckbox = document.getElementById('ws-fullwidth-checkbox');
-    const halfwidthCheckbox = document.getElementById('ws-halfwidth-checkbox');
-    const tabCheckbox = document.getElementById('ws-tab-checkbox');
     const applyBtn = document.getElementById('whitespace-apply-btn');
     const cancelBtn = document.getElementById('whitespace-cancel-btn');
     
@@ -578,7 +607,10 @@ function setupWhitespaceVisualizationDialogEvents(dialogOverlay) {
     };
     
     // 一時的な設定を保存（キャンセル時の復元用）
-    const originalSettings = { ...whitespaceVisualization };
+    const originalSettings = { 
+        ...whitespaceVisualization,
+        colors: { ...whitespaceVisualization.colors }
+    };
     
     // 色とRGB入力の初期化と連動設定
     function hexToRgb(hex) {
@@ -633,30 +665,13 @@ function setupWhitespaceVisualizationDialogEvents(dialogOverlay) {
     setupColorSync(halfwidthColorPicker, halfwidthRGB);
     setupColorSync(tabColorPicker, tabRGB);
     
-    // 有効/無効チェックボックスの変更
-    enableCheckbox.addEventListener('change', () => {
-        const enabled = enableCheckbox.checked;
-        fullwidthCheckbox.disabled = !enabled;
-        halfwidthCheckbox.disabled = !enabled;
-        tabCheckbox.disabled = !enabled;
-        
-        // 見た目の更新
-        const typeSettings = document.querySelector('.whitespace-type-settings');
-        if (typeSettings) {
-            typeSettings.style.opacity = enabled ? '1' : '0.5';
-        }
-    });
-    
-    // 初期状態の設定
-    enableCheckbox.dispatchEvent(new Event('change'));
-    
     // 適用ボタン
     applyBtn.addEventListener('click', () => {
         const newSettings = {
             enabled: enableCheckbox.checked,
-            showFullWidthSpace: fullwidthCheckbox.checked,
-            showHalfWidthSpace: halfwidthCheckbox.checked,
-            showTab: tabCheckbox.checked,
+            showFullWidthSpace: true,   // 常に有効
+            showHalfWidthSpace: true,   // 常に有効  
+            showTab: true,              // 常に有効
             colors: {
                 fullWidthSpace: fullwidthColorPicker.value,
                 halfWidthSpace: halfwidthColorPicker.value,
