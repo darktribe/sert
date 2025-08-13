@@ -67,13 +67,6 @@
     "messageTitle": "Message",
     "ok": "OK"
   },
-  "whitespace": {
-    "enable": "Enable whitespace visualization",
-    "typeSettings": "Types of whitespace to display", 
-    "fullWidthSpace": "Full-width space (　) - shown in light blue",
-    "halfWidthSpace": "Half-width space ( ) - shown as gray dot",
-    "tabCharacter": "Tab character (→) - shown as orange arrow"
-  },
   "about": {
     "title": "About Vinsert",
     "appName": "Vinsert",
@@ -167,5 +160,12 @@
       "exitWithoutSaving": "Exit Without Saving",
       "cancel": "Cancel"
     }
+  },
+  "whitespace": {
+    "enable": "Enable whitespace visualization",
+    "typeSettings": "Types of whitespace to display",
+    "fullWidthSpace": "Full-width space (　) - shown in light blue",
+    "halfWidthSpace": "Half-width space ( ) - shown as gray dot",
+    "tabCharacter": "Tab character (→) - shown as orange arrow"
   }
 }

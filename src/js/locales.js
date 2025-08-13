@@ -156,6 +156,13 @@ const FALLBACK_LANGUAGES = {
             version: 'Version 1.00',
             author: 'Author : Akihiko Ouchi a.k.a 如月 翔也（from 歳月堂）'
         },
+        whitespace: {
+            enable: '空白文字の可視化を有効にする',
+            typeSettings: '表示する空白文字の種類',
+            fullWidthSpace: '全角スペース（　）- 薄い青で表示',
+            halfWidthSpace: '半角スペース（ ）- グレーのドットで表示',
+            tabCharacter: 'タブ文字（→）- オレンジの矢印で表示'
+        },
         dialogs: {
             newFile: {
                 title: '内容に変更があります',
@@ -250,6 +257,13 @@ const FALLBACK_LANGUAGES = {
             description: 'Vinsert Is New Simple Editor by Rust and Tauri',
             version: 'Version 1.00',
             author: 'Author : Akihiko Ouchi a.k.a show-ya kisaragi（from saigetsudo）'
+        },
+        whitespace: {
+            enable: 'Enable whitespace visualization',
+            typeSettings: 'Types of whitespace to display',
+            fullWidthSpace: 'Full-width space (　) - shown in light blue',
+            halfWidthSpace: 'Half-width space ( ) - shown as gray dot',
+            tabCharacter: 'Tab character (→) - shown as orange arrow'
         },
         fonts: {
             title: 'Font Settings',
@@ -494,7 +508,14 @@ const FALLBACK_LANGUAGES = {
             description: 'Vinsert Is New Simple Editor by Rust and Tauri',
             version: 'Version 1.00',
             author: 'Author : Akihiko Ouchi a.k.a show-ya kisaragi（from saigetsudo）'
-      }
+        },
+        whitespace: {
+            enable: 'Activer la visualisation des espaces',
+            typeSettings: 'Types d\'espaces à afficher',
+            fullWidthSpace: 'Espace pleine largeur (　) - affiché en bleu clair',
+            halfWidthSpace: 'Espace demi-largeur ( ) - affiché comme point gris',
+            tabCharacter: 'Caractère de tabulation (→) - affiché comme flèche orange'
+        },
     }
 };
 

@@ -167,5 +167,12 @@
     "version": "Version 1.00",
     "author": "Author : Akihiko Ouchi a.k.a show-ya kisaragi（from saigetsudo）",
     "supportUrl": "Support URL : https://saigetsudo.com/product/vinsert"
+  },
+  "whitespace": {
+    "enable": "Activer la visualisation des espaces",
+    "typeSettings": "Types d'espaces à afficher",
+    "fullWidthSpace": "Espace pleine largeur (　) - affiché en bleu clair",
+    "halfWidthSpace": "Espace demi-largeur ( ) - affiché comme point gris",
+    "tabCharacter": "Caractère de tabulation (→) - affiché comme flèche orange"
   }
 }

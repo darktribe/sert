@@ -145,9 +145,7 @@ export function updateWhitespaceMarkers() {
     });
 }
 
-/**
- * 実際のマーカー更新処理
- */
+
 /**
  * 実際のマーカー更新処理（タイプライターモード対応版）
  */
@@ -169,7 +167,7 @@ function performWhitespaceMarkersUpdate() {
         let paddingTop = parseFloat(computedStyle.paddingTop);
         
         // タイプライターモードの検出とpadding調整
-        const isTypewriterMode = paddingTop > 20; // 通常は10px、タイプライターモードでは画面の半分
+        const isTypewriterMode = paddingTop > 20;
         if (isTypewriterMode) {
             console.log('👁️ Typewriter mode detected, adjusting calculations');
         }
@@ -185,32 +183,31 @@ function performWhitespaceMarkersUpdate() {
         
         // 文字幅の計算
         const spaceWidth = context.measureText(' ').width;
-        const tabWidth = spaceWidth * 4; // タブは4スペース分
+        const tabStopWidth = spaceWidth * 4; // タブストップは4文字ごと
         
         // スクロール位置を取得
         const scrollTop = editor.scrollTop;
         const scrollLeft = editor.scrollLeft;
         
-        // 表示可能範囲を計算（タイプライターモード考慮）
+        // 表示可能範囲を計算
         const editorHeight = editor.clientHeight;
         const effectiveTop = isTypewriterMode ? scrollTop - paddingTop + 20 : scrollTop;
         const effectiveHeight = editorHeight + (isTypewriterMode ? paddingTop * 2 : 0);
         
-        // 安全な表示範囲を大きめに取る
         const visibleStartLine = Math.max(0, Math.floor(effectiveTop / lineHeight) - 5);
         const visibleEndLine = Math.min(
             content.split('\n').length, 
             Math.ceil((effectiveTop + effectiveHeight) / lineHeight) + 5
         );
         
-        console.log(`👁️ Visible range: ${visibleStartLine} to ${visibleEndLine}, scrollTop: ${scrollTop}, isTypewriter: ${isTypewriterMode}`);
+        console.log(`👁️ Visible range: ${visibleStartLine} to ${visibleEndLine}, scrollTop: ${scrollTop}`);
         
         // 行ごとに処理
         const lines = content.split('\n');
-        let currentY = paddingTop; // 実際のpadding値を使用
+        let currentY = paddingTop;
         
         for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-            // 表示範囲の判定をより緩く
+            // 表示範囲の判定
             if (lineIndex < visibleStartLine - 2 || lineIndex > visibleEndLine + 2) {
                 currentY += lineHeight;
                 continue;
@@ -218,64 +215,60 @@ function performWhitespaceMarkersUpdate() {
             
             const line = lines[lineIndex];
             let currentX = paddingLeft + lineNumbersWidth - scrollLeft;
+            let columnPosition = 0; // 現在の列位置（0ベース）
             
-            // 行内の各文字を処理（Tab幅を正しく計算）
-            let linePosition = 0; // 行内の文字位置（タブストップ計算用）
-            // 行内の各文字を処理（タブストップを正しく計算）
-        let columnPosition = 0; // 現在の列位置（タブストップ計算用）
-        
-        for (let charIndex = 0; charIndex < line.length; charIndex++) {
-            const char = line[charIndex];
-            
-            // 空白文字の種類を判定
-            let markerType = null;
-            let charWidth = 0;
-            
-            if (char === '\u3000' && whitespaceVisualization.showFullWidthSpace) {
-                // 全角スペース
-                markerType = 'fullwidth-space';
-                charWidth = context.measureText('\u3000').width;
-                columnPosition += 2; // 全角は2列分
-            } else if (char === ' ' && whitespaceVisualization.showHalfWidthSpace) {
-                // 半角スペース
-                markerType = 'halfwidth-space';
-                charWidth = spaceWidth;
-                columnPosition += 1;
-            } else if (char === '\t' && whitespaceVisualization.showTab) {
-                // タブ文字 - 次のタブストップまでの幅を計算
-                markerType = 'tab';
-                const tabSize = 4;
-                const spacesToNextTabStop = tabSize - (columnPosition % tabSize);
-                charWidth = spaceWidth * spacesToNextTabStop;
-                columnPosition += spacesToNextTabStop;
-            } else {
-                // 通常の文字
-                charWidth = context.measureText(char).width;
-                // 文字幅から列数を推定（半角は1、全角は2）
-                const charColumns = char.charCodeAt(0) < 256 ? 1 : 2;
-                columnPosition += charColumns;
-            }
+            // 行内の各文字を処理
+            for (let charIndex = 0; charIndex < line.length; charIndex++) {
+                const char = line[charIndex];
+                
+                // 空白文字の種類を判定
+                let markerType = null;
+                let charWidth = 0;
+                let displayWidth = 0; // 実際の表示幅
                 
                 if (char === '\u3000' && whitespaceVisualization.showFullWidthSpace) {
                     // 全角スペース
                     markerType = 'fullwidth-space';
-                    charWidth = context.measureText('\u3000').width;
+                    displayWidth = context.measureText('\u3000').width;
+                    charWidth = displayWidth;
+                    columnPosition += 2; // 全角は2列
                 } else if (char === ' ' && whitespaceVisualization.showHalfWidthSpace) {
                     // 半角スペース
                     markerType = 'halfwidth-space';
-                    charWidth = spaceWidth;
+                    displayWidth = spaceWidth;
+                    charWidth = displayWidth;
+                    columnPosition += 1;
                 } else if (char === '\t' && whitespaceVisualization.showTab) {
-                    // タブ文字 - 固定幅4文字分
+                    // タブ文字 - 次のタブストップまでの幅を計算
                     markerType = 'tab';
-                    charWidth = spaceWidth * 4; // 固定で4文字分
+                    
+                    // 次のタブストップまでの列数を計算
+                    const nextTabStop = Math.floor((columnPosition + 4) / 4) * 4;
+                    const columnsToNextTabStop = nextTabStop - columnPosition;
+                    
+                    // 実際の表示幅を計算
+                    displayWidth = spaceWidth * columnsToNextTabStop;
+                    charWidth = displayWidth;
+                    
+                    // 列位置を更新
+                    columnPosition = nextTabStop;
+                    
+                    console.log(`Tab at column ${columnPosition - columnsToNextTabStop}: width=${columnsToNextTabStop} columns`);
                 } else {
                     // 通常の文字
-                    charWidth = context.measureText(char).width;
+                    displayWidth = context.measureText(char).width;
+                    charWidth = displayWidth;
+                    
+                    // 文字の列数を推定（ASCII文字は1列、それ以外は2列）
+                    if (char.charCodeAt(0) < 256) {
+                        columnPosition += 1;
+                    } else {
+                        columnPosition += 2;
+                    }
                 }
                 
-                // マーカーを作成（スクロール位置とpadding を正しく考慮）
+                // マーカーを作成
                 if (markerType) {
-                    // タイプライターモードでのY座標計算を修正
                     const absoluteY = currentY - scrollTop;
                     
                     // 画面内に表示される範囲のみマーカーを作成
@@ -292,8 +285,6 @@ function performWhitespaceMarkersUpdate() {
     } catch (error) {
         console.error('❌ Error in performWhitespaceMarkersUpdate:', error);
         console.error('Stack trace:', error.stack);
-        
-        // エラー時は全マーカーを削除して状態をクリア
         removeAllMarkers();
     }
 }
