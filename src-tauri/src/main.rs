@@ -3,7 +3,7 @@
 
 /*
  * =====================================================
- * Vinsert Editor - Rustバックエンド
+ * Vinsert Editor - Rustバックエンド (Tauri 2.5対応)
  * Python拡張機能対応のシンプルなテキストエディタ
  * =====================================================
  */
@@ -653,9 +653,6 @@ fn initialize_python() -> PythonType {
 }
 
 /**
- * Python環境の詳細を検出・確認する関数（PyO3 0.22.6完全対応版）
- */
-/**
  * Python環境の詳細を検出・確認する関数（緊急修正版）
  */
 fn detect_python_environment() -> PythonType {
@@ -794,12 +791,12 @@ fn main() {
             open_folder
         ])
         
-        // メニューの設定
+        // メニューの設定（Tauri 2.5対応）
         .menu(|app| {
             create_native_menu(app)
         })
         
-        // メニューイベントハンドラー
+        // メニューイベントハンドラー（Tauri 2.5対応）
         .on_menu_event(|app, event| {
             handle_menu_event(app, event);
         })
@@ -897,9 +894,9 @@ fn main() {
 }
 
 /**
- * ネイティブメニューを作成
+ * ネイティブメニューを作成（Tauri 2.5対応）
  */
-fn create_native_menu(app: &tauri::App) -> Result<tauri::menu::Menu<tauri::Wry>, Box<dyn std::error::Error>> {
+fn create_native_menu(app: &tauri::AppHandle) -> Result<tauri::menu::Menu<tauri::Wry>, tauri::Error> {
     use tauri::menu::*;
     
     // アプリメニュー（macOS固有）
@@ -1112,14 +1109,14 @@ fn create_native_menu(app: &tauri::App) -> Result<tauri::menu::Menu<tauri::Wry>,
 }
 
 /**
- * メニューイベントを処理
+ * メニューイベントを処理（Tauri 2.5対応）
  */
-fn handle_menu_event(app: &tauri::App, event: tauri::menu::MenuEvent) {
-    println!("🍎 Native menu event: {}", event.id());
+fn handle_menu_event(app: &tauri::AppHandle, event: tauri::menu::MenuEvent) {
+    println!("🍎 Native menu event: {:?}", event.id());
     
     // WebViewを取得
     if let Some(webview) = app.webview_windows().get("main") {
-        let script = match event.id().as_str() {
+        let script = match event.id().0.as_str() {
             // ファイルメニュー
             "new_file" => "window.newFile && window.newFile();",
             "open_file" => "window.openFile && window.openFile();",
@@ -1155,7 +1152,7 @@ fn handle_menu_event(app: &tauri::App, event: tauri::menu::MenuEvent) {
             "about" => "window.showAboutDialog && window.showAboutDialog();",
             
             _ => {
-                println!("⚠️ Unhandled menu event: {}", event.id());
+                println!("⚠️ Unhandled menu event: {:?}", event.id());
                 return;
             }
         };
@@ -1164,7 +1161,7 @@ fn handle_menu_event(app: &tauri::App, event: tauri::menu::MenuEvent) {
         if let Err(e) = webview.eval(script) {
             println!("❌ Failed to execute menu script: {}", e);
         } else {
-            println!("✅ Menu script executed: {}", event.id());
+            println!("✅ Menu script executed: {:?}", event.id());
         }
     } else {
         println!("❌ Failed to get main webview for menu event");
