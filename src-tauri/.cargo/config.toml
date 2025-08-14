@@ -1,18 +1,8 @@
-# Windows用のPython設定
-[target.x86_64-pc-windows-msvc.env]
-# システムのPythonを使用
-PYO3_PYTHON = "python"
+[env]
+PYO3_PYTHON = "/opt/homebrew/opt/python@3.11/bin/python3.11"
 
-[target.x86_64-pc-windows-msvc.build]
-# Windows SDKとVC++のライブラリパスは自動検出される
-
-
-# macOS用の設定（参考用、Windows では不要）
-# [target.x86_64-apple-darwin.env]
-# PYO3_PYTHON = "/opt/homebrew/opt/python@3.11/bin/python3.11"
-
-# [target.x86_64-apple-darwin.build]
-# rustflags = [
-#     "-L", "/opt/homebrew/opt/python@3.11/lib",
-#     "-L", "/opt/homebrew/opt/python@3.11/Frameworks/Python.framework/Versions/3.11/lib"
-# ]
+[build]
+rustflags = [
+    "-L", "/opt/homebrew/opt/python@3.11/lib",
+    "-L", "/opt/homebrew/opt/python@3.11/Frameworks/Python.framework/Versions/3.11/lib"
+]

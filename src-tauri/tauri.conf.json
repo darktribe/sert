@@ -1,33 +1,46 @@
 {
+  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
   "productName": "Vinsert",
   "version": "1.0.0",
   "identifier": "com.saigetsudo.vinsert-editor",
   "build": {
     "beforeBuildCommand": "npm run build",
     "beforeDevCommand": "npm run dev",
-    "frontendDist": "../dist"
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420"
   },
   "app": {
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "Vinsert - Simple Editor",
+        "label": "main",
+        "title": "Vinsert Editor",
         "width": 1200,
         "height": 800,
         "resizable": true,
-        "maximized": false,
+        "maximizable": true,
+        "minimizable": true,
+        "closable": true,
         "decorations": true,
         "alwaysOnTop": false,
         "fullscreen": false,
-        "focus": true
+        "skipTaskbar": false,
+        "transparent": false,
+        "visibleOnAllWorkspaces": false,
+        "contentProtected": false,
+        "shadow": true,
+        "focus": true,
+        "center": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost",
+      "capabilities": ["default"]
     }
   },
   "bundle": {
-    "targets": ["msi"],
+    "active": true,
+    "targets": ["app"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -43,15 +56,15 @@
     },
     "category": "DeveloperTool",
     "shortDescription": "Simple Text Editor for Developers",
-    "longDescription": "Vinsert Is a New Simple Editor by Rust and Tauri - and Theme and Extensions and Python included.",
+    "longDescription": "Vinsert is a simple and powerful text editor designed for developers with Python extension support.",
     "windows": {
-      "certificateThumbprint": null,
-      "digestAlgorithm": "sha256", 
-      "timestampUrl": "",
       "wix": {
         "language": "ja-JP"
       }
-    }
+    },
+    "category": "DeveloperTool",
+    "shortDescription": "Simple Text Editor for Developers",
+    "longDescription": "Vinsert Is a New Simple Editor by Rust and Tauri - and Theme and Extensions and Python included."
   },
   "plugins": {
     "fs": {
