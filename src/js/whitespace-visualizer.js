@@ -147,7 +147,7 @@ export function updateWhitespaceMarkers() {
 
 
 /**
- * 実際のマーカー更新処理（タイプライターモード対応版）
+ * 実際のマーカー更新処理（実エディタ測定方式）
  */
 function performWhitespaceMarkersUpdate() {
     // 既存のマーカーをクリア
@@ -176,14 +176,9 @@ function performWhitespaceMarkersUpdate() {
         const lineNumbers = document.getElementById('line-numbers');
         const lineNumbersWidth = lineNumbers ? lineNumbers.offsetWidth : 0;
         
-        // フォントメトリクス計算用のキャンバス
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        context.font = `${fontSize}px ${computedStyle.fontFamily}`;
-        
-        // 文字幅の計算
-        const spaceWidth = context.measureText(' ').width;
-        const tabStopWidth = spaceWidth * 4; // タブストップは4文字ごと
+        // 実エディタでの文字幅測定
+        const realMetrics = measureRealEditorMetrics();
+        console.log('👁️ Real editor metrics:', realMetrics);
         
         // スクロール位置を取得
         const scrollTop = editor.scrollTop;
@@ -215,62 +210,42 @@ function performWhitespaceMarkersUpdate() {
             
             const line = lines[lineIndex];
             let currentX = paddingLeft + lineNumbersWidth - scrollLeft;
-            let columnPosition = 0; // 現在の列位置（0ベース）
             
-            // 行内の各文字を処理（実際の表示幅ベースでのTab処理）
+            // 行内の各文字を処理（実エディタ測定ベース）
             for (let charIndex = 0; charIndex < line.length; charIndex++) {
                 const char = line[charIndex];
                 
                 // 空白文字の種類を判定
                 let markerType = null;
                 let charWidth = 0;
-                let displayWidth = 0; // 実際の表示幅
                 
                 if (char === '\u3000' && whitespaceVisualization.showFullWidthSpace) {
                     // 全角スペース
                     markerType = 'fullwidth-space';
-                    displayWidth = context.measureText('\u3000').width;
-                    charWidth = displayWidth;
-                    columnPosition += 2; // 論理的には半角2文字分
+                    charWidth = realMetrics.fullWidthSpaceWidth;
                 } else if (char === ' ' && whitespaceVisualization.showHalfWidthSpace) {
                     // 半角スペース
                     markerType = 'halfwidth-space';
-                    displayWidth = spaceWidth;
-                    charWidth = displayWidth;
-                    columnPosition += 1;
+                    charWidth = realMetrics.halfWidthSpaceWidth;
                 } else if (char === '\t' && whitespaceVisualization.showTab) {
-                    // タブ文字 - エディタの実際の動作に合わせる
+                    // タブ文字 - 実エディタでの実際のタブ幅を使用
                     markerType = 'tab';
                     
-                    // 現在位置までの実際の表示幅を計算
+                    // 現在位置までの実際の表示幅を正確に計算
                     const textBeforeTab = line.substring(0, charIndex);
-                    const actualWidthBeforeTab = context.measureText(textBeforeTab).width;
+                    const actualWidthBeforeTab = measureRealTextWidth(textBeforeTab, realMetrics);
                     
-                    // 次のタブストップ位置を実際の表示幅で計算
-                    const tabStopWidth = spaceWidth * 4; // 4文字分の幅
+                    // 実エディタのタブストップ計算
+                    const tabStopWidth = realMetrics.tabStopWidth;
                     const nextTabStopWidth = Math.ceil((actualWidthBeforeTab + 1) / tabStopWidth) * tabStopWidth;
-                    const tabWidth = nextTabStopWidth - actualWidthBeforeTab;
+                    const tabWidth = Math.max(realMetrics.halfWidthSpaceWidth, nextTabStopWidth - actualWidthBeforeTab);
                     
-                    // Tab装飾の幅をエディタの実際のTab幅に合わせる
-                    displayWidth = tabWidth;
-                    charWidth = displayWidth;
+                    charWidth = tabWidth;
                     
-                    // 論理的な列位置も更新（4文字ごと）
-                    const nextTabStop = Math.floor((columnPosition + 4) / 4) * 4;
-                    columnPosition = nextTabStop;
-                    
-                    console.log(`Tab: actual width before=${actualWidthBeforeTab}px, tab width=${tabWidth}px, logical position=${columnPosition}`);
+                    console.log(`Tab: actual width before=${actualWidthBeforeTab.toFixed(2)}px, tab width=${tabWidth.toFixed(2)}px, tab stop=${tabStopWidth.toFixed(2)}px`);
                 } else {
                     // 通常の文字
-                    displayWidth = context.measureText(char).width;
-                    charWidth = displayWidth;
-                    
-                    // 論理的な列位置を更新
-                    if (char.charCodeAt(0) < 256) {
-                        columnPosition += 1; // ASCII文字（半角）
-                    } else {
-                        columnPosition += 2; // 非ASCII文字（全角）= 半角2文字分
-                    }
+                    charWidth = measureRealCharWidth(char, realMetrics);
                 }
                 
                 // マーカーを作成
@@ -292,6 +267,267 @@ function performWhitespaceMarkersUpdate() {
         console.error('❌ Error in performWhitespaceMarkersUpdate:', error);
         console.error('Stack trace:', error.stack);
         removeAllMarkers();
+    }
+}
+
+/**
+ * 実エディタでの文字幅測定（DOM実測定方式）
+ */
+function measureRealEditorMetrics() {
+    if (!editor) return null;
+    
+    try {
+        // 測定用の隠し要素を作成
+        const measurer = document.createElement('div');
+        measurer.style.cssText = `
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            visibility: hidden;
+            pointer-events: none;
+            white-space: pre;
+            font-family: ${editor.style.fontFamily || getComputedStyle(editor).fontFamily};
+            font-size: ${editor.style.fontSize || getComputedStyle(editor).fontSize};
+            line-height: ${editor.style.lineHeight || getComputedStyle(editor).lineHeight};
+            font-variant-numeric: ${getComputedStyle(editor).fontVariantNumeric};
+            letter-spacing: ${getComputedStyle(editor).letterSpacing};
+            word-spacing: ${getComputedStyle(editor).wordSpacing};
+            tab-size: ${getComputedStyle(editor).tabSize};
+            -moz-tab-size: ${getComputedStyle(editor).tabSize};
+            -webkit-tab-size: ${getComputedStyle(editor).tabSize};
+            -o-tab-size: ${getComputedStyle(editor).tabSize};
+        `;
+        
+        document.body.appendChild(measurer);
+        
+        // 半角スペース幅を測定
+        measurer.textContent = ' ';
+        const halfWidthSpaceWidth = measurer.offsetWidth;
+        
+        // 全角スペース幅を測定
+        measurer.textContent = '\u3000';
+        const fullWidthSpaceWidth = measurer.offsetWidth;
+        
+        // タブ幅を実測定
+        measurer.textContent = '\t';
+        const singleTabWidth = measurer.offsetWidth;
+        
+        // 複数のタブで確認
+        measurer.textContent = '\t\t';
+        const doubleTabWidth = measurer.offsetWidth;
+        
+        // より正確なタブストップ幅を計算
+        const tabStopWidth = singleTabWidth > 0 ? singleTabWidth : halfWidthSpaceWidth * 4;
+        
+        // ASCII文字の平均幅（参考用）
+        const testChars = ['m', 'i', 'w', 'l', '0', '1', 'A', 'a'];
+        let totalAsciiWidth = 0;
+        for (const char of testChars) {
+            measurer.textContent = char;
+            totalAsciiWidth += measurer.offsetWidth;
+        }
+        const averageAsciiWidth = totalAsciiWidth / testChars.length;
+        
+        // 清掃
+        document.body.removeChild(measurer);
+        
+        const metrics = {
+            halfWidthSpaceWidth,
+            fullWidthSpaceWidth,
+            tabStopWidth,
+            singleTabWidth,
+            doubleTabWidth,
+            averageAsciiWidth,
+            spaceToFullSpaceRatio: halfWidthSpaceWidth / fullWidthSpaceWidth,
+            isRealMeasurement: true
+        };
+        
+        console.log('👁️ Real editor metrics:', metrics);
+        return metrics;
+        
+    } catch (error) {
+        console.error('❌ Real editor metrics measurement error:', error);
+        return null;
+    }
+}
+
+/**
+ * 実エディタでのテキスト幅測定
+ */
+function measureRealTextWidth(text, realMetrics) {
+    if (!text) return 0;
+    
+    // タブを含む場合は特別処理
+    if (text.includes('\t')) {
+        let width = 0;
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            if (char === '\t') {
+                // 実エディタのタブストップまでの距離を計算
+                const nextTabStop = Math.ceil((width + 1) / realMetrics.tabStopWidth) * realMetrics.tabStopWidth;
+                width = nextTabStop;
+            } else {
+                width += measureRealCharWidth(char, realMetrics);
+            }
+        }
+        return width;
+    } else {
+        // タブがない場合は DOM実測定
+        try {
+            const measurer = document.createElement('div');
+            measurer.style.cssText = `
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+                visibility: hidden;
+                pointer-events: none;
+                white-space: pre;
+                font-family: ${editor.style.fontFamily || getComputedStyle(editor).fontFamily};
+                font-size: ${editor.style.fontSize || getComputedStyle(editor).fontSize};
+                line-height: ${editor.style.lineHeight || getComputedStyle(editor).lineHeight};
+                font-variant-numeric: ${getComputedStyle(editor).fontVariantNumeric};
+                letter-spacing: ${getComputedStyle(editor).letterSpacing};
+                word-spacing: ${getComputedStyle(editor).wordSpacing};
+            `;
+            
+            document.body.appendChild(measurer);
+            measurer.textContent = text;
+            const width = measurer.offsetWidth;
+            document.body.removeChild(measurer);
+            
+            return width;
+        } catch (error) {
+            console.warn('⚠️ DOM text measurement failed, using fallback:', error);
+            // フォールバック: 文字数 × 平均幅
+            return text.length * realMetrics.averageAsciiWidth;
+        }
+    }
+}
+
+/**
+ * 実エディタでの個別文字幅測定
+ */
+function measureRealCharWidth(char, realMetrics) {
+    if (char === ' ') {
+        return realMetrics.halfWidthSpaceWidth;
+    } else if (char === '\u3000') {
+        return realMetrics.fullWidthSpaceWidth;
+    } else {
+        // その他の文字はDOM実測定
+        try {
+            const measurer = document.createElement('div');
+            measurer.style.cssText = `
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+                visibility: hidden;
+                pointer-events: none;
+                white-space: pre;
+                font-family: ${editor.style.fontFamily || getComputedStyle(editor).fontFamily};
+                font-size: ${editor.style.fontSize || getComputedStyle(editor).fontSize};
+                line-height: ${editor.style.lineHeight || getComputedStyle(editor).lineHeight};
+                font-variant-numeric: ${getComputedStyle(editor).fontVariantNumeric};
+                letter-spacing: ${getComputedStyle(editor).letterSpacing};
+                word-spacing: ${getComputedStyle(editor).wordSpacing};
+            `;
+            
+            document.body.appendChild(measurer);
+            measurer.textContent = char;
+            const width = measurer.offsetWidth;
+            document.body.removeChild(measurer);
+            
+            return width;
+        } catch (error) {
+            console.warn('⚠️ DOM char measurement failed, using fallback:', error);
+            return realMetrics.averageAsciiWidth;
+        }
+    }
+}
+
+/**
+ * 高精度フォントメトリクス測定
+ */
+function measurePreciseFontMetrics(context) {
+    // 複数の測定方法を組み合わせてより正確な値を取得
+    const measurements = {
+        // 半角スペース幅
+        halfWidthSpaceWidth: context.measureText(' ').width,
+        
+        // 全角スペース幅
+        fullWidthSpaceWidth: context.measureText('\u3000').width,
+        
+        // 基準文字幅（複数文字の平均）
+        averageCharWidth: 0,
+        
+        // タブストップ幅
+        tabStopWidth: 0
+    };
+    
+    // 基準文字幅を計算（ASCII文字の平均）
+    const testChars = ['m', 'i', 'w', 'l', '0', '1', 'A', 'a', 'x', 'M'];
+    let totalWidth = 0;
+    for (const char of testChars) {
+        totalWidth += context.measureText(char).width;
+    }
+    measurements.averageCharWidth = totalWidth / testChars.length;
+    
+    // タブストップ幅を計算（エディタのtab-sizeプロパティに基づく）
+    const tabSize = parseInt(getComputedStyle(editor).tabSize) || 4;
+    measurements.tabStopWidth = measurements.halfWidthSpaceWidth * tabSize;
+    
+    // 日本語フォント特有の調整
+    const fontFamily = getComputedStyle(editor).fontFamily.toLowerCase();
+    if (fontFamily.includes('yu gothic') || 
+        fontFamily.includes('meiryo') || 
+        fontFamily.includes('ms gothic') ||
+        fontFamily.includes('hiragino') ||
+        fontFamily.includes('noto sans cjk')) {
+        
+        // 日本語フォントの場合はタブストップを調整
+        measurements.tabStopWidth = measurements.halfWidthSpaceWidth * Math.max(6, tabSize);
+        console.log('👁️ Japanese font detected, adjusted tab stop width:', measurements.tabStopWidth);
+    }
+    
+    console.log('👁️ Measured font metrics:', measurements);
+    return measurements;
+}
+
+/**
+ * テキストの実際の表示幅を測定
+ */
+function measureTextWidth(context, text, fontMetrics) {
+    if (!text) return 0;
+    
+    // タブを含む場合は特別処理
+    if (text.includes('\t')) {
+        let width = 0;
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            if (char === '\t') {
+                // タブストップまでの距離を計算
+                const nextTabStop = Math.ceil((width + 1) / fontMetrics.tabStopWidth) * fontMetrics.tabStopWidth;
+                width = nextTabStop;
+            } else {
+                width += measureCharacterWidth(context, char, fontMetrics);
+            }
+        }
+        return width;
+    } else {
+        // タブがない場合は通常測定
+        return context.measureText(text).width;
+    }
+}
+
+/**
+ * 個別文字の幅を測定
+ */
+function measureCharacterWidth(context, char, fontMetrics) {
+    if (char === ' ') {
+        return fontMetrics.halfWidthSpaceWidth;
+    } else if (char === '\u3000') {
+        return fontMetrics.fullWidthSpaceWidth;
+    } else {
+        return context.measureText(char).width;
     }
 }
 

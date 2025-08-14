@@ -913,34 +913,176 @@ export function getCurrentTabSize() {
 }
 
 /**
- * 日本語フォント対応：フォントに基づいてタブサイズを動的に調整
+ * 日本語フォント対応：フォントに基づいてタブサイズを動的に調整（高精度版）
  */
 function updateTabSizeForFont() {
     if (!editor) return;
     
     try {
-        console.log('📏 Calculating optimal tab size for current font (Japanese support)...');
+        console.log('📏 Calculating optimal tab size for current font (high precision)...');
         
-        // 日本語フォント判定とタブサイズ計算
-        const fontMetrics = measureFontMetrics();
+        // 高精度フォントメトリクス測定
+        const fontMetrics = measureAdvancedFontMetrics();
         if (!fontMetrics) {
             console.warn('⚠️ Font metrics measurement failed, using fallback');
             updateCSSTabSize(4);
             return;
         }
         
-        // 日本語フォント特有の調整
-        const optimalTabSize = calculateOptimalTabSize(fontMetrics);
+        // 最適なタブサイズを計算
+        const optimalTabSize = calculateOptimalTabSizeAdvanced(fontMetrics);
         
         // CSSのtab-sizeを更新
         updateCSSTabSize(optimalTabSize);
         
-        console.log(`📏 Tab size updated for Japanese font: ${optimalTabSize}`);
+        console.log(`📏 Tab size updated (advanced): ${optimalTabSize}`);
         console.log(`📏 Font metrics:`, fontMetrics);
         
     } catch (error) {
         console.warn('⚠️ Failed to update tab size:', error);
         // フォールバック: 日本語フォント用デフォルト
-        updateCSSTabSize(8); // 日本語フォントでは大きめに設定
+        const fontFamily = getComputedStyle(editor).fontFamily.toLowerCase();
+        if (fontFamily.includes('yu gothic') || 
+            fontFamily.includes('meiryo') || 
+            fontFamily.includes('ms gothic') ||
+            fontFamily.includes('hiragino')) {
+            updateCSSTabSize(6);
+        } else {
+            updateCSSTabSize(4);
+        }
     }
+}
+
+/**
+ * 高精度フォントメトリクス測定
+ */
+function measureAdvancedFontMetrics() {
+    if (!editor) return null;
+    
+    try {
+        const computedStyle = window.getComputedStyle(editor);
+        const fontSize = parseFloat(computedStyle.fontSize);
+        const fontFamily = computedStyle.fontFamily;
+        
+        // Canvas設定
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        context.font = `${fontSize}px ${fontFamily}`;
+        
+        // 複数文字の幅を測定
+        const spaceWidth = context.measureText(' ').width;
+        const fullWidthSpaceWidth = context.measureText('\u3000').width;
+        
+        // ASCII文字の平均幅
+        const asciiChars = ['m', 'i', 'w', 'l', '0', '1', 'A', 'a', 'x', 'M', 'W', 'g', 'j'];
+        let totalAsciiWidth = 0;
+        for (const char of asciiChars) {
+            totalAsciiWidth += context.measureText(char).width;
+        }
+        const averageAsciiWidth = totalAsciiWidth / asciiChars.length;
+        
+        // 日本語文字のサンプル測定
+        const japaneseChars = ['あ', 'い', 'う', 'え', 'お', 'か', 'き', 'く', 'け', 'こ'];
+        let totalJapaneseWidth = 0;
+        let japaneseCharCount = 0;
+        for (const char of japaneseChars) {
+            try {
+                const width = context.measureText(char).width;
+                if (width > 0) {
+                    totalJapaneseWidth += width;
+                    japaneseCharCount++;
+                }
+            } catch (e) {
+                // 文字が利用できない場合はスキップ
+            }
+        }
+        const averageJapaneseWidth = japaneseCharCount > 0 ? totalJapaneseWidth / japaneseCharCount : fullWidthSpaceWidth;
+        
+        // 幅比率を計算
+        const spaceToFullSpaceRatio = spaceWidth / fullWidthSpaceWidth;
+        const spaceToAverageRatio = spaceWidth / averageAsciiWidth;
+        
+        // フォント分類
+        const isJapaneseFont = fontFamily.toLowerCase().includes('yu gothic') || 
+                               fontFamily.toLowerCase().includes('meiryo') || 
+                               fontFamily.toLowerCase().includes('ms gothic') ||
+                               fontFamily.toLowerCase().includes('hiragino') ||
+                               fontFamily.toLowerCase().includes('noto sans cjk');
+        
+        const isMonospace = Math.abs(context.measureText('i').width - context.measureText('W').width) < 1;
+        
+        return {
+            spaceWidth,
+            fullWidthSpaceWidth,
+            averageAsciiWidth,
+            averageJapaneseWidth,
+            spaceToFullSpaceRatio,
+            spaceToAverageRatio,
+            isJapaneseFont,
+            isMonospace,
+            fontSize,
+            fontFamily
+        };
+        
+    } catch (error) {
+        console.error('❌ Font metrics measurement error:', error);
+        return null;
+    }
+}
+
+/**
+ * 高精度タブサイズ計算
+ */
+function calculateOptimalTabSizeAdvanced(metrics) {
+    const {
+        spaceWidth,
+        fullWidthSpaceWidth,
+        averageAsciiWidth,
+        isJapaneseFont,
+        isMonospace,
+        spaceToFullSpaceRatio,
+        fontSize
+    } = metrics;
+    
+    let tabSize = 4; // デフォルト
+    
+    if (isJapaneseFont) {
+        // 日本語フォント特有の調整
+        if (fontSize >= 16) {
+            tabSize = 8; // 大きいサイズでは広めに
+        } else if (fontSize >= 14) {
+            tabSize = 6; // 中サイズ
+        } else {
+            tabSize = 6; // 小サイズでも見やすく
+        }
+        
+        // 半角と全角の比率による微調整
+        if (spaceToFullSpaceRatio < 0.4) {
+            tabSize += 1; // 全角が相対的に広い場合
+        } else if (spaceToFullSpaceRatio > 0.6) {
+            tabSize = Math.max(4, tabSize - 1); // 全角が相対的に狭い場合
+        }
+        
+    } else if (isMonospace) {
+        // 等幅フォント
+        tabSize = 4;
+        
+        // フォントサイズによる調整
+        if (fontSize <= 11) {
+            tabSize = 4;
+        } else if (fontSize >= 18) {
+            tabSize = 4; // 大きくても4で統一
+        }
+        
+    } else {
+        // プロポーショナルフォント
+        if (averageAsciiWidth / spaceWidth > 3) {
+            tabSize = 6; // 文字幅が広い場合
+        } else {
+            tabSize = 4;
+        }
+    }
+    
+    // 最終的な範囲制限
+    return Math.max(2, Math.min(16, Math.round(tabSize)));
 }

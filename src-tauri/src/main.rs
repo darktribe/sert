@@ -793,13 +793,7 @@ fn main() {
         
         // メニューの設定（Tauri 2.5対応）
         .menu(move |app| {
-            match create_native_menu(app) {
-                Ok(menu) => menu,
-                Err(e) => {
-                    eprintln!("Failed to create menu: {}", e);
-                    tauri::menu::Menu::new(app).unwrap_or_else(|_| panic!("Failed to create fallback menu"))
-                }
-            }
+            create_native_menu(app)
         })
         
         // メニューイベントハンドラー（Tauri 2.5対応）
@@ -899,6 +893,9 @@ fn main() {
         .expect("error while running tauri application");
 }
 
+/**
+ * ネイティブメニューを作成（Tauri 2.5対応）
+ */
 /**
  * ネイティブメニューを作成（Tauri 2.5対応）
  */
