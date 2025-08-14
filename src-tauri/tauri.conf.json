@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schema.json",
   "productName": "Vinsert",
-  "version": "0.1.0",
-  "identifier": "com.saigetsudo.vinsert",
+  "version": "1.0.0",
+  "identifier": "com.saigetsudo.vinsert-editor",
   "build": {
     "beforeBuildCommand": "npm run build",
     "beforeDevCommand": "npm run dev",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Sert Editor",
+        "title": "Vinsert Editor",
         "width": 1200,
         "height": 800,
         "resizable": true,
@@ -40,7 +40,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["dmg", "msi" ,"app" ,"appimage" ,"deb" ],
+    "targets": ["app"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -49,17 +49,22 @@
       "icons/icon.ico"
     ],
     "macOS": {
-      "entitlements": null,
-      "exceptionDomain": "",
-      "frameworks": [],
-      "providerShortName": null,
-      "signingIdentity": null
+      "entitlements": "entitlements-developer-id.plist",
+      "signingIdentity": "Developer ID Application: akihiko ouchi (UVC7CS2KN7)",
+      "hardenedRuntime": true,
+      "minimumSystemVersion": "10.13"
     },
+    "category": "DeveloperTool",
+    "shortDescription": "Simple Text Editor for Developers",
+    "longDescription": "Vinsert is a simple and powerful text editor designed for developers with Python extension support.",
     "windows": {
       "wix": {
         "language": "ja-JP"
       }
-    }
+    },
+    "category": "DeveloperTool",
+    "shortDescription": "Simple Text Editor for Developers",
+    "longDescription": "Vinsert Is a New Simple Editor by Rust and Tauri - and Theme and Extensions and Python included."
   },
   "plugins": {
     "fs": {

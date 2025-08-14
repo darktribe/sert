@@ -279,58 +279,59 @@ export function saveFontSettings() {
 }
 
 /**
- * フォント設定をエディタに適用
- */
+* フォント設定をエディタに適用
+*/
 export function applyFontSettings() {
-    if (!editor) return;
-    
-    console.log('🎨 Applying font settings:', fontSettings);
-    
-    // エディタのフォント設定
-    editor.style.fontFamily = fontSettings.fontFamily;
-    editor.style.fontSize = `${fontSettings.fontSize}px`;
-    
-    // 行番号のフォント設定も更新
-    const lineNumbers = document.getElementById('line-numbers');
-    if (lineNumbers) {
-        lineNumbers.style.fontFamily = fontSettings.fontFamily;
-        lineNumbers.style.fontSize = `${fontSettings.fontSize}px`;
-    }
-    
-    // ステータスバーのフォント設定も更新
-    const statusBarElements = document.querySelectorAll('.status-bar span');
-    statusBarElements.forEach(element => {
-        element.style.fontFamily = fontSettings.fontFamily;
-    });
-    
-    // ステータスバーのフォントサイズ表示を更新
-    updateFontSizeDisplay();
+   if (!editor) return;
+   
+   console.log('🎨 Applying font settings:', fontSettings);
+   
+   // エディタのフォント設定
+   editor.style.fontFamily = fontSettings.fontFamily;
+   editor.style.fontSize = `${fontSettings.fontSize}px`;
+   
+   // 行番号のフォント設定も更新
+   const lineNumbers = document.getElementById('line-numbers');
+   if (lineNumbers) {
+       lineNumbers.style.fontFamily = fontSettings.fontFamily;
+       lineNumbers.style.fontSize = `${fontSettings.fontSize}px`;
+   }
+   
+   // ステータスバーのフォント設定も更新
+   const statusBarElements = document.querySelectorAll('.status-bar span');
+   statusBarElements.forEach(element => {
+       element.style.fontFamily = fontSettings.fontFamily;
+   });
+   
+   // ステータスバーのフォントサイズ表示を更新
+   updateFontSizeDisplay();
 
-    // タブサイズを動的に調整
-    updateTabSizeForFont();
-    
-    // シンプルなタブサイズ調整（日本語フォント用）
-    if (fontSettings.fontFamily.includes('Yu Gothic') || 
-        fontSettings.fontFamily.includes('Meiryo') || 
-        fontSettings.fontFamily.includes('MS Gothic')) {
-        // 日本語フォントの場合は大きめのタブサイズ
-        editor.style.tabSize = '6';
-        const lineNumbers = document.getElementById('line-numbers');
-        if (lineNumbers) {
-            lineNumbers.style.tabSize = '6';
-        }
-        console.log('📏 Japanese font detected, tab-size set to 6');
-    } else {
-        // その他のフォントは標準
-        editor.style.tabSize = '4';
-        const lineNumbers = document.getElementById('line-numbers');
-        if (lineNumbers) {
-            lineNumbers.style.tabSize = '4';
-        }
-        console.log('📏 Standard font, tab-size set to 4');
-    }
-    
-    console.log('✅ Font settings applied successfully');
+   // フォント適用後に少し遅延してタブサイズを更新（重要：改善版）
+   setTimeout(() => {
+       try {
+           updateTabSizeForFont();
+           console.log('✅ Tab size updated after font change');
+           
+           // 空白文字可視化も更新（フォント変更に追従）
+           setTimeout(() => {
+               try {
+                   import('./whitespace-visualizer.js').then(module => {
+                       if (module && module.updateWhitespaceMarkers && window.whitespaceVisualization?.enabled) {
+                           module.updateWhitespaceMarkers();
+                           console.log('✅ Whitespace markers updated after font change');
+                       }
+                   });
+               } catch (error) {
+                   console.warn('⚠️ Whitespace markers update failed after font change:', error);
+               }
+           }, 50);
+           
+       } catch (error) {
+           console.warn('⚠️ Tab size update failed after font change:', error);
+       }
+   }, 150); // フォント適用の完了を待つ
+   
+   console.log('✅ Font settings applied successfully');
 }
 
 /**
