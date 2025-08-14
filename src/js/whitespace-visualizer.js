@@ -239,32 +239,38 @@ function performWhitespaceMarkersUpdate() {
                     charWidth = displayWidth;
                     columnPosition += 1;
                 } else if (char === '\t' && whitespaceVisualization.showTab) {
-                    // タブ文字 - 次のタブストップまでの幅を計算
+                    // タブ文字 - 次のタブストップまでの幅を計算（全角文字考慮）
                     markerType = 'tab';
                     
-                    // 次のタブストップまでの列数を計算
+                    // 次のタブストップまでの列数を計算（4文字ごと）
                     const nextTabStop = Math.floor((columnPosition + 4) / 4) * 4;
                     const columnsToNextTabStop = nextTabStop - columnPosition;
                     
-                    // 実際の表示幅を計算
+                    // 実際の表示幅を計算（半角文字幅基準）
                     displayWidth = spaceWidth * columnsToNextTabStop;
                     charWidth = displayWidth;
                     
                     // 列位置を更新
                     columnPosition = nextTabStop;
                     
-                    console.log(`Tab at column ${columnPosition - columnsToNextTabStop}: width=${columnsToNextTabStop} columns`);
+                    console.log(`Tab at column ${columnPosition - columnsToNextTabStop} -> ${columnPosition}: width=${columnsToNextTabStop} columns`);
                 } else {
-                    // 通常の文字
+                    // 通常の文字（全角文字の列数計算を先に行う）
+                    let charColumns;
+                    if (char.charCodeAt(0) < 256) {
+                        // ASCII文字（半角）
+                        charColumns = 1;
+                    } else {
+                        // 非ASCII文字（全角）
+                        charColumns = 2;
+                    }
+                    
+                    // 実際の表示幅を計算
                     displayWidth = context.measureText(char).width;
                     charWidth = displayWidth;
                     
-                    // 文字の列数を推定（ASCII文字は1列、それ以外は2列）
-                    if (char.charCodeAt(0) < 256) {
-                        columnPosition += 1;
-                    } else {
-                        columnPosition += 2;
-                    }
+                    // 列位置を更新
+                    columnPosition += charColumns;
                 }
                 
                 // マーカーを作成
@@ -421,7 +427,7 @@ function createWhitespaceMarker(type, x, y, width, height) {
 }
 
 /**
- * スクロール時のマーカー更新（タイプライターモード対応・安定版）
+ * スクロール時のマーカー更新（即座同期版）
  */
 export function updateWhitespaceMarkersOnScroll() {
     if (!whitespaceVisualization.enabled || !editor || !markersContainer) {
@@ -435,29 +441,23 @@ export function updateWhitespaceMarkersOnScroll() {
     
     updateScheduled = true;
     
-    // スクロール時は少し遅延を入れて安定化
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            try {
-                performWhitespaceMarkersUpdate();
-                console.log('👁️ Whitespace markers updated on scroll');
-            } catch (error) {
-                console.error('❌ Error updating whitespace markers on scroll:', error);
-                
-                // エラー時はマーカーを一度クリアして次のフレームで再試行
-                removeAllMarkers();
-                setTimeout(() => {
-                    try {
-                        performWhitespaceMarkersUpdate();
-                    } catch (retryError) {
-                        console.error('❌ Retry also failed:', retryError);
-                    }
-                }, 100);
-            } finally {
-                updateScheduled = false;
-            }
-        });
-    });
+    // スクロール時は即座に更新（遅延なし）
+    try {
+        performWhitespaceMarkersUpdate();
+        console.log('👁️ Whitespace markers updated on scroll (immediate)');
+    } catch (error) {
+        console.error('❌ Error updating whitespace markers on scroll:', error);
+        
+        // エラー時はマーカーを一度クリアして即座に再試行
+        removeAllMarkers();
+        try {
+            performWhitespaceMarkersUpdate();
+        } catch (retryError) {
+            console.error('❌ Immediate retry also failed:', retryError);
+        }
+    } finally {
+        updateScheduled = false;
+    }
 }
 
 /**
