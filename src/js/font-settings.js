@@ -305,6 +305,30 @@ export function applyFontSettings() {
     
     // ステータスバーのフォントサイズ表示を更新
     updateFontSizeDisplay();
+
+    // タブサイズを動的に調整
+    updateTabSizeForFont();
+    
+    // シンプルなタブサイズ調整（日本語フォント用）
+    if (fontSettings.fontFamily.includes('Yu Gothic') || 
+        fontSettings.fontFamily.includes('Meiryo') || 
+        fontSettings.fontFamily.includes('MS Gothic')) {
+        // 日本語フォントの場合は大きめのタブサイズ
+        editor.style.tabSize = '6';
+        const lineNumbers = document.getElementById('line-numbers');
+        if (lineNumbers) {
+            lineNumbers.style.tabSize = '6';
+        }
+        console.log('📏 Japanese font detected, tab-size set to 6');
+    } else {
+        // その他のフォントは標準
+        editor.style.tabSize = '4';
+        const lineNumbers = document.getElementById('line-numbers');
+        if (lineNumbers) {
+            lineNumbers.style.tabSize = '4';
+        }
+        console.log('📏 Standard font, tab-size set to 4');
+    }
     
     console.log('✅ Font settings applied successfully');
 }
@@ -765,6 +789,8 @@ export function increaseFontSize() {
         applyFontSettings();
         saveFontSettings();
         console.log('🔍 Font size increased to:', fontSettings.fontSize);
+        // タブサイズも更新
+        setTimeout(() => updateTabSizeForFont(), 50);
     }
 }
 
@@ -777,6 +803,8 @@ export function decreaseFontSize() {
         applyFontSettings();
         saveFontSettings();
         console.log('🔍 Font size decreased to:', fontSettings.fontSize);
+        // タブサイズも更新
+        setTimeout(() => updateTabSizeForFont(), 50);
     }
 }
 
@@ -795,4 +823,124 @@ export async function refreshFontDetection() {
     detectedFonts = null;
     fontDetectionInProgress = false;
     return await detectSystemFonts();
+}
+
+
+
+/**
+ * Canvas APIを使用して現在のフォントの文字幅を測定
+ */
+function measureCharacterWidth() {
+    try {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        // 現在のエディタのフォント設定を取得
+        const computedStyle = window.getComputedStyle(editor);
+        const fontFamily = computedStyle.fontFamily;
+        const fontSize = computedStyle.fontSize;
+        
+        // フォントを設定
+        context.font = `${fontSize} ${fontFamily}`;
+        
+        // 複数の文字で平均幅を計算（より正確な測定）
+        const testChars = ['m', 'i', 'w', 'l', '0', '1', 'A', 'a'];
+        let totalWidth = 0;
+        
+        for (const char of testChars) {
+            const metrics = context.measureText(char);
+            totalWidth += metrics.width;
+        }
+        
+        const averageWidth = totalWidth / testChars.length;
+        
+        console.log(`📏 Measured character width: ${averageWidth.toFixed(2)}px (font: ${fontSize} ${fontFamily})`);
+        
+        return averageWidth;
+        
+    } catch (error) {
+        console.warn('⚠️ Character width measurement failed:', error);
+        return null;
+    }
+}
+
+/* CSSのtab-sizeプロパティを動的に更新（CSS変数使用版）*/
+function updateCSSTabSize(tabSize) {
+   try {
+       // CSS変数を使用してグローバルに設定
+       document.documentElement.style.setProperty('--dynamic-tab-size', tabSize);
+       
+       // 従来の方法もフォールバックとして保持
+       if (editor) {
+           editor.style.tabSize = tabSize;
+           editor.style.MozTabSize = tabSize;
+           editor.style.WebkitTabSize = tabSize;
+           editor.style.OTabSize = tabSize;
+       }
+       
+       const lineNumbers = document.getElementById('line-numbers');
+       if (lineNumbers) {
+           lineNumbers.style.tabSize = tabSize;
+           lineNumbers.style.MozTabSize = tabSize;
+           lineNumbers.style.WebkitTabSize = tabSize;
+           lineNumbers.style.OTabSize = tabSize;
+       }
+       
+       console.log(`📏 CSS tab-size updated to: ${tabSize}`);
+       
+   } catch (error) {
+       console.warn('⚠️ Failed to update CSS tab-size:', error);
+   }
+}
+
+/**
+ * タブサイズを手動で設定（デバッグ用）
+ */
+export function setCustomTabSize(size) {
+    const tabSize = Math.max(1, Math.min(16, parseInt(size) || 4));
+    updateCSSTabSize(tabSize);
+    console.log(`🔧 Manual tab size set to: ${tabSize}`);
+}
+
+/**
+ * 現在のタブサイズを取得（デバッグ用）
+ */
+export function getCurrentTabSize() {
+    if (!editor) return null;
+    
+    const computedStyle = window.getComputedStyle(editor);
+    return computedStyle.tabSize || '4';
+}
+
+/**
+ * 日本語フォント対応：フォントに基づいてタブサイズを動的に調整
+ */
+function updateTabSizeForFont() {
+    if (!editor) return;
+    
+    try {
+        console.log('📏 Calculating optimal tab size for current font (Japanese support)...');
+        
+        // 日本語フォント判定とタブサイズ計算
+        const fontMetrics = measureFontMetrics();
+        if (!fontMetrics) {
+            console.warn('⚠️ Font metrics measurement failed, using fallback');
+            updateCSSTabSize(4);
+            return;
+        }
+        
+        // 日本語フォント特有の調整
+        const optimalTabSize = calculateOptimalTabSize(fontMetrics);
+        
+        // CSSのtab-sizeを更新
+        updateCSSTabSize(optimalTabSize);
+        
+        console.log(`📏 Tab size updated for Japanese font: ${optimalTabSize}`);
+        console.log(`📏 Font metrics:`, fontMetrics);
+        
+    } catch (error) {
+        console.warn('⚠️ Failed to update tab size:', error);
+        // フォールバック: 日本語フォント用デフォルト
+        updateCSSTabSize(8); // 日本語フォントでは大きめに設定
+    }
 }

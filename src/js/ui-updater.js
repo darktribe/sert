@@ -324,3 +324,25 @@ export function updateFontSizeDisplay() {
         fontSizeDisplay.textContent = `${t('statusBar.fontSize')}: ${fontSettings.fontSize}px`;
     }
 }
+
+/**
+ * フォント関連の設定が変更されたときの包括的な更新
+ */
+export function updateAfterFontChange() {
+    // フォントサイズ表示を更新
+    updateFontSizeDisplay();
+    
+    // タブサイズを更新（font-settings.jsから）
+    try {
+        import('./font-settings.js').then(module => {
+            if (module && module.updateTabSizeForFont) {
+                setTimeout(() => {
+                    // フォント適用後に少し遅延してタブサイズを更新
+                    module.updateTabSizeForFont();
+                }, 100);
+            }
+        });
+    } catch (error) {
+        console.warn('⚠️ Tab size update after font change failed:', error);
+    }
+}

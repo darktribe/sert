@@ -45,6 +45,22 @@ window.showThemeDialog = showThemeDialog;
 window.showLanguageSettingsDialog = showLanguageSettingsDialog;
 window.toggleTypewriterMode = toggleTypewriterMode;
 
+// タブサイズ調整機能（デバッグ用）
+window.debugTabSize = async function() {
+    try {
+        const { getCurrentTabSize, setCustomTabSize } = await import('./js/font-settings.js');
+        const current = getCurrentTabSize();
+        console.log('📏 Current tab-size:', current);
+        
+        const newSize = prompt(`現在のタブサイズ: ${current}\n新しいタブサイズを入力してください (1-16):`, current);
+        if (newSize && !isNaN(newSize)) {
+            setCustomTabSize(parseInt(newSize));
+        }
+    } catch (error) {
+        console.warn('⚠️ Debug tab size not available:', error);
+    }
+};
+
 // 空白文字可視化機能
 window.toggleWhitespaceVisualization = async function() {
     try {
