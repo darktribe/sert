@@ -792,13 +792,12 @@ fn main() {
         ])
         
         // メニューの設定（Tauri 2.5対応）
-        // メニューの設定（Tauri 2.5対応）
-        .menu(|app| {
+        .menu(move |app| {
             match create_native_menu(app) {
-                Ok(menu) => Ok(menu),
+                Ok(menu) => menu,
                 Err(e) => {
                     eprintln!("Failed to create menu: {}", e);
-                    Ok(tauri::menu::Menu::new(app).unwrap_or_else(|_| panic!("Failed to create fallback menu")))
+                    tauri::menu::Menu::new(app).unwrap_or_else(|_| panic!("Failed to create fallback menu"))
                 }
             }
         })
