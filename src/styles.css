@@ -1,54 +1,45 @@
 /*
  * =====================================================
- * Sert Editor - スタイルシート（テーマ機能対応・修正版）
+ * Vinsert Editor - Cleaned and Fixed Stylesheet
  * =====================================================
  */
 
- /*
+/*
  * =====================================================
- * テーマ用CSSカスタムプロパティ
+ * CSS Custom Properties for Theming
  * =====================================================
  */
-
  :root {
-  /* 基本エディタテーマ（修正版） */
+  /* Editor Theme Properties */
   --editor-bg-color: #1e1e1e;
   --editor-text-color: #d4d4d4;
   --editor-cursor-color: #ffffff;
   --editor-selection-bg-color: rgba(173, 214, 255, 0.15);
   
-  /* 行番号関連 */
+  /* Line Numbers */
   --line-numbers-bg-color: #252526;
   --line-numbers-text-color: #858585;
   --line-numbers-border-color: #3e3e40;
   
-  /* メニューバー関連 */
+  /* Menu Bar */
   --menu-bar-bg-color: #2d2d30;
   --menu-bar-text-color: #d4d4d4;
   --menu-bar-hover-bg-color: #37373d;
   --menu-bar-border-color: #3e3e40;
   
-  /* ステータスバー関連 */
+  /* Status Bar */
   --status-bar-bg-color: #007acc;
   --status-bar-text-color: #ffffff;
   
-  /* 行ハイライト関連 */
+  /* Line Highlight */
   --line-highlight-bg-color: rgba(255, 255, 255, 0.05);
-
-  /* プレビュー用 */
-  --preview-editor-bg: var(--editor-bg-color);
-  --preview-editor-text: var(--editor-text-color);
-  --preview-line-numbers-bg: var(--line-numbers-bg-color);
-  --preview-line-numbers-text: var(--line-numbers-text-color);
-  --preview-line-numbers-border: var(--line-numbers-border-color);
-  --preview-menu-bg: var(--menu-bar-bg-color);
-  --preview-menu-text: var(--menu-bar-text-color);
-  --preview-status-bg: var(--status-bar-bg-color);
-  --preview-status-text: var(--status-bar-text-color);
 }
- 
- 
-/* 基本設定 */
+
+/*
+ * =====================================================
+ * Base Styles
+ * =====================================================
+ */
 * {
   margin: 0;
   padding: 0;
@@ -71,7 +62,6 @@ body, html {
   bottom: 0;
 }
 
-/* メインコンテナ */
 .container {
   display: flex;
   flex-direction: column;
@@ -84,10 +74,12 @@ body, html {
   bottom: 0;
 }
 
-/* =====================================================
- メニューバー（修正版）
- ===================================================== */
- .menu-bar {
+/*
+ * =====================================================
+ * Menu Bar
+ * =====================================================
+ */
+.menu-bar {
   background-color: var(--menu-bar-bg-color);
   border-bottom: 1px solid var(--menu-bar-border-color);
   padding: 0;
@@ -107,7 +99,6 @@ body, html {
   color: var(--menu-bar-text-color);
   transition: background-color 0.2s;
   z-index: 1001;
-  pointer-events: auto;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
@@ -129,7 +120,6 @@ body, html {
   min-width: 160px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   z-index: 10005;
-  pointer-events: auto;
 }
 
 .menu-option {
@@ -140,7 +130,6 @@ body, html {
   transition: background-color 0.2s;
   position: relative;
   z-index: 10006;
-  pointer-events: auto;
   display: block;
   width: 100%;
   box-sizing: border-box;
@@ -150,10 +139,8 @@ body, html {
   background-color: #37373d;
 }
 
-/* チェックボックス付きメニューオプション */
 .menu-option-checkbox {
   padding-left: 28px;
-  pointer-events: auto;
 }
 
 .menu-checkmark {
@@ -164,95 +151,134 @@ body, html {
   font-size: 12px;
   color: #007acc;
   visibility: hidden;
-  pointer-events: none;
 }
 
 .menu-separator {
   height: 1px;
   background-color: #3e3e40;
   margin: 4px 0;
-  pointer-events: none;
 }
 
-/* =====================================================
- 言語切り替えUI（無効化 - メニューダイアログ形式に移行）
- ===================================================== */
- .language-switcher {
-  display: none !important; /* 右上の言語セレクトボックスを非表示 */
+/*
+ * =====================================================
+ * Language Switcher
+ * =====================================================
+ */
+.language-switcher {
+  margin-left: auto;
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.language-btn {
-  background-color: transparent;
-  border: none;
+.language-select {
+  background-color: #37373d;
+  border: 1px solid #3e3e40;
+  border-radius: 4px;
   color: #d4d4d4;
   padding: 4px 8px;
-  border-radius: 2px;
-  cursor: pointer;
   font-size: 11px;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  transition: background-color 0.2s, color 0.2s;
-  min-width: 28px;
-  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+  min-width: 120px;
+  max-width: 180px;
 }
 
-.language-btn:hover:not(:disabled) {
+.language-select:hover:not(:disabled) {
   background-color: #4a4a4a;
-  color: #ffffff;
+  border-color: #007acc;
 }
 
-.language-btn.active {
-  background-color: #007acc;
-  color: white;
-  font-weight: bold;
+.language-select:focus {
+  outline: none;
+  border-color: #007acc;
+  box-shadow: 0 0 0 1px #007acc;
 }
 
-.language-btn:focus {
-  outline: 1px solid #007acc;
-  outline-offset: 1px;
-}
-
-.language-btn:disabled {
+.language-select:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-/* =====================================================
- エディタエリア
- ===================================================== */
- .editor-container {
+.language-select option {
+  background-color: #2d2d30;
+  color: #d4d4d4;
+  padding: 4px 8px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 11px;
+}
+
+.language-select option:hover {
+  background-color: #37373d;
+}
+
+.language-select option:checked {
+  background-color: #007acc;
+  color: white;
+}
+
+.debug-button {
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+  border-radius: 2px;
+  transition: background-color 0.2s;
+}
+
+.debug-button:hover {
+  background-color: #37373d;
+}
+
+/*
+ * =====================================================
+ * Editor Area
+ * =====================================================
+ */
+.editor-container {
   display: flex;
   flex: 1;
   overflow: hidden;
   background-color: #1e1e1e;
   position: relative;
-  min-height: 0; /* flex子要素の縮小を許可 */
-  height: calc(100% - 54px); /* メニューバー(30px) + ステータスバー(24px)を除いた高さ */
+  min-height: 0;
+  height: calc(100% - 54px);
 }
 
-/* 行番号表示（論理行対応） */
+.editor-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--editor-bg-color);
+  z-index: 0;
+}
+
 .line-numbers {
-  background-color: #252526;
-  color: #858585;
+  background-color: var(--line-numbers-bg-color);
+  color: var(--line-numbers-text-color);
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 14px;
   line-height: 1.5;
   padding: 10px 8px;
   text-align: right;
   user-select: none;
-  border-right: 1px solid #3e3e40;
+  border-right: 1px solid var(--line-numbers-border-color);
   overflow-y: hidden;
   overflow-x: hidden;
   min-width: 50px;
   max-width: 80px;
   flex-shrink: 0;
-  z-index: 3;  /* エディタより前面に */
+  z-index: 3;
   position: relative;
-  
-  /* スクロールバーを非表示にしつつスクロール可能にする */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
-  
-  /* タブ幅を4文字分に設定（エディタと同期） */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   tab-size: 4;
   -moz-tab-size: 4;
   -webkit-tab-size: 4;
@@ -260,24 +286,18 @@ body, html {
   font-variant-numeric: tabular-nums;
 }
 
-/* Webkit系ブラウザのスクロールバー非表示 */
 .line-numbers::-webkit-scrollbar {
   display: none;
 }
 
-/* 個別の行番号スタイル */
 .line-number {
   display: block;
   box-sizing: border-box;
   text-align: right;
   padding-right: 8px;
-  vertical-align: top;
 }
 
-/* =====================================================
- エディタテキストエリア - Tab入力対応
- ===================================================== */
- .editor-textarea {
+.editor-textarea {
   flex: 1;
   background-color: transparent;
   color: var(--editor-text-color);
@@ -288,25 +308,19 @@ body, html {
   line-height: 1.5;
   padding: 10px;
   resize: none;
-  
   white-space: pre-wrap;
   overflow-wrap: break-word;
   word-wrap: break-word;
   overflow-x: hidden;
   overflow-y: auto;
-  
-  /* タブ幅を4文字分に設定（エディタと同期） */
   tab-size: 4;
   -moz-tab-size: 4;
   -webkit-tab-size: 4;
   -o-tab-size: 4;
-  
-  /* フォント設定を強化してタブ幅を固定 */
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
   word-spacing: 0;
   letter-spacing: 0;
-  
   position: relative;
   z-index: 2;
   caret-color: var(--editor-cursor-color);
@@ -324,10 +338,12 @@ body, html {
   outline: none;
 }
 
-/* =====================================================
- 行ハイライト
- ===================================================== */
- .line-highlight-overlay {
+/*
+ * =====================================================
+ * Line Highlight
+ * =====================================================
+ */
+.line-highlight-overlay {
   position: absolute;
   left: 0;
   background-color: var(--line-highlight-bg-color);
@@ -336,23 +352,11 @@ body, html {
   transition: top 0.1s ease-out, height 0.1s ease-out;
 }
 
-/* エディタコンテナの背景 */
-.editor-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--editor-bg-color);
-  z-index: 0;
-}
-
-/* src/styles.css の該当部分に追加 */
-
-/* =====================================================
- ステータスバー（スペース修正版）
- ===================================================== */
+/*
+ * =====================================================
+ * Status Bar
+ * =====================================================
+ */
 .status-bar {
   background-color: var(--status-bar-bg-color);
   color: var(--status-bar-text-color);
@@ -371,22 +375,13 @@ body, html {
   z-index: 100;
 }
 
-/* 選択中の文字数表示に左マージンを追加 */
-#selection-count {
-  margin-left: 4px;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  white-space: nowrap;
-}
-
-/* 他のステータスバー要素も統一 */
 #cursor-position, #file-encoding, #font-size-display, #char-count, #selection-count {
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   white-space: nowrap;
 }
 
-#cursor-position, #file-encoding, #font-size-display, #char-count {
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  white-space: nowrap;
+#selection-count {
+  margin-left: 4px;
 }
 
 #file-encoding {
@@ -402,9 +397,11 @@ body, html {
   font-weight: bold;
 }
 
-/* =====================================================
- 検索・置換ダイアログ
- ===================================================== */
+/*
+ * =====================================================
+ * Dialog System
+ * =====================================================
+ */
 .search-dialog-overlay {
   position: fixed;
   top: 0;
@@ -439,15 +436,49 @@ body, html {
   max-width: 480px;
 }
 
-/* フォントサイズ入力ダイアログ（新機能） */
+.font-settings-dialog {
+  min-width: 520px;
+  max-width: 680px;
+}
+
 .font-size-input-dialog {
   min-width: 420px;
   max-width: 500px;
 }
 
-.font-size-input-overlay {
-  z-index: 10002;
+.theme-dialog {
+  min-width: 520px;
+  max-width: 680px;
 }
+
+.language-dialog {
+  min-width: 520px;
+  max-width: 680px;
+}
+
+.whitespace-dialog {
+  min-width: 520px;
+  max-width: 680px;
+}
+
+.extension-dialog {
+  min-width: 600px;
+  max-width: 800px;
+}
+
+.about-dialog {
+  min-width: 400px;
+  max-width: 500px;
+}
+
+/* Dialog Overlay Z-Index Management */
+.font-settings-overlay { z-index: 10001; }
+.font-size-input-overlay { z-index: 10002; }
+.theme-dialog-overlay { z-index: 10003; }
+.language-dialog-overlay { z-index: 10003; }
+.extension-dialog-overlay { z-index: 10004; }
+.about-dialog-overlay { z-index: 10005; }
+.whitespace-dialog-overlay { z-index: 10006; }
 
 @keyframes searchDialogSlideIn {
   from {
@@ -623,18 +654,11 @@ body, html {
   color: #d4d4d4;
 }
 
-/* =====================================================
- アバウトダイアログ
- ===================================================== */
-.about-dialog-overlay {
-  z-index: 10005;
-}
-
-.about-dialog {
-  min-width: 400px;
-  max-width: 500px;
-}
-
+/*
+ * =====================================================
+ * About Dialog
+ * =====================================================
+ */
 .about-content {
   text-align: center;
   margin-bottom: 25px;
@@ -690,23 +714,16 @@ body, html {
   color: #003d6b;
 }
 
-/* =====================================================
- フォント設定ダイアログ
- ===================================================== */
-.font-settings-overlay {
-  z-index: 10001;
-}
-
-.font-settings-dialog {
-  min-width: 520px;
-  max-width: 680px;
-}
-
+/*
+ * =====================================================
+ * Font Settings
+ * =====================================================
+ */
 .font-settings-section {
   margin-bottom: 20px;
 }
 
-.font-select {
+.font-select, .theme-select {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #3e3e40;
@@ -719,13 +736,13 @@ body, html {
   cursor: pointer;
 }
 
-.font-select:focus {
+.font-select:focus, .theme-select:focus {
   outline: none;
   border-color: #007acc;
   box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.3);
 }
 
-.font-select option {
+.font-select option, .theme-select option {
   background-color: #2d2d30;
   color: #d4d4d4;
   padding: 8px;
@@ -801,7 +818,6 @@ body, html {
   min-width: 20px;
 }
 
-/* フォントサイズ直接入力専用（新機能） */
 .font-size-direct-controls {
   display: flex;
   align-items: center;
@@ -846,75 +862,11 @@ body, html {
   overflow: auto;
 }
 
-/* =====================================================
- 言語設定ダイアログ
- ===================================================== */
- .language-dialog-overlay {
-  z-index: 10003;
-}
-
-.language-dialog {
-  min-width: 520px;
-  max-width: 680px;
-}
-
-.language-info-section {
-  margin: 20px 0;
-}
-
-/* =====================================================
- 言語設定ダイアログ
- ===================================================== */
- .language-dialog-overlay {
-  z-index: 10003;
-}
-
-.language-dialog {
-  min-width: 520px;
-  max-width: 680px;
-}
-
-.language-info-section {
-  margin: 20px 0;
-}
-
-/* =====================================================
- テーマダイアログ
- ===================================================== */
-.theme-dialog-overlay {
-  z-index: 10003;
-}
-
-.theme-dialog {
-  min-width: 520px;
-  max-width: 680px;
-}
-
-.theme-select {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #3e3e40;
-  border-radius: 4px;
-  background-color: #1e1e1e;
-  color: #d4d4d4;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 14px;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  cursor: pointer;
-}
-
-.theme-select:focus {
-  outline: none;
-  border-color: #007acc;
-  box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.3);
-}
-
-.theme-select option {
-  background-color: #2d2d30;
-  color: #d4d4d4;
-  padding: 8px;
-}
-
+/*
+ * =====================================================
+ * Theme Settings
+ * =====================================================
+ */
 .theme-preview-section {
   margin: 20px 0;
 }
@@ -973,279 +925,20 @@ body, html {
   font-size: 11px;
 }
 
-.preview-menubar {
-  background: #2d2d30;
-  color: #d4d4d4;
-  padding: 6px 12px;
-  font-size: 12px;
-  border-bottom: 1px solid #3e3e40;
-}
-
-.preview-editor {
-  display: flex;
-  min-height: 60px;
-}
-
-.preview-line-numbers {
-  background: #252526;
-  color: #858585;
-  padding: 8px;
-  text-align: right;
-  min-width: 30px;
-  border-right: 1px solid #3e3e40;
-}
-
-.preview-text {
-  background: #1e1e1e;
-  color: #d4d4d4;
-  padding: 8px;
-  flex: 1;
-  white-space: pre;
-}
-
-.preview-statusbar {
-  background: #007acc;
-  color: #ffffff;
-  padding: 4px 12px;
-  font-size: 11px;
-}
-
-/* =====================================================
- 空白文字可視化マーカー
- ===================================================== */
- .whitespace-markers-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  z-index: 5;
-  overflow: hidden;
-}
-
-.whitespace-marker {
-  position: absolute;
-  pointer-events: none;
-}
-
-/* 全角スペースマーカー */
-.whitespace-marker-fullwidth-space {
-  background-color: rgba(100, 150, 255, 0.2);
-  border: 1px solid rgba(100, 150, 255, 0.4);
-}
-
-/* 半角スペースマーカー */
-.whitespace-marker-halfwidth-space {
-  /* スタイルは JavaScript で動的に設定 */
-}
-
-/* タブマーカー */
-.whitespace-marker-tab {
-  background-color: rgba(255, 165, 0, 0.1);
-  border-bottom: 1px solid rgba(255, 165, 0, 0.5);
-}
-
-/* 空白文字可視化ダイアログ */
-.whitespace-dialog-overlay {
-  z-index: 10006;
-}
-
-.whitespace-dialog {
-  min-width: 520px;
-  max-width: 680px;
-}
-
-.whitespace-settings-section {
-  margin-bottom: 20px;
-}
-
-.whitespace-type-settings {
-  margin: 16px 0;
-  padding: 12px;
-  background-color: rgba(55, 55, 61, 0.3);
-  border-radius: 4px;
-  border-left: 3px solid #007acc;
-}
-
-.whitespace-type-settings h4 {
-  margin: 0 0 12px 0;
-  color: #cccccc;
-  font-size: 14px;
-  font-weight: bold;
-}
-
-.whitespace-type-settings .search-checkbox-label {
-  display: block;
-  margin-bottom: 8px;
-  padding: 4px 0;
-}
-
-.whitespace-preview-section {
+/*
+ * =====================================================
+ * Language Settings
+ * =====================================================
+ */
+.language-info-section {
   margin: 20px 0;
 }
 
-.whitespace-preview {
-  background-color: #1e1e1e;
-  border: 1px solid #3e3e40;
-  border-radius: 4px;
-  padding: 12px;
-  min-height: 80px;
-  white-space: pre;
-  color: #d4d4d4;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  overflow: auto;
-}
-
-/* =====================================================
- レスポンシブ対応
- ===================================================== */
-@media (max-width: 768px) {
-  .search-dialog {
-    min-width: 90vw;
-    max-width: 95vw;
-    margin: 10px;
-  }
-  
-  .font-settings-dialog {
-    min-width: 90vw;
-    max-width: 95vw;
-  }
-  
-  .font-size-input-dialog {
-    min-width: 90vw;
-    max-width: 95vw;
-  }
-  
-  .theme-dialog {
-    min-width: 90vw;
-    max-width: 95vw;
-  }
-  
-  .font-size-controls {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-  
-  .font-size-direct-controls {
-    justify-content: center;
-  }
-  
-  .search-button-group {
-    justify-content: center;
-  }
-  
-  .search-checkbox-group {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .menu-bar {
-    flex-wrap: wrap;
-    height: auto;
-    min-height: 30px;
-  }
-  
-  .language-switcher {
-    margin-left: auto;
-    margin-right: 5px;
-  }
-}
-
-/* =====================================================
- 言語切り替えUI (セレクトボックス版)
- ===================================================== */
- .language-switcher {
-  margin-left: auto;
-  margin-right: 10px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.language-select {
-  background-color: #37373d;
-  border: 1px solid #3e3e40;
-  border-radius: 4px;
-  color: #d4d4d4;
-  padding: 4px 8px;
-  font-size: 11px;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
-  min-width: 120px;
-  max-width: 180px;
-}
-
-.language-select:hover:not(:disabled) {
-  background-color: #4a4a4a;
-  border-color: #007acc;
-}
-
-.language-select:focus {
-  outline: none;
-  border-color: #007acc;
-  box-shadow: 0 0 0 1px #007acc;
-}
-
-.language-select:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.language-select option {
-  background-color: #2d2d30;
-  color: #d4d4d4;
-  padding: 4px 8px;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 11px;
-}
-
-.language-select option:hover {
-  background-color: #37373d;
-}
-
-.language-select option:checked {
-  background-color: #007acc;
-  color: white;
-}
-
-/* デバッグボタン */
-.debug-button {
-  background: none;
-  border: none;
-  color: #888;
-  cursor: pointer;
-  font-size: 12px;
-  padding: 2px 4px;
-  border-radius: 2px;
-  transition: background-color 0.2s;
-}
-
-.debug-button:hover {
-  background-color: #37373d;
-}
-
-/* レガシーボタンスタイル（削除予定） */
-.language-btn {
-  display: none;
-}
-
-/* =====================================================
- 拡張機能設定ダイアログ
- ===================================================== */
- .extension-dialog-overlay {
-  z-index: 10004;
-}
-
-.extension-dialog {
-  min-width: 600px;
-  max-width: 800px;
-}
-
+/*
+ * =====================================================
+ * Extension Settings
+ * =====================================================
+ */
 .extension-list {
   max-height: 400px;
   overflow-y: auto;
@@ -1314,191 +1007,41 @@ body, html {
   font-size: 14px;
 }
 
-/* =====================================================
- 補完候補ボックス
- ===================================================== */
-.suggestion-box {
-  background-color: #2d2d30;
-  border: 1px solid #3e3e40;
-  border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 10010;
-  min-width: 200px;
+/*
+ * =====================================================
+ * Whitespace Visualization
+ * =====================================================
+ */
+.whitespace-markers-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 5;
+  overflow: hidden;
 }
 
-.suggestion-item {
-  padding: 6px 12px;
-  color: #d4d4d4;
-  cursor: pointer;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 14px;
-  transition: background-color 0.1s;
+.whitespace-marker {
+  position: absolute;
+  pointer-events: none;
 }
 
-.suggestion-item:hover,
-.suggestion-item.selected {
-  background-color: #007acc;
-  color: white;
+.whitespace-marker-fullwidth-space {
+  background-color: rgba(100, 150, 255, 0.2);
+  border: 1px solid rgba(100, 150, 255, 0.4);
 }
 
-/* HTMLハイライト用（拡張機能から適用） */
-.html-highlight {
-  color: #e06c75 !important;
+.whitespace-marker-tab {
+  background-color: rgba(255, 165, 0, 0.1);
+  border-bottom: 1px solid rgba(255, 165, 0, 0.5);
 }
 
-/* =====================================================
- * 高機能HTML拡張用追加スタイル
- * styles.cssの末尾に追加してください
- * ===================================================== */
-
-/* HTML拡張機能用エディタスタイル */
-.editor-textarea.html-content {
-  /* HTMLコンテンツ検出時の追加スタイル */
-  position: relative;
+.whitespace-settings-section {
+  margin-bottom: 20px;
 }
 
-/* HTMLタグハイライト（赤文字表示） */
-.html-highlight {
-  color: #e06c75 !important;
-  font-weight: 500;
-}
-
-/* エディタ内でのHTMLタグ表示（テキストノード内では直接適用できないため、別の方法で実装） */
-.editor-textarea:focus {
-  /* HTMLタグ入力時の視覚的フィードバック */
-  box-shadow: 0 0 0 1px rgba(224, 108, 117, 0.3);
-}
-
-/* 強化されたサジェスションボックス */
-.enhanced-suggestion-box {
-  background-color: #2d2d30;
-  border: 2px solid #007acc;
-  border-radius: 6px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
-  max-height: 250px;
-  overflow-y: auto;
-  z-index: 10010;
-  min-width: 220px;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-}
-
-/* サジェスションアイテムの強化 */
-.enhanced-suggestion-box .suggestion-item {
-  padding: 8px 12px;
-  color: #d4d4d4;
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 1.4;
-  transition: all 0.15s ease;
-  border-left: 3px solid transparent;
-  position: relative;
-}
-
-.enhanced-suggestion-box .suggestion-item:hover {
-  background-color: #37373d;
-  border-left-color: #007acc;
-}
-
-/* 矢印キー選択時のスタイル */
-.enhanced-suggestion-box .suggestion-item.selected {
-  background-color: #007acc !important;
-  color: white !important;
-  border-left-color: #005a9e !important;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
-}
-
-/* インクリメンタル検索のマッチ部分ハイライト */
-.suggestion-highlight {
-  background-color: #ffff00;
-  color: #000000;
-  font-weight: bold;
-  padding: 1px 2px;
-  border-radius: 2px;
-}
-
-/* 選択状態でのマッチハイライト */
-.enhanced-suggestion-box .suggestion-item.selected .suggestion-highlight {
-  background-color: #ffffff;
-  color: #007acc;
-}
-
-/* HTMLタグ部分の色付け（サジェスション内） */
-.enhanced-suggestion-box .suggestion-item {
-  color: #e06c75; /* HTMLタグ色 */
-}
-
-/* キーボード操作のヒント */
-.enhanced-suggestion-box::after {
-  content: "↑↓: 選択  Enter/Tab: 確定  Esc: キャンセル";
-  display: block;
-  padding: 6px 12px;
-  background-color: #37373d;
-  color: #888888;
-  font-size: 11px;
-  border-top: 1px solid #3e3e40;
-  text-align: center;
-}
-
-/* サジェスションボックスのスクロールバー */
-.enhanced-suggestion-box::-webkit-scrollbar {
-  width: 8px;
-}
-
-.enhanced-suggestion-box::-webkit-scrollbar-track {
-  background: #2d2d30;
-}
-
-.enhanced-suggestion-box::-webkit-scrollbar-thumb {
-  background: #5a5a5a;
-  border-radius: 4px;
-}
-
-.enhanced-suggestion-box::-webkit-scrollbar-thumb:hover {
-  background: #7a7a7a;
-}
-
-/* HTMLコンテンツ検出時のエディタボーダー */
-.editor-textarea.html-content {
-  border-left: 3px solid rgba(224, 108, 117, 0.5);
-}
-
-/* アニメーション効果 */
-.enhanced-suggestion-box {
-  animation: suggestionFadeIn 0.2s ease-out;
-}
-
-@keyframes suggestionFadeIn {
-  from {
-      opacity: 0;
-      transform: translateY(-10px) scale(0.95);
-  }
-  to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-  }
-}
-
-/* レスポンシブ対応 */
-@media (max-width: 768px) {
-  .enhanced-suggestion-box {
-      min-width: 180px;
-      max-width: 90vw;
-      font-size: 13px;
-  }
-  
-  .enhanced-suggestion-box .suggestion-item {
-      padding: 6px 10px;
-  }
-  
-  .enhanced-suggestion-box::after {
-      font-size: 10px;
-      padding: 4px 8px;
-  }
-}
-
-/* 色設定用スタイル */
 .whitespace-color-settings {
   margin: 16px 0;
   padding: 12px;
@@ -1572,4 +1115,191 @@ body, html {
   outline: none;
   border-color: #007acc;
   box-shadow: 0 0 0 1px rgba(0, 122, 204, 0.3);
+}
+
+.whitespace-preview-section {
+  margin: 20px 0;
+}
+
+.whitespace-preview {
+  background-color: #1e1e1e;
+  border: 1px solid #3e3e40;
+  border-radius: 4px;
+  padding: 12px;
+  min-height: 80px;
+  white-space: pre;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: auto;
+}
+
+/*
+ * =====================================================
+ * Extension System - Suggestion Box
+ * =====================================================
+ */
+.suggestion-box, .enhanced-suggestion-box {
+  background-color: #2d2d30;
+  border: 2px solid #007acc;
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 10010;
+  min-width: 220px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  animation: suggestionFadeIn 0.2s ease-out;
+}
+
+.suggestion-item {
+  padding: 8px 12px;
+  color: #d4d4d4;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.4;
+  transition: all 0.15s ease;
+  border-left: 3px solid transparent;
+  position: relative;
+}
+
+.suggestion-item:hover {
+  background-color: #37373d;
+  border-left-color: #007acc;
+}
+
+.suggestion-item.selected {
+  background-color: #007acc !important;
+  color: white !important;
+  border-left-color: #005a9e !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.suggestion-highlight {
+  background-color: #ffff00;
+  color: #000000;
+  font-weight: bold;
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+
+.suggestion-item.selected .suggestion-highlight {
+  background-color: #ffffff;
+  color: #007acc;
+}
+
+.enhanced-suggestion-box .suggestion-item {
+  color: #e06c75;
+}
+
+.enhanced-suggestion-box::after {
+  content: "↑↓: 選択  Enter/Tab: 確定  Esc: キャンセル";
+  display: block;
+  padding: 6px 12px;
+  background-color: #37373d;
+  color: #888888;
+  font-size: 11px;
+  border-top: 1px solid #3e3e40;
+  text-align: center;
+}
+
+.enhanced-suggestion-box::-webkit-scrollbar {
+  width: 8px;
+}
+
+.enhanced-suggestion-box::-webkit-scrollbar-track {
+  background: #2d2d30;
+}
+
+.enhanced-suggestion-box::-webkit-scrollbar-thumb {
+  background: #5a5a5a;
+  border-radius: 4px;
+}
+
+.enhanced-suggestion-box::-webkit-scrollbar-thumb:hover {
+  background: #7a7a7a;
+}
+
+.editor-textarea.html-content {
+  border-left: 3px solid rgba(224, 108, 117, 0.5);
+}
+
+.html-highlight {
+  color: #e06c75 !important;
+  font-weight: 500;
+}
+
+.editor-textarea:focus {
+  box-shadow: 0 0 0 1px rgba(224, 108, 117, 0.3);
+}
+
+@keyframes suggestionFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/*
+ * =====================================================
+ * Responsive Design
+ * =====================================================
+ */
+@media (max-width: 768px) {
+  .search-dialog, .font-settings-dialog, .font-size-input-dialog,
+  .theme-dialog, .language-dialog, .whitespace-dialog {
+    min-width: 90vw;
+    max-width: 95vw;
+    margin: 10px;
+  }
+  
+  .font-size-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .font-size-direct-controls {
+    justify-content: center;
+  }
+  
+  .search-button-group {
+    justify-content: center;
+  }
+  
+  .search-checkbox-group {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .menu-bar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 30px;
+  }
+  
+  .language-switcher {
+    margin-left: auto;
+    margin-right: 5px;
+  }
+  
+  .enhanced-suggestion-box {
+    min-width: 180px;
+    max-width: 90vw;
+    font-size: 13px;
+  }
+  
+  .enhanced-suggestion-box .suggestion-item {
+    padding: 6px 10px;
+  }
+  
+  .enhanced-suggestion-box::after {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
 }
