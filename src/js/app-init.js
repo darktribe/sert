@@ -94,6 +94,35 @@ async function initializeTauri() {
                     }
                 });
                 console.log('Window close handler set up');
+                // ウィンドウリサイズ・最大化イベントのハンドリングを追加
+                try {
+                    // 最大化/復元イベントを監視
+                    await currentWindow.onResized(() => {
+                        console.log('🔄 Window resized, forcing layout recalculation');
+                        // レイアウト再計算を強制実行
+                        requestAnimationFrame(() => {
+                            const container = document.querySelector('.container');
+                            if (container) {
+                                container.style.height = '100%';
+                                container.style.width = '100%';
+                            }
+                            
+                            // UIコンポーネントの更新も実行
+                            try {
+                                import('./ui-updater.js').then(module => {
+                                    if (module.updateLineNumbers) module.updateLineNumbers();
+                                    if (module.updateStatus) module.updateStatus();
+                                });
+                            } catch (error) {
+                                console.warn('⚠️ UI update failed on resize:', error);
+                            }
+                        });
+                    });
+                    
+                    console.log('✅ Window resize handler set up');
+                } catch (resizeError) {
+                    console.warn('⚠️ Could not set up resize handler:', resizeError);
+                }
             }
             
             // Tauri APIs の確認

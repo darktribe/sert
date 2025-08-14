@@ -57,18 +57,31 @@
 
 body, html {
   height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   background-color: var(--editor-bg-color);
   color: var(--editor-text-color);
   overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 /* メインコンテナ */
 .container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 /* =====================================================
@@ -206,12 +219,14 @@ body, html {
 /* =====================================================
  エディタエリア
  ===================================================== */
-.editor-container {
+ .editor-container {
   display: flex;
   flex: 1;
   overflow: hidden;
   background-color: #1e1e1e;
   position: relative;
+  min-height: 0; /* flex子要素の縮小を許可 */
+  height: calc(100% - 54px); /* メニューバー(30px) + ステータスバー(24px)を除いた高さ */
 }
 
 /* 行番号表示（論理行対応） */
@@ -338,7 +353,7 @@ body, html {
 /* =====================================================
  ステータスバー（スペース修正版）
  ===================================================== */
- .status-bar {
+.status-bar {
   background-color: var(--status-bar-bg-color);
   color: var(--status-bar-text-color);
   padding: 4px 12px;
@@ -347,8 +362,13 @@ body, html {
   justify-content: space-between;
   align-items: center;
   flex-shrink: 0;
+  flex-grow: 0;
   height: 24px;
-  gap: 8px; /* 要素間に8pxのギャップを追加 */
+  min-height: 24px;
+  max-height: 24px;
+  gap: 8px;
+  position: relative;
+  z-index: 100;
 }
 
 /* 選択中の文字数表示に左マージンを追加 */
