@@ -280,10 +280,11 @@ body, html {
   overflow-x: hidden;
   overflow-y: auto;
   
-  tab-size: 4ch;
-  -moz-tab-size: 4ch;
-  -webkit-tab-size: 4ch;
-  -o-tab-size: 4ch;
+  /* タブ幅を4文字分に設定（エディタと同期） */
+  tab-size: 4;
+  -moz-tab-size: 4;
+  -webkit-tab-size: 4;
+  -o-tab-size: 4;
   
   /* フォント設定を強化してタブ幅を固定 */
   font-variant-numeric: tabular-nums;

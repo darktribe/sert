@@ -217,7 +217,7 @@ function performWhitespaceMarkersUpdate() {
             let currentX = paddingLeft + lineNumbersWidth - scrollLeft;
             let columnPosition = 0; // 現在の列位置（0ベース）
             
-            // 行内の各文字を処理
+            // 行内の各文字を処理（実際の表示幅ベースでのTab処理）
             for (let charIndex = 0; charIndex < line.length; charIndex++) {
                 const char = line[charIndex];
                 
@@ -231,7 +231,7 @@ function performWhitespaceMarkersUpdate() {
                     markerType = 'fullwidth-space';
                     displayWidth = context.measureText('\u3000').width;
                     charWidth = displayWidth;
-                    columnPosition += 2; // 全角は2列
+                    columnPosition += 2; // 論理的には半角2文字分
                 } else if (char === ' ' && whitespaceVisualization.showHalfWidthSpace) {
                     // 半角スペース
                     markerType = 'halfwidth-space';
@@ -239,40 +239,38 @@ function performWhitespaceMarkersUpdate() {
                     charWidth = displayWidth;
                     columnPosition += 1;
                 } else if (char === '\t' && whitespaceVisualization.showTab) {
-                    // タブ文字 - 次のタブストップまでの正確な幅で表示
+                    // タブ文字 - エディタの実際の動作に合わせる
                     markerType = 'tab';
                     
-                    // タブストップ位置を計算（次の4の倍数位置）
-                    const nextTabStop = Math.floor((columnPosition + 4) / 4) * 4;
-                    const columnsToNextTabStop = nextTabStop - columnPosition;
+                    // 現在位置までの実際の表示幅を計算
+                    const textBeforeTab = line.substring(0, charIndex);
+                    const actualWidthBeforeTab = context.measureText(textBeforeTab).width;
                     
-                    // 重要：タブマーカーは次のタブストップまでの正確な幅で表示
-                    // 「あい」(4列) + Tab = 4列分のタブ幅
-                    // 「11」(2列) + Tab = 2列分のタブ幅
-                    displayWidth = spaceWidth * columnsToNextTabStop;
+                    // 次のタブストップ位置を実際の表示幅で計算
+                    const tabStopWidth = spaceWidth * 4; // 4文字分の幅
+                    const nextTabStopWidth = Math.ceil((actualWidthBeforeTab + 1) / tabStopWidth) * tabStopWidth;
+                    const tabWidth = nextTabStopWidth - actualWidthBeforeTab;
+                    
+                    // Tab装飾の幅をエディタの実際のTab幅に合わせる
+                    displayWidth = tabWidth;
                     charWidth = displayWidth;
                     
-                    // 列位置を更新
+                    // 論理的な列位置も更新（4文字ごと）
+                    const nextTabStop = Math.floor((columnPosition + 4) / 4) * 4;
                     columnPosition = nextTabStop;
                     
-                    console.log(`Tab at column ${columnPosition - columnsToNextTabStop} -> ${columnPosition}: width=${columnsToNextTabStop} columns`);
+                    console.log(`Tab: actual width before=${actualWidthBeforeTab}px, tab width=${tabWidth}px, logical position=${columnPosition}`);
                 } else {
-                    // 通常の文字（全角文字の列数計算を先に行う）
-                    let charColumns;
-                    if (char.charCodeAt(0) < 256) {
-                        // ASCII文字（半角）
-                        charColumns = 1;
-                    } else {
-                        // 非ASCII文字（全角）
-                        charColumns = 2;
-                    }
-                    
-                    // 実際の表示幅を計算
+                    // 通常の文字
                     displayWidth = context.measureText(char).width;
                     charWidth = displayWidth;
                     
-                    // 列位置を更新
-                    columnPosition += charColumns;
+                    // 論理的な列位置を更新
+                    if (char.charCodeAt(0) < 256) {
+                        columnPosition += 1; // ASCII文字（半角）
+                    } else {
+                        columnPosition += 2; // 非ASCII文字（全角）= 半角2文字分
+                    }
                 }
                 
                 // マーカーを作成
