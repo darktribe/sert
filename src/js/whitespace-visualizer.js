@@ -370,7 +370,7 @@ function createWhitespaceMarker(type, x, y, width, height) {
                 case 'halfwidth-space':
                     // 半角スペース: 薄い枠と中央の点
                     marker.style.backgroundColor = 'transparent';
-                    marker.style.border = `1px solid ${whitespaceVisualization.colors.halfWidthSpace}40`; // 25%透明度
+                    marker.style.border = `2px solid ${whitespaceVisualization.colors.halfWidthSpace}80`; // 25%透明度
                     marker.style.boxSizing = 'border-box';
                     marker.style.opacity = '0.6';
     
@@ -405,7 +405,7 @@ function createWhitespaceMarker(type, x, y, width, height) {
                             top: 50%;
                             left: 2px;
                             color: ${tabColor};
-                            font-size: ${Math.max(10, Math.round(height * 0.6))}px;
+                            font-size: ${Math.max(8, Math.round(height * 0.4))}px;
                             line-height: 1;
                             transform: translateY(-50%);
                             font-family: monospace;
