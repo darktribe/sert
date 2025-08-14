@@ -1170,8 +1170,3 @@ fn handle_menu_event(app: &tauri::App, event: tauri::menu::MenuEvent) {
         println!("❌ Failed to get main webview for menu event");
     }
 }
-        
-        // アプリケーション実行
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
-}
