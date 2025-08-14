@@ -239,14 +239,16 @@ function performWhitespaceMarkersUpdate() {
                     charWidth = displayWidth;
                     columnPosition += 1;
                 } else if (char === '\t' && whitespaceVisualization.showTab) {
-                    // タブ文字 - 次のタブストップまでの幅を計算（全角文字考慮）
+                    // タブ文字 - 次のタブストップまでの正確な幅で表示
                     markerType = 'tab';
                     
-                    // 次のタブストップまでの列数を計算（4文字ごと）
+                    // タブストップ位置を計算（次の4の倍数位置）
                     const nextTabStop = Math.floor((columnPosition + 4) / 4) * 4;
                     const columnsToNextTabStop = nextTabStop - columnPosition;
                     
-                    // 実際の表示幅を計算（半角文字幅基準）
+                    // 重要：タブマーカーは次のタブストップまでの正確な幅で表示
+                    // 「あい」(4列) + Tab = 4列分のタブ幅
+                    // 「11」(2列) + Tab = 2列分のタブ幅
                     displayWidth = spaceWidth * columnsToNextTabStop;
                     charWidth = displayWidth;
                     
