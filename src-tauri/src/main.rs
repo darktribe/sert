@@ -3,7 +3,7 @@
 
 /*
  * =====================================================
- * Vinsert Editor - Rustバックエンド
+ * Vinsert Editor - Rustバックエンド (Tauri 2.5対応)
  * Python拡張機能対応のシンプルなテキストエディタ
  * =====================================================
  */
@@ -653,9 +653,6 @@ fn initialize_python() -> PythonType {
 }
 
 /**
- * Python環境の詳細を検出・確認する関数（PyO3 0.22.6完全対応版）
- */
-/**
  * Python環境の詳細を検出・確認する関数（緊急修正版）
  */
 fn detect_python_environment() -> PythonType {
@@ -794,6 +791,16 @@ fn main() {
             open_folder
         ])
         
+        // メニューの設定（Tauri 2.5対応）
+        .menu(move |app| {
+            create_native_menu(app)
+        })
+        
+        // メニューイベントハンドラー（Tauri 2.5対応）
+        .on_menu_event(move |app, event| {
+            handle_menu_event(&app, event);
+        })
+        
         // アプリケーション初期化処理
         .setup(|app| {
             println!("🚀 Sert Editor starting up...");
@@ -808,7 +815,7 @@ fn main() {
                 
                 #[cfg(target_os = "macos")]
                 {
-                    println!("🖥️ macOS multi-display support enabled via configuration");
+                    println!("🖥️ macOS native menu enabled");
                 }
                 
                 #[cfg(not(target_os = "macos"))]
@@ -875,6 +882,7 @@ fn main() {
             
             println!("📋 Clipboard operations enabled");
             println!("📁 File operations enabled (JavaScript-based dialogs)");
+            println!("🍎 Native menu system enabled");
             println!("🎯 Sert Editor ready!");
             
             Ok(())
@@ -883,4 +891,282 @@ fn main() {
         // アプリケーション実行
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+/**
+ * ネイティブメニューを作成（Tauri 2.5対応）
+ */
+/**
+ * ネイティブメニューを作成（Tauri 2.5対応）
+ */
+fn create_native_menu(app: &tauri::AppHandle) -> Result<tauri::menu::Menu<tauri::Wry>, tauri::Error> {
+    use tauri::menu::*;
+    
+    // アプリメニュー（macOS固有）
+    #[cfg(target_os = "macos")]
+    let app_menu = {
+        let about_item = MenuItem::with_id(app, "about", "Vinsertについて", true, None::<&str>)?;
+        let separator = PredefinedMenuItem::separator(app)?;
+        let hide_item = PredefinedMenuItem::hide(app, Some("Vinsertを隠す"))?;
+        let hide_others_item = PredefinedMenuItem::hide_others(app, Some("他を隠す"))?;
+        let show_all_item = PredefinedMenuItem::show_all(app, Some("すべてを表示"))?;
+        let quit_item = PredefinedMenuItem::quit(app, Some("Vinsertを終了"))?;
+        
+        Submenu::with_items(
+            app,
+            "Vinsert",
+            true,
+            &[
+                &about_item,
+                &separator,
+                &hide_item,
+                &hide_others_item,
+                &show_all_item,
+                &separator,
+                &quit_item,
+            ],
+        )?
+    };
+    
+    // ファイルメニュー
+    let new_item = MenuItem::with_id(app, "new_file", "新規作成", true, Some("CmdOrCtrl+N"))?;
+    let open_item = MenuItem::with_id(app, "open_file", "開く", true, Some("CmdOrCtrl+O"))?;
+    let save_item = MenuItem::with_id(app, "save_file", "上書き保存", true, Some("CmdOrCtrl+S"))?;
+    let save_as_item = MenuItem::with_id(app, "save_as_file", "名前をつけて保存", true, Some("CmdOrCtrl+Shift+S"))?;
+    
+    let file_separator = PredefinedMenuItem::separator(app)?;
+    
+    // macOSでは終了メニューをアプリメニューに配置するため、ファイルメニューには含めない
+    #[cfg(target_os = "macos")]
+    let file_menu = Submenu::with_items(
+        app,
+        "ファイル",
+        true,
+        &[
+            &new_item,
+            &open_item,
+            &file_separator,
+            &save_item,
+            &save_as_item,
+        ],
+    )?;
+    
+    #[cfg(not(target_os = "macos"))]
+    let file_menu = {
+        let exit_item = MenuItem::with_id(app, "exit_app", "終了", true, Some("CmdOrCtrl+Q"))?;
+        Submenu::with_items(
+            app,
+            "ファイル",
+            true,
+            &[
+                &new_item,
+                &open_item,
+                &file_separator,
+                &save_item,
+                &save_as_item,
+                &file_separator,
+                &exit_item,
+            ],
+        )?
+    };
+    
+    // 編集メニュー
+    let undo_item = MenuItem::with_id(app, "undo", "元に戻す", true, Some("CmdOrCtrl+Z"))?;
+    let redo_item = MenuItem::with_id(app, "redo", "やりなおし", true, Some("CmdOrCtrl+Shift+Z"))?;
+    let edit_separator1 = PredefinedMenuItem::separator(app)?;
+    let cut_item = PredefinedMenuItem::cut(app, Some("切り取り"))?;
+    let copy_item = PredefinedMenuItem::copy(app, Some("コピー"))?;
+    let paste_item = PredefinedMenuItem::paste(app, Some("貼り付け"))?;
+    let edit_separator2 = PredefinedMenuItem::separator(app)?;
+    let select_all_item = PredefinedMenuItem::select_all(app, Some("すべて選択"))?;
+    
+    let edit_menu = Submenu::with_items(
+        app,
+        "編集",
+        true,
+        &[
+            &undo_item,
+            &redo_item,
+            &edit_separator1,
+            &cut_item,
+            &copy_item,
+            &paste_item,
+            &edit_separator2,
+            &select_all_item,
+        ],
+    )?;
+    
+    // 表示メニュー
+    let font_settings_item = MenuItem::with_id(app, "font_settings", "フォント設定", true, None::<&str>)?;
+    let font_size_input_item = MenuItem::with_id(app, "font_size_input", "フォントサイズ指定", true, None::<&str>)?;
+    let view_separator1 = PredefinedMenuItem::separator(app)?;
+    let increase_font_item = MenuItem::with_id(app, "increase_font", "フォントサイズを大きく", true, Some("CmdOrCtrl+Plus"))?;
+    let decrease_font_item = MenuItem::with_id(app, "decrease_font", "フォントサイズを小さく", true, Some("CmdOrCtrl+Minus"))?;
+    let view_separator2 = PredefinedMenuItem::separator(app)?;
+    let line_highlight_item = MenuItem::with_id(app, "toggle_line_highlight", "行ハイライト", true, None::<&str>)?;
+    let typewriter_mode_item = MenuItem::with_id(app, "toggle_typewriter_mode", "タイプライターモード", true, None::<&str>)?;
+    let view_separator3 = PredefinedMenuItem::separator(app)?;
+    let whitespace_vis_item = MenuItem::with_id(app, "toggle_whitespace_visualization", "空白文字の可視化", true, None::<&str>)?;
+    let whitespace_settings_item = MenuItem::with_id(app, "whitespace_settings", "空白文字の設定", true, None::<&str>)?;
+    
+    let view_menu = Submenu::with_items(
+        app,
+        "表示",
+        true,
+        &[
+            &font_settings_item,
+            &font_size_input_item,
+            &view_separator1,
+            &increase_font_item,
+            &decrease_font_item,
+            &view_separator2,
+            &line_highlight_item,
+            &typewriter_mode_item,
+            &view_separator3,
+            &whitespace_vis_item,
+            &whitespace_settings_item,
+        ],
+    )?;
+    
+    // 検索メニュー
+    let find_item = MenuItem::with_id(app, "show_search", "検索", true, Some("CmdOrCtrl+F"))?;
+    let replace_item = MenuItem::with_id(app, "show_replace", "置換", true, Some("CmdOrCtrl+H"))?;
+    
+    let search_menu = Submenu::with_items(
+        app,
+        "検索",
+        true,
+        &[
+            &find_item,
+            &replace_item,
+        ],
+    )?;
+    
+    // 機能拡張メニュー
+    let extension_settings_item = MenuItem::with_id(app, "extension_settings", "拡張機能設定", true, None::<&str>)?;
+    let extension_separator = PredefinedMenuItem::separator(app)?;
+    let language_settings_item = MenuItem::with_id(app, "language_settings", "言語設定", true, None::<&str>)?;
+    let theme_item = MenuItem::with_id(app, "show_theme", "テーマ", true, None::<&str>)?;
+    let extension_separator2 = PredefinedMenuItem::separator(app)?;
+    let open_app_folder_item = MenuItem::with_id(app, "open_app_folder", "アプリフォルダを開く", true, None::<&str>)?;
+    
+    let extensions_menu = Submenu::with_items(
+        app,
+        "機能拡張",
+        true,
+        &[
+            &extension_settings_item,
+            &extension_separator,
+            &language_settings_item,
+            &theme_item,
+            &extension_separator2,
+            &open_app_folder_item,
+        ],
+    )?;
+    
+    // ウィンドウメニュー（macOS固有）
+    #[cfg(target_os = "macos")]
+    let window_menu = {
+        let minimize_item = PredefinedMenuItem::minimize(app, Some("しまう"))?;
+        let zoom_item = PredefinedMenuItem::maximize(app, Some("拡大/縮小"))?;
+        
+        Submenu::with_items(
+            app,
+            "ウィンドウ",
+            true,
+            &[
+                &minimize_item,
+                &zoom_item,
+            ],
+        )?
+    };
+    
+    // メニューバーを構築
+    #[cfg(target_os = "macos")]
+    let menu = Menu::with_items(
+        app,
+        &[
+            &app_menu,
+            &file_menu,
+            &edit_menu,
+            &view_menu,
+            &search_menu,
+            &extensions_menu,
+            &window_menu,
+        ],
+    )?;
+    
+    #[cfg(not(target_os = "macos"))]
+    let menu = Menu::with_items(
+        app,
+        &[
+            &file_menu,
+            &edit_menu,
+            &view_menu,
+            &search_menu,
+            &extensions_menu,
+        ],
+    )?;
+    
+    Ok(menu)
+}
+
+/**
+ * メニューイベントを処理（Tauri 2.5対応）
+ */
+fn handle_menu_event(app: &tauri::AppHandle, event: tauri::menu::MenuEvent) {
+    println!("🍎 Native menu event: {:?}", event.id());
+    
+    // WebViewを取得
+    if let Some(webview) = app.webview_windows().get("main") {
+        let script = match event.id().0.as_str() {
+            // ファイルメニュー
+            "new_file" => "window.newFile && window.newFile();",
+            "open_file" => "window.openFile && window.openFile();",
+            "save_file" => "window.saveFile && window.saveFile();",
+            "save_as_file" => "window.saveAsFile && window.saveAsFile();",
+            "exit_app" => "window.exitApp && window.exitApp();",
+            
+            // 編集メニュー
+            "undo" => "window.undo && window.undo();",
+            "redo" => "window.redo && window.redo();",
+            
+            // 表示メニュー
+            "font_settings" => "window.showFontSettingsDialog && window.showFontSettingsDialog();",
+            "font_size_input" => "window.showFontSizeInputDialog && window.showFontSizeInputDialog();",
+            "increase_font" => "window.increaseFontSize && window.increaseFontSize();",
+            "decrease_font" => "window.decreaseFontSize && window.decreaseFontSize();",
+            "toggle_line_highlight" => "window.toggleLineHighlight && window.toggleLineHighlight();",
+            "toggle_typewriter_mode" => "window.toggleTypewriterMode && window.toggleTypewriterMode();",
+            "toggle_whitespace_visualization" => "window.toggleWhitespaceVisualization && window.toggleWhitespaceVisualization();",
+            "whitespace_settings" => "window.showWhitespaceVisualizationDialog && window.showWhitespaceVisualizationDialog();",
+            
+            // 検索メニュー
+            "show_search" => "window.showSearchDialog && window.showSearchDialog();",
+            "show_replace" => "window.showReplaceDialog && window.showReplaceDialog();",
+            
+            // 機能拡張メニュー
+            "extension_settings" => "window.showExtensionSettingsDialog && window.showExtensionSettingsDialog();",
+            "language_settings" => "window.showLanguageSettingsDialog && window.showLanguageSettingsDialog();",
+            "show_theme" => "window.showThemeDialog && window.showThemeDialog();",
+            "open_app_folder" => "window.openAppFolder && window.openAppFolder();",
+            
+            // アバウトメニュー
+            "about" => "window.showAboutDialog && window.showAboutDialog();",
+            
+            _ => {
+                println!("⚠️ Unhandled menu event: {:?}", event.id());
+                return;
+            }
+        };
+        
+        // JavaScriptを実行
+        if let Err(e) = webview.eval(script) {
+            println!("❌ Failed to execute menu script: {}", e);
+        } else {
+            println!("✅ Menu script executed: {:?}", event.id());
+        }
+    } else {
+        println!("❌ Failed to get main webview for menu event");
+    }
 }

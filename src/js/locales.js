@@ -52,7 +52,9 @@ const FALLBACK_LANGUAGES = {
             increaseFontSize: 'フォントサイズを大きく',
             decreaseFontSize: 'フォントサイズを小さく',
             lineHighlight: '行ハイライト',
-            typewriterMode: 'タイプライターモード'
+            typewriterMode: 'タイプライターモード',
+            whitespaceVisualization: '空白文字の可視化',
+            whitespaceSettings: '空白文字の設定'
         },
         searchMenu: {
             find: '検索',
@@ -154,6 +156,13 @@ const FALLBACK_LANGUAGES = {
             version: 'Version 1.00',
             author: 'Author : Akihiko Ouchi a.k.a 如月 翔也（from 歳月堂）'
         },
+        whitespace: {
+            enable: '空白文字の可視化を有効にする',
+            typeSettings: '表示する空白文字の種類',
+            fullWidthSpace: '全角スペース（　）- 薄い青で表示',
+            halfWidthSpace: '半角スペース（ ）- グレーのドットで表示',
+            tabCharacter: 'タブ文字（→）- オレンジの矢印で表示'
+        },
         dialogs: {
             newFile: {
                 title: '内容に変更があります',
@@ -209,7 +218,9 @@ const FALLBACK_LANGUAGES = {
             increaseFontSize: 'Increase Font Size',
             decreaseFontSize: 'Decrease Font Size',
             lineHighlight: 'Line Highlight',
-            typewriterMode: 'Typewriter Mode'
+            typewriterMode: 'Typewriter Mode',
+            whitespaceVisualization: 'Whitespace Visualization',
+            whitespaceSettings: 'Whitespace Settings'
         },
         searchMenu: {
             find: 'Find',
@@ -246,6 +257,13 @@ const FALLBACK_LANGUAGES = {
             description: 'Vinsert Is New Simple Editor by Rust and Tauri',
             version: 'Version 1.00',
             author: 'Author : Akihiko Ouchi a.k.a show-ya kisaragi（from saigetsudo）'
+        },
+        whitespace: {
+            enable: 'Enable whitespace visualization',
+            typeSettings: 'Types of whitespace to display',
+            fullWidthSpace: 'Full-width space (　) - shown in light blue',
+            halfWidthSpace: 'Half-width space ( ) - shown as gray dot',
+            tabCharacter: 'Tab character (→) - shown as orange arrow'
         },
         fonts: {
             title: 'Font Settings',
@@ -365,7 +383,9 @@ const FALLBACK_LANGUAGES = {
             increaseFontSize: 'Augmenter la taille de police',
             decreaseFontSize: 'Diminuer la taille de police',
             lineHighlight: 'Surbrillance de ligne',
-            typewriterMode: 'Mode machine à écrire'
+            typewriterMode: 'Mode machine à écrire',
+            whitespaceVisualization: 'Visualisation des espaces',
+            whitespaceSettings: 'Paramètres des espaces'
         },
         searchMenu: {
             find: 'Rechercher',
@@ -488,7 +508,14 @@ const FALLBACK_LANGUAGES = {
             description: 'Vinsert Is New Simple Editor by Rust and Tauri',
             version: 'Version 1.00',
             author: 'Author : Akihiko Ouchi a.k.a show-ya kisaragi（from saigetsudo）'
-      }
+        },
+        whitespace: {
+            enable: 'Activer la visualisation des espaces',
+            typeSettings: 'Types d\'espaces à afficher',
+            fullWidthSpace: 'Espace pleine largeur (　) - affiché en bleu clair',
+            halfWidthSpace: 'Espace demi-largeur ( ) - affiché comme point gris',
+            tabCharacter: 'Caractère de tabulation (→) - affiché comme flèche orange'
+        },
     }
 };
 
@@ -578,8 +605,7 @@ async function ensureConfigDirectory() {
             
             // 親ディレクトリも含めて再帰的に作成
             await mkdir(configDirectory, { 
-                recursive: true,
-                mode: 0o755
+                recursive: true
             });
             
             // 作成確認
@@ -623,8 +649,7 @@ async function ensureLocalesDirectory() {
             console.log('📁 Creating locales directory:', localesDirectory);
             
             await mkdir(localesDirectory, { 
-                recursive: true,
-                mode: 0o755
+                recursive: true
             });
             
             // 作成確認
@@ -656,16 +681,13 @@ function initializeFallbackSystem() {
         { code: 'en', name: 'English', nativeName: 'English', version: '1.0.0' }
     ];
     
-    // デフォルト言語を設定
-    const preferredLanguage = loadLanguageFromStorage();
-    const selectedLang = FALLBACK_LANGUAGES[preferredLanguage] || FALLBACK_LANGUAGES['ja'];
-    const { _meta, ...langData } = selectedLang;
-    
+    // 日本語で初期化
+    const { _meta, ...langData } = FALLBACK_LANGUAGES['ja'];
     languageData = langData;
-    currentLanguage = _meta.code;
+    currentLanguage = 'ja';
     isExternalSystemEnabled = false;
     
-    console.log(`✅ Fallback i18n system initialized with language: ${_meta.name} (${currentLanguage})`);
+    console.log(`✅ Fallback i18n system initialized with Japanese`);
     console.log('📋 Available languages:', availableLanguages.map(l => `${l.nativeName} (${l.code})`));
 }
 
@@ -849,30 +871,21 @@ export async function changeLanguage(languageCode) {
 export async function initializeI18n() {
     console.log('🌐 Initializing i18n system...');
     
-    // まずフォールバックシステムを確実に初期化（外部システムが失敗した場合の備え）
-    initializeFallbackSystem();
-    console.log('🔄 Fallback system initialized as backup');
+    // 日本語で固定初期化
+    availableLanguages = [
+        { code: 'ja', name: '日本語', nativeName: '日本語', version: '1.0.0' },
+        { code: 'en', name: 'English', nativeName: 'English', version: '1.0.0' }
+    ];
     
-    // 外部ファイルシステムを試行（バックグラウンドで）
-    try {
-        console.log('🔍 Attempting to initialize external file system...');
-        await tryExternalFileSystem();
-    } catch (error) {
-        console.warn('⚠️ External file system not available, using fallback:', error);
-    }
+    const { _meta, ...langData } = FALLBACK_LANGUAGES['ja'];
+    languageData = langData;
+    currentLanguage = 'ja';
+    isExternalSystemEnabled = false;
     
+    console.log('✅ I18n initialized with Japanese');
     return true;
 }
 
-/**
- * 外部ファイルシステムを試行
- */
-/**
- * 外部ファイルシステムを初期化
- */
-/**
- * 外部ファイルシステムを初期化
- */
 /**
  * 外部ファイルシステムを安全に初期化（失敗してもアプリは継続）
  */
@@ -880,7 +893,7 @@ export async function tryExternalFileSystem() {
     // 必ずフラグをリセットしてから開始
     resetExternalSystemFlag();
     
-    console.log('🔍 tryExternalFileSystem called - forcing folder creation check');
+    console.log('🔍 tryExternalFileSystem called - initializing folder structure');
     console.log('🔍 isExternalSystemEnabled after reset:', isExternalSystemEnabled);
     
     // Tauri APIの確認を最初に実行
@@ -889,18 +902,8 @@ export async function tryExternalFileSystem() {
         return false;
     }
     
-    // フラグに関係なく、フォルダの存在確認と作成を実行
-    // if (isExternalSystemEnabled) {
-    //     console.log('⚠️ External system already enabled, skipping');
-    //     return;
-    // }
-    
     try {
         console.log('📂 Initializing external file system...');
-        console.log('🔍 Checking Tauri APIs...');
-        console.log('🔍 window.__TAURI__:', !!window.__TAURI__);
-        console.log('🔍 window.__TAURI__.path:', !!window.__TAURI__?.path);
-        console.log('🔍 window.__TAURI__.fs:', !!window.__TAURI__?.fs);
         
         // 設定ディレクトリを取得・作成
         console.log('🔍 Getting config directory...');
@@ -914,7 +917,8 @@ export async function tryExternalFileSystem() {
         const configCreated = await ensureConfigDirectory();
         console.log('📁 Config directory creation result:', configCreated);
         if (!configCreated) {
-            throw new Error(`設定ファイル保存場所（${configDirectory}）が開けませんでした`);
+            console.warn(`⚠️ Config directory could not be created: ${configDirectory}`);
+            // エラーにせず続行
         }
         console.log('✅ Config directory confirmed');
         
@@ -924,12 +928,15 @@ export async function tryExternalFileSystem() {
             throw new Error('Locales directory not available');
         }
         
+        console.log('📁 Creating locales directory...');
         await ensureLocalesDirectory();
         
-        // 言語ファイルを作成
+        // 言語ファイルを作成（重要：必ず実行）
+        console.log('📝 Creating language files...');
         await createLanguageFiles();
         
         // 外部言語ファイルを読み込み
+        console.log('📖 Loading external languages...');
         await loadExternalLanguages();
         
         isExternalSystemEnabled = true;
@@ -940,18 +947,14 @@ export async function tryExternalFileSystem() {
         console.log('🗂️ Config directory should be at:', configDirectory);
         console.log('🗂️ Locales directory should be at:', localesDirectory);
         
+        return true;
+        
     } catch (error) {
         console.error('❌ External file system initialization failed:', error);
         
         // フォールバックシステムで継続（alertは表示しない）
         console.log('🔄 Falling back to internal language system');
         isExternalSystemEnabled = false;
-        
-        // エラーの詳細をコンソールに記録
-        if (error.message.includes('が開けませんでした')) {
-            console.error('📁 Directory creation failed:', error.message);
-            console.log('💡 The app will continue using built-in language data');
-        }
         
         return false;
     }
@@ -962,11 +965,14 @@ export async function tryExternalFileSystem() {
  */
 async function createLanguageFiles() {
     if (!window.__TAURI__?.fs || !localesDirectory) {
+        console.warn('⚠️ Cannot create language files: Tauri FS or directory not available');
         return;
     }
     
     const { exists, writeTextFile } = window.__TAURI__.fs;
     const { join } = window.__TAURI__.path;
+    
+    console.log('📝 Creating language files in:', localesDirectory);
     
     for (const [langCode, langData] of Object.entries(FALLBACK_LANGUAGES)) {
         try {
@@ -974,13 +980,18 @@ async function createLanguageFiles() {
             const fileExists = await exists(filePath);
             
             if (!fileExists) {
-                console.log(`📝 Creating language file: ${langCode}.json`);
+                console.log(`📝 Creating language file: ${langCode}.json at ${filePath}`);
                 await writeTextFile(filePath, JSON.stringify(langData, null, 2));
+                console.log(`✅ Created ${langCode}.json successfully`);
+            } else {
+                console.log(`📄 Language file already exists: ${langCode}.json`);
             }
         } catch (error) {
             console.error(`❌ Failed to create ${langCode}.json:`, error);
         }
     }
+    
+    console.log('✅ Language file creation process completed');
 }
 
 /**

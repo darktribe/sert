@@ -34,7 +34,9 @@
     "increaseFontSize": "Augmenter la taille de police",
     "decreaseFontSize": "Diminuer la taille de police",
     "lineHighlight": "Surbrillance de ligne",
-    "typewriterMode": "Mode machine à écrire"
+    "typewriterMode": "Mode machine à écrire",
+    "whitespaceVisualization": "Visualisation des espaces",
+    "whitespaceSettings": "Paramètres des espaces"
   },
   "searchMenu": {
     "find": "Rechercher",
@@ -150,6 +152,13 @@
   "messages": {
     "messageTitle": "Message",
     "ok": "OK"
+  },
+  "whitespace": {
+    "enable": "Activer la visualisation des espaces",
+    "typeSettings": "Types d'espaces à afficher",
+    "fullWidthSpace": "Espace pleine largeur (　) - affiché en bleu clair",
+    "halfWidthSpace": "Espace demi-largeur ( ) - affiché comme point gris",
+    "tabCharacter": "Caractère de tabulation (→) - affiché comme flèche orange"
   },
   "about": {
     "title": "À propos de Vinsert",

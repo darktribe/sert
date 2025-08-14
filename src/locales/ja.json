@@ -34,7 +34,9 @@
     "increaseFontSize": "フォントサイズを大きく",
     "decreaseFontSize": "フォントサイズを小さく",
     "lineHighlight": "行ハイライト",
-    "typewriterMode": "タイプライターモード"
+    "typewriterMode": "タイプライターモード",
+    "whitespaceVisualization": "空白文字の可視化",
+    "whitespaceSettings": "空白文字の設定"
   },
   "searchMenu": {
     "find": "検索",
@@ -64,6 +66,13 @@
   "messages": {
     "messageTitle": "メッセージ",
     "ok": "OK"
+  },
+  "whitespace": {
+    "enable": "空白文字の可視化を有効にする",
+    "typeSettings": "表示する空白文字の種類",
+    "fullWidthSpace": "全角スペース（　）- 薄い青で表示",
+    "halfWidthSpace": "半角スペース（ ）- グレーのドットで表示",
+    "tabCharacter": "タブ文字（→）- オレンジの矢印で表示"
   },
   "about": {
     "title": "Vinsertについて",
@@ -158,5 +167,12 @@
       "exitWithoutSaving": "保存せずに終了",
       "cancel": "キャンセル"
     }
+  },
+  "whitespace": {
+    "enable": "空白文字の可視化を有効にする",
+    "typeSettings": "表示する空白文字の種類",
+    "fullWidthSpace": "全角スペース（　）- 薄い青で表示",
+    "halfWidthSpace": "半角スペース（ ）- グレーのドットで表示",
+    "tabCharacter": "タブ文字（→）- オレンジの矢印で表示"
   }
 }

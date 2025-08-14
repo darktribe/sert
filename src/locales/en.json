@@ -34,7 +34,9 @@
     "increaseFontSize": "Increase Font Size",
     "decreaseFontSize": "Decrease Font Size",
     "lineHighlight": "Line Highlight",
-    "typewriterMode": "Typewriter Mode"
+    "typewriterMode": "Typewriter Mode",
+    "whitespaceVisualization": "Whitespace Visualization", 
+    "whitespaceSettings": "Whitespace Settings"
   },
   "searchMenu": {
     "find": "Find",
@@ -158,5 +160,12 @@
       "exitWithoutSaving": "Exit Without Saving",
       "cancel": "Cancel"
     }
+  },
+  "whitespace": {
+    "enable": "Enable whitespace visualization",
+    "typeSettings": "Types of whitespace to display",
+    "fullWidthSpace": "Full-width space (　) - shown in light blue",
+    "halfWidthSpace": "Half-width space ( ) - shown as gray dot",
+    "tabCharacter": "Tab character (→) - shown as orange arrow"
   }
 }

@@ -19,23 +19,27 @@ import { updateStatus } from './ui-updater.js';
 export async function handleKeydown(e) {
     console.log('Key pressed:', e.key, 'Ctrl:', e.ctrlKey, 'Meta:', e.metaKey);
     
-    // ===== Tab キー入力処理 =====
+    // ===== Tab キー入力処理（最優先） =====
     if (e.key === 'Tab') {
         e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        
+        console.log('Tab key pressed, Shift:', e.shiftKey);
         
         const start = editor.selectionStart;
         const end = editor.selectionEnd;
         const value = editor.value;
         
         if (e.shiftKey) {
-            // Shift+Tab: インデント削除（行頭のタブまたは4つのスペースを削除）
+            // Shift+Tab: インデント削除
             handleShiftTab(start, end, value);
         } else {
-            // Tab: タブ文字またはスペース4つを挿入
+            // Tab: タブ文字を挿入
             handleTab(start, end, value);
         }
         
-        return;
+        return false;
     }
     
     // アプリ終了ショートカット (Ctrl/Cmd+Q, Ctrl/Cmd+W)
@@ -208,23 +212,21 @@ export async function handleKeydown(e) {
  * Tab キー処理: タブ文字またはスペースを挿入
  */
 function handleTab(start, end, value) {
-    // タブ文字を挿入（スペース4つにしたい場合は '    ' に変更）
+    console.log('Inserting tab character');
+    
+    // 実際のタブ文字を挿入
     const tabCharacter = '\t';
+    const newValue = value.substring(0, start) + tabCharacter + value.substring(end);
     
-    if (start === end) {
-        // カーソル位置にタブを挿入
-        const newValue = value.substring(0, start) + tabCharacter + value.substring(end);
-        editor.value = newValue;
-        editor.setSelectionRange(start + tabCharacter.length, start + tabCharacter.length);
-    } else {
-        // 選択範囲を削除してタブを挿入
-        const newValue = value.substring(0, start) + tabCharacter + value.substring(end);
-        editor.value = newValue;
-        editor.setSelectionRange(start + tabCharacter.length, start + tabCharacter.length);
-    }
+    editor.value = newValue;
+    const newCursorPos = start + tabCharacter.length;
+    editor.setSelectionRange(newCursorPos, newCursorPos);
     
-    // 画面更新（イベントを発火）
-    editor.dispatchEvent(new Event('input', { bubbles: true }));
+    // inputイベントを発火して更新処理を実行
+    const inputEvent = new Event('input', { bubbles: true });
+    editor.dispatchEvent(inputEvent);
+    
+    console.log('Tab character inserted');
 }
 
 /**

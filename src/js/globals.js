@@ -109,3 +109,46 @@ export function loadLineHighlightSetting() {
         console.warn('Could not load line highlight setting:', error);
     }
 }
+
+// =====================================================
+// 空白文字可視化機能関連（新規追加）
+// =====================================================
+
+// 空白文字可視化設定
+export let whitespaceVisualization = {
+    enabled: false,
+    showFullWidthSpace: true,   // 全角スペース
+    showHalfWidthSpace: true,   // 半角スペース  
+    showTab: true,              // タブ文字
+    colors: {
+        fullWidthSpace: '#FFA500',  // 全角スペース色（オレンジ）
+        halfWidthSpace: '#FFA500',  // 半角スペース色（オレンジ）
+        tab: '#FFA500'              // タブ色（オレンジ）
+    }
+};
+
+// 空白文字可視化設定の更新
+export function setWhitespaceVisualization(settings) {
+    whitespaceVisualization = { ...whitespaceVisualization, ...settings };
+    // ローカルストレージに保存
+    try {
+        localStorage.setItem('vinsert-whitespace-visualization', JSON.stringify(whitespaceVisualization));
+        console.log('💾 Whitespace visualization settings saved:', whitespaceVisualization);
+    } catch (error) {
+        console.warn('⚠️ Could not save whitespace visualization settings:', error);
+    }
+}
+
+// 空白文字可視化設定を読み込む関数
+export function loadWhitespaceVisualizationSetting() {
+    try {
+        const saved = localStorage.getItem('vinsert-whitespace-visualization');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            whitespaceVisualization = { ...whitespaceVisualization, ...parsed };
+            console.log('📂 Whitespace visualization settings loaded:', whitespaceVisualization);
+        }
+    } catch (error) {
+        console.warn('⚠️ Could not load whitespace visualization settings:', error);
+    }
+}

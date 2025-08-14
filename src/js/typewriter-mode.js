@@ -156,11 +156,29 @@ function centerCurrentLine() {
     const targetScrollTop = markerRelativeTop - editorCenter + (parseFloat(editorStyle.lineHeight) / 2);
     
     // スクロールを実行
-    editorElement.scrollTop = Math.max(0, targetScrollTop);
+    editor.scrollTop = Math.max(0, targetScrollTop);
     
     // 行番号を同期
     if (lineNumbersElement) {
-        lineNumbersElement.scrollTop = editorElement.scrollTop;
+        lineNumbersElement.scrollTop = editor.scrollTop;
+    }
+    
+    // 空白文字マーカーも更新（頻度を制限）
+    try {
+        // タイプライターモードでは更新頻度を制限
+        if (!window._lastWhitespaceUpdate || Date.now() - window._lastWhitespaceUpdate > 150) {
+            import('./whitespace-visualizer.js').then(module => {
+                if (module && module.updateWhitespaceMarkersOnScroll) {
+                    module.updateWhitespaceMarkersOnScroll();
+                    window._lastWhitespaceUpdate = Date.now();
+                }
+            }).catch(() => {
+                // 空白文字可視化機能が無効な場合は何もしない
+            });
+        }
+    } catch (error) {
+        // エラーは無視（空白文字可視化はオプション機能のため）
+        console.warn('⚠️ Whitespace marker update failed in typewriter mode:', error);
     }
 }
 

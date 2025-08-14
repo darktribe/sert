@@ -15,51 +15,19 @@ export function updateLineNumbers() {
     const lineNumbers = document.getElementById('line-numbers');
     if (!lineNumbers || !editor) return;
     
-    // グローバルに公開（タイプライターモードから呼び出せるように）
-    window.updateLineNumbers = updateLineNumbers;
-       
+    console.log('Updating line numbers...');
+    
     const lines = editor.value.split('\n');
     const lineCount = lines.length;
     
-    // 各論理行の物理的な高さを計算するための準備
-    const computedStyle = window.getComputedStyle(editor);
-    const lineHeight = parseFloat(computedStyle.lineHeight);
-    const editorWidth = editor.clientWidth - 
-                        parseFloat(computedStyle.paddingLeft) - 
-                        parseFloat(computedStyle.paddingRight);
-    
-    // フォントメトリクスを取得するための一時的なキャンバス
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    context.font = computedStyle.font;
-    
-    // 各行の行番号と高さを計算
+    // シンプルに行番号を生成
     let lineNumbersHTML = '';
-    let totalHeight = 0;
-    
-    for (let i = 0; i < lineCount; i++) {
-        const lineNumber = i + 1;
-        const lineText = lines[i];
-        
-        // 空行の場合は1行分の高さ
-        if (lineText === '') {
-            lineNumbersHTML += `<div class="line-number" style="height: ${lineHeight}px; line-height: ${lineHeight}px;">${lineNumber}</div>`;
-            totalHeight += lineHeight;
-            continue;
-        }
-        
-        // テキストの幅を計算して何行分になるか判定
-        const textWidth = context.measureText(lineText).width;
-        const wrappedLines = Math.max(1, Math.ceil(textWidth / editorWidth));
-        const lineBlockHeight = wrappedLines * lineHeight;
-        
-        // 行番号要素を作成（行番号は論理行の先頭に配置）
-        lineNumbersHTML += `<div class="line-number" style="height: ${lineBlockHeight}px; line-height: ${lineHeight}px;">${lineNumber}</div>`;
-        totalHeight += lineBlockHeight;
+    for (let i = 1; i <= lineCount; i++) {
+        lineNumbersHTML += `<div class="line-number">${i}</div>`;
     }
     
-    // 行番号をHTMLとして設定
     lineNumbers.innerHTML = lineNumbersHTML;
+    console.log(`Line numbers updated: ${lineCount} lines`);
     
     // スクロール位置を同期
     syncScroll();
@@ -208,6 +176,58 @@ export function updateStatus() {
     
     // 行ハイライトも更新
     updateLineHighlight();
+    
+    // 空白文字可視化も更新
+    updateWhitespaceMarkersIfEnabled();
+}
+
+/**
+ * 空白文字可視化が有効な場合のみマーカーを更新（安定版）
+ */
+function updateWhitespaceMarkersIfEnabled() {
+    try {
+        // 動的インポートで循環依存を避ける
+        import('./whitespace-visualizer.js').then(module => {
+            if (module && module.updateWhitespaceMarkers) {
+                // 通常の更新は少し遅延させて安定化
+                setTimeout(() => {
+                    try {
+                        module.updateWhitespaceMarkers();
+                    } catch (updateError) {
+                        console.warn('⚠️ Whitespace markers update failed:', updateError);
+                    }
+                }, 50);
+            }
+        }).catch((error) => {
+            // 空白文字可視化機能が無効な場合は何もしない（エラーログも出さない）
+        });
+    } catch (error) {
+        // エラーは無視（空白文字可視化はオプション機能のため）
+        console.warn('⚠️ Whitespace markers update error:', error);
+    }
+}
+
+/**
+ * スクロール時の空白文字マーカー更新（安定版）
+ */
+export function updateWhitespaceMarkersOnScroll() {
+    try {
+        import('./whitespace-visualizer.js').then(module => {
+            if (module && module.updateWhitespaceMarkersOnScroll) {
+                // スクロール時の更新は即座に実行（ただしエラーハンドリング付き）
+                try {
+                    module.updateWhitespaceMarkersOnScroll();
+                } catch (updateError) {
+                    console.warn('⚠️ Scroll-triggered whitespace update failed:', updateError);
+                }
+            }
+        }).catch(() => {
+            // 空白文字可視化機能が無効な場合は何もしない
+        });
+    } catch (error) {
+        // エラーは無視
+        console.warn('⚠️ Whitespace scroll update error:', error);
+    }
 }
 
 /**
@@ -302,5 +322,27 @@ export function updateFontSizeDisplay() {
     if (fontSizeDisplay) {
         const fontSettings = getCurrentFontSettings();
         fontSizeDisplay.textContent = `${t('statusBar.fontSize')}: ${fontSettings.fontSize}px`;
+    }
+}
+
+/**
+ * フォント関連の設定が変更されたときの包括的な更新
+ */
+export function updateAfterFontChange() {
+    // フォントサイズ表示を更新
+    updateFontSizeDisplay();
+    
+    // タブサイズを更新（font-settings.jsから）
+    try {
+        import('./font-settings.js').then(module => {
+            if (module && module.updateTabSizeForFont) {
+                setTimeout(() => {
+                    // フォント適用後に少し遅延してタブサイズを更新
+                    module.updateTabSizeForFont();
+                }, 100);
+            }
+        });
+    } catch (error) {
+        console.warn('⚠️ Tab size update after font change failed:', error);
     }
 }

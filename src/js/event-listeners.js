@@ -17,20 +17,32 @@ import { handleGlobalClick, handleMenuEscape } from './menu-controller.js';
 export function setupEventListeners() {
     console.log('Setting up event listeners...');
     
-    // テキスト入力関連
-    editor.addEventListener('input', handleInput);
-    editor.addEventListener('keydown', handleKeydown);
+    if (!editor) {
+        console.error('❌ Editor element not available');
+        return;
+    }
     
-    // スクロール・フォーカス関連
+    // キーボードイベントを最優先で設定
+    editor.addEventListener('keydown', handleKeydown, true);
+    console.log('✅ Keydown listener added (capture=true)');
+    
+    // 他のイベントリスナー
+    editor.addEventListener('input', handleInput);
     editor.addEventListener('scroll', () => {
         syncScroll();
-        // スクロール時にハイライトの位置も更新
         updateLineHighlight();
-    });
+        // 空白文字可視化マーカーの更新（即座同期版）
+        try {
+            updateWhitespaceMarkersOnScroll();
+        } catch (error) {
+            // エラーは無視（オプション機能のため）
+            console.warn('⚠️ Whitespace marker update failed on scroll:', error);
+        }
+    }, { passive: true });
     editor.addEventListener('click', updateStatus);
     editor.addEventListener('keyup', updateStatus);
     
-    // IME（日本語入力）関連
+    // IME関連
     editor.addEventListener('compositionstart', handleCompositionStart);
     editor.addEventListener('compositionend', handleCompositionEnd);
     editor.addEventListener('compositionupdate', handleCompositionUpdate);
@@ -39,5 +51,31 @@ export function setupEventListeners() {
     document.addEventListener('click', handleGlobalClick);
     document.addEventListener('keydown', handleMenuEscape);
     
-    console.log('Event listeners set up successfully');
+    // マウスホイールスクロール時の空白文字マーカー更新
+    editor.addEventListener('wheel', () => {
+        try {
+            // ホイールスクロール後に空白文字マーカーを更新
+            setTimeout(() => {
+                updateWhitespaceMarkersIfNeeded();
+            }, 16); // 1フレーム後に更新
+        } catch (error) {
+            console.warn('⚠️ Whitespace marker update failed on wheel scroll:', error);
+        }
+    }, { passive: true });
+    
+    console.log('✅ Event listeners set up successfully');
+}
+
+/**
+ * 空白文字マーカーの更新（必要時のみ）
+ */
+async function updateWhitespaceMarkersIfNeeded() {
+    try {
+        const module = await import('./whitespace-visualizer.js');
+        if (module && module.updateWhitespaceMarkersOnScroll) {
+            module.updateWhitespaceMarkersOnScroll();
+        }
+    } catch (error) {
+        // 空白文字可視化機能が無効な場合は何もしない
+    }
 }
