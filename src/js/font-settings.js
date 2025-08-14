@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - フォント設定機能（直接数値指定対応版）
+ * Vinsert Editor - フォント設定機能（システムフォント検出対応版）
  * =====================================================
  */
 
@@ -15,8 +15,8 @@ let fontSettings = {
     fontSize: 14
 };
 
-// 利用可能なフォント一覧
-const availableFonts = [
+// 基本的なモノスペースフォント一覧（フォールバック用）
+const fallbackFonts = [
     { name: 'Consolas', value: 'Consolas, Monaco, Courier New, monospace' },
     { name: 'Monaco', value: 'Monaco, Consolas, Courier New, monospace' },
     { name: 'Courier New', value: 'Courier New, Consolas, Monaco, monospace' },
@@ -29,12 +29,223 @@ const availableFonts = [
     { name: 'DejaVu Sans Mono', value: 'DejaVu Sans Mono, Consolas, Monaco, monospace' }
 ];
 
+// 検出対象のフォント名リスト（一般的なプログラミング用フォント）
+const fontsToDetect = [
+    // 一般的なモノスペースフォント
+    'Consolas', 'Monaco', 'Courier New', 'Courier',
+    
+    // プログラミング用フォント
+    'Source Code Pro', 'Fira Code', 'JetBrains Mono', 'Roboto Mono',
+    'Ubuntu Mono', 'Menlo', 'DejaVu Sans Mono', 'Liberation Mono',
+    'Inconsolata', 'Droid Sans Mono', 'Hack', 'Anonymous Pro',
+    'PT Mono', 'Space Mono', 'IBM Plex Mono', 'Cascadia Code',
+    'SF Mono', 'Operator Mono', 'Input Mono', 'Fantasque Sans Mono',
+    'Victor Mono', 'Iosevka', 'Noto Sans Mono', 'Overpass Mono',
+    
+    // システムフォント
+    'Arial', 'Helvetica', 'Times New Roman', 'Georgia', 'Verdana',
+    'Tahoma', 'Trebuchet MS', 'Comic Sans MS', 'Impact', 'Lucida Console',
+    
+    // macOS固有
+    'Helvetica Neue', 'San Francisco', 'SF Pro Text', 'SF Pro Display',
+    'New York', 'Avenir', 'Futura', 'Gill Sans', 'Optima',
+    
+    // Windows固有
+    'Segoe UI', 'Calibri', 'Cambria', 'Candara', 'Corbel', 'Constantia',
+    'Microsoft Sans Serif', 'Microsoft YaHei', 'Malgun Gothic',
+    
+    // Linux固有
+    'Noto Sans', 'Noto Serif', 'Liberation Sans', 'Liberation Serif',
+    'DejaVu Sans', 'DejaVu Serif', 'Ubuntu', 'Cantarell',
+    
+    // 日本語フォント
+    'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo',
+    'MS Gothic', 'MS Mincho', 'Noto Sans CJK JP', 'Source Han Sans',
+    'BIZ UDGothic', 'BIZ UDMincho',
+    
+    // その他
+    'Comic Neue', 'Fira Sans', 'Open Sans', 'Lato', 'Montserrat',
+    'Playfair Display', 'Oswald', 'Source Sans Pro'
+];
+
+// 検出されたフォントのキャッシュ
+let detectedFonts = null;
+let fontDetectionInProgress = false;
+
 // フォントサイズの範囲
 const fontSizeRange = {
     min: 8,
     max: 32,
     step: 1
 };
+
+/**
+ * Canvas APIを使用してフォントの存在を検出
+ */
+function detectFont(fontName) {
+    try {
+        // Canvas要素を作成
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        // テスト用の文字列
+        const testString = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        const fontSize = '72px';
+        
+        // デフォルトフォントでの描画結果を取得
+        context.font = `${fontSize} monospace`;
+        const defaultWidth = context.measureText(testString).width;
+        
+        // 検査対象フォントでの描画結果を取得
+        context.font = `${fontSize} "${fontName}", monospace`;
+        const testWidth = context.measureText(testString).width;
+        
+        // 幅が異なればフォントが存在する
+        const isAvailable = Math.abs(defaultWidth - testWidth) > 1;
+        
+        console.log(`Font detection: ${fontName} - ${isAvailable ? 'Available' : 'Not available'} (default: ${defaultWidth}px, test: ${testWidth}px)`);
+        
+        return isAvailable;
+        
+    } catch (error) {
+        console.warn(`Font detection failed for ${fontName}:`, error);
+        return false;
+    }
+}
+
+/**
+ * より精密なフォント検出（複数のテスト方法を組み合わせ）
+ */
+function detectFontPrecise(fontName) {
+    try {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        // 複数のテスト文字列で検証
+        const testStrings = [
+            'The quick brown fox jumps over the lazy dog 1234567890',
+            'mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm',
+            'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
+            'iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii'
+        ];
+        
+        const fontSize = '48px';
+        let matchCount = 0;
+        
+        for (const testString of testStrings) {
+            // デフォルトフォント
+            context.font = `${fontSize} serif`;
+            const serifWidth = context.measureText(testString).width;
+            
+            context.font = `${fontSize} sans-serif`;
+            const sansWidth = context.measureText(testString).width;
+            
+            context.font = `${fontSize} monospace`;
+            const monoWidth = context.measureText(testString).width;
+            
+            // 検査対象フォント
+            context.font = `${fontSize} "${fontName}", serif`;
+            const testWidth = context.measureText(testString).width;
+            
+            // 3つのベースラインフォントと異なるかチェック
+            const diffFromSerif = Math.abs(serifWidth - testWidth);
+            const diffFromSans = Math.abs(sansWidth - testWidth);
+            const diffFromMono = Math.abs(monoWidth - testWidth);
+            
+            const minDiff = 2; // 最小差異（ピクセル）
+            
+            if (diffFromSerif > minDiff || diffFromSans > minDiff || diffFromMono > minDiff) {
+                matchCount++;
+            }
+        }
+        
+        // 半数以上のテストで差異が検出されればフォントが存在
+        const isAvailable = matchCount >= testStrings.length / 2;
+        
+        console.log(`Precise font detection: ${fontName} - ${isAvailable ? 'Available' : 'Not available'} (matches: ${matchCount}/${testStrings.length})`);
+        
+        return isAvailable;
+        
+    } catch (error) {
+        console.warn(`Precise font detection failed for ${fontName}:`, error);
+        return false;
+    }
+}
+
+/**
+ * システムフォントを非同期で検出
+ */
+async function detectSystemFonts() {
+    if (fontDetectionInProgress) {
+        console.log('Font detection already in progress');
+        return detectedFonts || fallbackFonts;
+    }
+    
+    if (detectedFonts) {
+        console.log('Using cached font detection results');
+        return detectedFonts;
+    }
+    
+    fontDetectionInProgress = true;
+    console.log('🔍 Starting system font detection...');
+    
+    try {
+        const availableFonts = [...fallbackFonts]; // フォールバックフォントを最初に追加
+        const detectedFontNames = new Set(fallbackFonts.map(f => f.name));
+        
+        // 検出処理を分割して実行（UIブロックを防ぐ）
+        const batchSize = 10;
+        
+        for (let i = 0; i < fontsToDetect.length; i += batchSize) {
+            const batch = fontsToDetect.slice(i, i + batchSize);
+            
+            for (const fontName of batch) {
+                if (detectedFontNames.has(fontName)) {
+                    continue; // 既に追加済み
+                }
+                
+                // より精密な検出を使用
+                const isAvailable = detectFontPrecise(fontName);
+                
+                if (isAvailable) {
+                    const fontValue = `"${fontName}", ${fontName.includes('Mono') ? 'monospace' : fontName.includes('Sans') ? 'sans-serif' : 'serif'}`;
+                    availableFonts.push({
+                        name: fontName,
+                        value: fontValue
+                    });
+                    detectedFontNames.add(fontName);
+                    console.log(`✅ Added system font: ${fontName}`);
+                }
+            }
+            
+            // UIブロックを防ぐため少し待機
+            if (i + batchSize < fontsToDetect.length) {
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+        }
+        
+        // 名前でソート（フォールバックフォントは最初に保持）
+        const fallbackCount = fallbackFonts.length;
+        const detectedSystemFonts = availableFonts.slice(fallbackCount);
+        detectedSystemFonts.sort((a, b) => a.name.localeCompare(b.name));
+        
+        detectedFonts = [
+            ...availableFonts.slice(0, fallbackCount),
+            ...detectedSystemFonts
+        ];
+        
+        console.log(`✅ Font detection completed. Found ${detectedFonts.length} fonts (${detectedFonts.length - fallbackCount} system fonts)`);
+        
+        return detectedFonts;
+        
+    } catch (error) {
+        console.error('❌ Font detection failed:', error);
+        detectedFonts = fallbackFonts;
+        return fallbackFonts;
+    } finally {
+        fontDetectionInProgress = false;
+    }
+}
 
 /**
  * フォント設定をローカルストレージから読み込み
@@ -299,9 +510,9 @@ function closeFontSizeInputDialog(dialogOverlay) {
 }
 
 /**
- * フォント設定ダイアログの作成
+ * フォント設定ダイアログの作成（システムフォント検出対応版）
  */
-function createFontSettingsDialog() {
+async function createFontSettingsDialog() {
     const dialogOverlay = document.createElement('div');
     dialogOverlay.id = 'font-settings-dialog-overlay';
     dialogOverlay.className = 'search-dialog-overlay font-settings-overlay';
@@ -309,18 +520,15 @@ function createFontSettingsDialog() {
     const dialog = document.createElement('div');
     dialog.className = 'search-dialog font-settings-dialog';
     
+    // 初期ローディング状態のHTML
     dialog.innerHTML = `
         <div class="search-dialog-header">${t('fonts.title')}</div>
         <div class="search-dialog-content">
             <div class="font-settings-section">
                 <div class="search-input-group">
                     <label for="font-family-select">${t('fonts.fontFamily')}</label>
-                    <select id="font-family-select" class="font-select">
-                        ${availableFonts.map(font => 
-                            `<option value="${font.value}" ${font.value === fontSettings.fontFamily ? 'selected' : ''}>
-                                ${font.name}
-                            </option>`
-                        ).join('')}
+                    <select id="font-family-select" class="font-select" disabled>
+                        <option>🔍 システムフォントを検出中...</option>
                     </select>
                 </div>
                 
@@ -364,13 +572,33 @@ function createFontSettingsDialog() {
     dialogOverlay.appendChild(dialog);
     document.body.appendChild(dialogOverlay);
     
+    // フォント検出を開始
+    console.log('🔍 Starting font detection for dialog...');
+    const availableFonts = await detectSystemFonts();
+    
+    // セレクトボックスを更新
+    const fontSelect = document.getElementById('font-family-select');
+    if (fontSelect) {
+        fontSelect.innerHTML = '';
+        fontSelect.disabled = false;
+        
+        availableFonts.forEach(font => {
+            const option = document.createElement('option');
+            option.value = font.value;
+            option.textContent = font.name;
+            option.selected = font.value === fontSettings.fontFamily;
+            fontSelect.appendChild(option);
+        });
+        
+        console.log(`✅ Font select populated with ${availableFonts.length} fonts`);
+    }
+    
     setupFontSettingsDialogEvents(dialogOverlay);
     updateFontPreview();
     
     // フォントセレクトにフォーカスを設定
     setTimeout(() => {
-        const fontSelect = document.getElementById('font-family-select');
-        if (fontSelect) {
+        if (fontSelect && !fontSelect.disabled) {
             fontSelect.focus();
         }
     }, 100);
@@ -391,61 +619,73 @@ function setupFontSettingsDialogEvents(dialogOverlay) {
     const originalSettings = { ...fontSettings };
     
     // フォントファミリ変更
-    fontSelect.addEventListener('change', () => {
-        fontSettings.fontFamily = fontSelect.value;
-        updateFontPreview();
-    });
+    if (fontSelect) {
+        fontSelect.addEventListener('change', () => {
+            fontSettings.fontFamily = fontSelect.value;
+            updateFontPreview();
+        });
+    }
     
     // フォントサイズ変更（スライダー）
-    fontSizeRange.addEventListener('input', () => {
-        const size = parseInt(fontSizeRange.value);
-        fontSettings.fontSize = size;
-        fontSizeInput.value = size;
-        updateFontPreview();
-    });
+    if (fontSizeRange) {
+        fontSizeRange.addEventListener('input', () => {
+            const size = parseInt(fontSizeRange.value);
+            fontSettings.fontSize = size;
+            if (fontSizeInput) fontSizeInput.value = size;
+            updateFontPreview();
+        });
+    }
     
     // フォントサイズ変更（数値入力）
-    fontSizeInput.addEventListener('input', () => {
-        const size = parseInt(fontSizeInput.value);
-        if (size >= fontSizeRange.min && size <= fontSizeRange.max) {
-            fontSettings.fontSize = size;
-            fontSizeRange.value = size;
-            updateFontPreview();
-        }
-    });
+    if (fontSizeInput) {
+        fontSizeInput.addEventListener('input', () => {
+            const size = parseInt(fontSizeInput.value);
+            if (size >= fontSizeRange.min && size <= fontSizeRange.max) {
+                fontSettings.fontSize = size;
+                if (fontSizeRange) fontSizeRange.value = size;
+                updateFontPreview();
+            }
+        });
+    }
     
     // 適用ボタン
-    applyBtn.addEventListener('click', () => {
-        applyFontSettings();
-        saveFontSettings();
-        closeFontSettingsDialog(dialogOverlay);
-        console.log('✅ Font settings applied and saved');
-    });
+    if (applyBtn) {
+        applyBtn.addEventListener('click', () => {
+            applyFontSettings();
+            saveFontSettings();
+            closeFontSettingsDialog(dialogOverlay);
+            console.log('✅ Font settings applied and saved');
+        });
+    }
     
     // リセットボタン
-    resetBtn.addEventListener('click', () => {
-        if (confirm(t('fonts.messages.resetConfirm'))) {
-            // デフォルト設定に戻す
-            fontSettings.fontFamily = 'Consolas, Monaco, Courier New, monospace';
-            fontSettings.fontSize = 14;
-            
-            // UIを更新
-            fontSelect.value = fontSettings.fontFamily;
-            fontSizeRange.value = fontSettings.fontSize;
-            fontSizeInput.value = fontSettings.fontSize;
-            
-            updateFontPreview();
-            console.log('🔄 Font settings reset to defaults');
-        }
-    });
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            if (confirm(t('fonts.messages.resetConfirm'))) {
+                // デフォルト設定に戻す
+                fontSettings.fontFamily = 'Consolas, Monaco, Courier New, monospace';
+                fontSettings.fontSize = 14;
+                
+                // UIを更新
+                if (fontSelect) fontSelect.value = fontSettings.fontFamily;
+                if (fontSizeRange) fontSizeRange.value = fontSettings.fontSize;
+                if (fontSizeInput) fontSizeInput.value = fontSettings.fontSize;
+                
+                updateFontPreview();
+                console.log('🔄 Font settings reset to defaults');
+            }
+        });
+    }
     
     // キャンセルボタン
-    cancelBtn.addEventListener('click', () => {
-        // 元の設定に戻す
-        fontSettings = originalSettings;
-        closeFontSettingsDialog(dialogOverlay);
-        console.log('❌ Font settings cancelled');
-    });
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+            // 元の設定に戻す
+            fontSettings = originalSettings;
+            closeFontSettingsDialog(dialogOverlay);
+            console.log('❌ Font settings cancelled');
+        });
+    }
     
     // ESCキーでキャンセル
     function handleKeyDown(e) {
@@ -538,4 +778,21 @@ export function decreaseFontSize() {
         saveFontSettings();
         console.log('🔍 Font size decreased to:', fontSettings.fontSize);
     }
+}
+
+/**
+ * 検出されたフォント一覧を取得（デバッグ用）
+ */
+export function getDetectedFonts() {
+    return detectedFonts || fallbackFonts;
+}
+
+/**
+ * フォント検出を強制的に再実行
+ */
+export async function refreshFontDetection() {
+    console.log('🔄 Refreshing font detection...');
+    detectedFonts = null;
+    fontDetectionInProgress = false;
+    return await detectSystemFonts();
 }
