@@ -20,9 +20,13 @@ fn setup_python() {
         return;
     }
     
-    // macOSでの設定
+    // OS別の設定
     if cfg!(target_os = "macos") {
         setup_macos_python();
+    } else if cfg!(target_os = "linux") {
+        setup_linux_python();
+    } else if cfg!(target_os = "windows") {
+        setup_windows_python();
     }
 }
 
@@ -113,4 +117,144 @@ fn setup_macos_python() {
     // 4. エラー: サポートされているPythonバージョンが見つからない
     println!("cargo:warning=WARNING: No supported Python version found (3.11 or 3.12)");
     println!("cargo:warning=Please install Python 3.11 with: brew install python@3.11");
+}
+
+fn setup_linux_python() {
+    println!("cargo:warning=Setting up Python for Linux");
+    
+    // 1. pkg-configを使ってPython3を検出
+    if let Ok(output) = Command::new("pkg-config").args(&["--exists", "python3"]).output() {
+        if output.status.success() {
+            // Python3のcflagsとlibsを取得
+            if let Ok(cflags_output) = Command::new("pkg-config").args(&["--cflags", "python3"]).output() {
+                if let Ok(libs_output) = Command::new("pkg-config").args(&["--libs", "python3"]).output() {
+                    let cflags = String::from_utf8_lossy(&cflags_output.stdout);
+                    let libs = String::from_utf8_lossy(&libs_output.stdout);
+                    
+                    // cflagsを処理
+                    for flag in cflags.split_whitespace() {
+                        if flag.starts_with("-I") {
+                            let path = flag.trim_start_matches("-I");
+                            println!("cargo:rustc-link-search=native={}", path);
+                        }
+                    }
+                    
+                    // libsを処理
+                    for flag in libs.split_whitespace() {
+                        if flag.starts_with("-L") {
+                            let path = flag.trim_start_matches("-L");
+                            println!("cargo:rustc-link-search=native={}", path);
+                        } else if flag.starts_with("-l") {
+                            let lib = flag.trim_start_matches("-l");
+                            println!("cargo:rustc-link-lib={}", lib);
+                        }
+                    }
+                    
+                    println!("cargo:warning=Using pkg-config Python3");
+                    return;
+                }
+            }
+        }
+    }
+    
+    // 2. python3-configを直接試す
+    if let Ok(output) = Command::new("python3-config").args(&["--ldflags", "--embed"]).output() {
+        if output.status.success() {
+            let ldflags = String::from_utf8_lossy(&output.stdout);
+            
+            for flag in ldflags.split_whitespace() {
+                if flag.starts_with("-L") {
+                    let path = flag.trim_start_matches("-L");
+                    println!("cargo:rustc-link-search=native={}", path);
+                } else if flag.starts_with("-l") && !flag.contains("intl") {
+                    let lib = flag.trim_start_matches("-l");
+                    println!("cargo:rustc-link-lib={}", lib);
+                }
+            }
+            
+            // Pythonパスを取得
+            if let Ok(python_output) = Command::new("which").arg("python3").output() {
+                if python_output.status.success() {
+                    let python_path = String::from_utf8_lossy(&python_output.stdout).trim().to_string();
+                    println!("cargo:rustc-env=PYO3_PYTHON={}", python_path);
+                    println!("cargo:warning=Using python3-config at: {}", python_path);
+                    return;
+                }
+            }
+        }
+    }
+    
+    // 3. 特定バージョンを試す（python3.11, python3.10, python3.9）
+    for version in &["3.11", "3.10", "3.9", "3.12"] {
+        let python_cmd = format!("python{}", version);
+        let config_cmd = format!("python{}-config", version);
+        
+        if let Ok(output) = Command::new("which").arg(&python_cmd).output() {
+            if output.status.success() {
+                let python_path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                
+                if let Ok(config_output) = Command::new(&config_cmd).args(&["--ldflags", "--embed"]).output() {
+                    if config_output.status.success() {
+                        let ldflags = String::from_utf8_lossy(&config_output.stdout);
+                        
+                        for flag in ldflags.split_whitespace() {
+                            if flag.starts_with("-L") {
+                                let path = flag.trim_start_matches("-L");
+                                println!("cargo:rustc-link-search=native={}", path);
+                            } else if flag.starts_with("-l") && !flag.contains("intl") {
+                                let lib = flag.trim_start_matches("-l");
+                                println!("cargo:rustc-link-lib={}", lib);
+                            }
+                        }
+                        
+                        println!("cargo:rustc-env=PYO3_PYTHON={}", python_path);
+                        println!("cargo:warning=Using Python {} at: {}", version, python_path);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+    
+    // 4. エラー: サポートされているPythonバージョンが見つからない
+    println!("cargo:warning=WARNING: No supported Python version found");
+    println!("cargo:warning=Please install Python development packages:");
+    println!("cargo:warning=  Ubuntu/Debian: apt install python3-dev");
+    println!("cargo:warning=  RHEL/CentOS: yum install python3-devel");
+    println!("cargo:warning=  Arch: pacman -S python python-pip");
+}
+
+fn setup_windows_python() {
+    println!("cargo:warning=Setting up Python for Windows");
+    
+    // 1. python3コマンドを試す
+    if let Ok(output) = Command::new("python3").arg("--version").output() {
+        if output.status.success() {
+            if let Ok(python_output) = Command::new("where").arg("python3").output() {
+                if python_output.status.success() {
+                    let python_path = String::from_utf8_lossy(&python_output.stdout).trim().to_string();
+                    println!("cargo:rustc-env=PYO3_PYTHON={}", python_path);
+                    println!("cargo:warning=Using Python3 at: {}", python_path);
+                    return;
+                }
+            }
+        }
+    }
+    
+    // 2. pythonコマンドを試す
+    if let Ok(output) = Command::new("python").arg("--version").output() {
+        if output.status.success() {
+            if let Ok(python_output) = Command::new("where").arg("python").output() {
+                if python_output.status.success() {
+                    let python_path = String::from_utf8_lossy(&python_output.stdout).trim().to_string();
+                    println!("cargo:rustc-env=PYO3_PYTHON={}", python_path);
+                    println!("cargo:warning=Using Python at: {}", python_path);
+                    return;
+                }
+            }
+        }
+    }
+    
+    println!("cargo:warning=WARNING: No Python found on Windows");
+    println!("cargo:warning=Please install Python from python.org or Microsoft Store");
 }

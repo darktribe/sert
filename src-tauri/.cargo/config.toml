@@ -1,8 +1,28 @@
-[env]
+# macOS固有の設定
+[target.x86_64-apple-darwin.env]
 PYO3_PYTHON = "/opt/homebrew/opt/python@3.11/bin/python3.11"
 
-[build]
+[target.aarch64-apple-darwin.env]
+PYO3_PYTHON = "/opt/homebrew/opt/python@3.11/bin/python3.11"
+
+# macOS向けのビルド設定
+[target.x86_64-apple-darwin.build]
 rustflags = [
     "-L", "/opt/homebrew/opt/python@3.11/lib",
     "-L", "/opt/homebrew/opt/python@3.11/Frameworks/Python.framework/Versions/3.11/lib"
 ]
+
+[target.aarch64-apple-darwin.build]
+rustflags = [
+    "-L", "/opt/homebrew/opt/python@3.11/lib", 
+    "-L", "/opt/homebrew/opt/python@3.11/Frameworks/Python.framework/Versions/3.11/lib"
+]
+
+# Linux向けの設定（必要に応じて）
+# システムのPythonを使用するため、通常は設定不要
+# [target.x86_64-unknown-linux-gnu.env]
+# # PYO3_PYTHON = "/usr/bin/python3"
+
+# Windows向けの設定（必要に応じて）
+# [target.x86_64-pc-windows-msvc.env]
+# # PYO3_PYTHON = "C:\\Python311\\python.exe"
