@@ -103,84 +103,126 @@ function stopContinuousCenter() {
 function centerCurrentLine() {
     if (!editorElement || !isEnabled) return;
     
-    // カーソル位置を取得
-    const cursorPos = editorElement.selectionStart;
-    
-    // 一時的な要素でカーソル位置の高さを測定
-    const measurer = document.createElement('div');
-    const editorStyle = window.getComputedStyle(editorElement);
-    
-    // エディタと同じスタイルを適用
-    measurer.style.position = 'absolute';
-    measurer.style.left = '-9999px';
-    measurer.style.top = '0';
-    measurer.style.width = editorElement.clientWidth + 'px';
-    measurer.style.font = editorStyle.font;
-    measurer.style.fontSize = editorStyle.fontSize;
-    measurer.style.fontFamily = editorStyle.fontFamily;
-    measurer.style.lineHeight = editorStyle.lineHeight;
-    measurer.style.whiteSpace = 'pre-wrap';
-    measurer.style.wordBreak = 'break-word';
-    measurer.style.overflowWrap = 'break-word';
-    measurer.style.padding = editorStyle.padding;
-    measurer.style.border = editorStyle.border;
-    measurer.style.boxSizing = editorStyle.boxSizing;
-    
-    // カーソル位置までのテキストを入れて高さを測定
-    measurer.textContent = editorElement.value.substring(0, cursorPos);
-    document.body.appendChild(measurer);
-    
-    const cursorTop = measurer.offsetHeight;
-    
-    // カーソル位置にマーカーを追加して現在行の高さを測定
-    measurer.innerHTML = '';
-    const beforeText = document.createTextNode(editorElement.value.substring(0, cursorPos));
-    const marker = document.createElement('span');
-    marker.textContent = '|';
-    const afterText = document.createTextNode(editorElement.value.substring(cursorPos));
-    
-    measurer.appendChild(beforeText);
-    measurer.appendChild(marker);
-    measurer.appendChild(afterText);
-    
-    const markerRect = marker.getBoundingClientRect();
-    const measuterRect = measurer.getBoundingClientRect();
-    const markerRelativeTop = markerRect.top - measuterRect.top;
-    
-    document.body.removeChild(measurer);
-    
-    // エディタの中央位置を計算
-    const editorCenter = editorElement.clientHeight / 2;
-    
-    // スクロール位置を計算
-    const targetScrollTop = markerRelativeTop - editorCenter + (parseFloat(editorStyle.lineHeight) / 2);
-    
-    // スクロールを実行
-    editor.scrollTop = Math.max(0, targetScrollTop);
-    
-    // 行番号を同期
-    if (lineNumbersElement) {
-        lineNumbersElement.scrollTop = editor.scrollTop;
-    }
-    
-    // 空白文字マーカーも更新（頻度を制限）
     try {
-        // タイプライターモードでは更新頻度を制限
-        if (!window._lastWhitespaceUpdate || Date.now() - window._lastWhitespaceUpdate > 150) {
-            import('./whitespace-visualizer.js').then(module => {
-                if (module && module.updateWhitespaceMarkersOnScroll) {
-                    module.updateWhitespaceMarkersOnScroll();
-                    window._lastWhitespaceUpdate = Date.now();
-                }
-            }).catch(() => {
-                // 空白文字可視化機能が無効な場合は何もしない
-            });
+        // カーソル位置を取得
+        const cursorPos = editorElement.selectionStart;
+        
+        // カーソルの物理的な位置を正確に計算
+        const physicalCursorTop = calculatePhysicalCursorPosition(cursorPos);
+        
+        // エディタの中央位置を計算
+        const editorCenter = editorElement.clientHeight / 2;
+        
+        // カーソルが表示されている物理行を中央に配置
+        const targetScrollTop = physicalCursorTop - editorCenter;
+        
+        // スクロールを実行
+        editorElement.scrollTop = Math.max(0, targetScrollTop);
+        
+        // 行番号を同期
+        if (lineNumbersElement) {
+            lineNumbersElement.scrollTop = editorElement.scrollTop;
         }
+        
+        // タイプライターモードでは行番号位置を更新
+        updateLineNumbersForTypewriter();
+        
+        console.log(`Typewriter: centered physical cursor position ${physicalCursorTop}, scroll: ${editorElement.scrollTop}`);
+        
     } catch (error) {
-        // エラーは無視（空白文字可視化はオプション機能のため）
-        console.warn('⚠️ Whitespace marker update failed in typewriter mode:', error);
+        console.error('❌ Error in centerCurrentLine:', error);
     }
 }
+
+/**
+ * カーソルの物理的な位置を計算
+ */
+function calculatePhysicalCursorPosition(cursorPos) {
+    try {
+        const computedStyle = window.getComputedStyle(editorElement);
+        const actualPaddingTop = parseFloat(editorElement.style.paddingTop) || parseFloat(computedStyle.paddingTop);
+        const paddingLeft = parseFloat(computedStyle.paddingLeft);
+        const paddingRight = parseFloat(computedStyle.paddingRight);
+        const editorWidth = editorElement.clientWidth - paddingLeft - paddingRight;
+        
+        // 測定用要素を作成
+        const measurer = document.createElement('div');
+        measurer.style.cssText = `
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            visibility: hidden;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: ${computedStyle.fontFamily};
+            font-size: ${computedStyle.fontSize};
+            line-height: ${computedStyle.lineHeight};
+            padding: 0;
+            margin: 0;
+            border: none;
+            width: ${editorWidth}px;
+        `;
+        
+        document.body.appendChild(measurer);
+        
+        // カーソル位置にマーカーを挿入して正確な位置を取得
+        const textBeforeCursor = editorElement.value.substring(0, cursorPos);
+        const textAfterCursor = editorElement.value.substring(cursorPos);
+        
+        const beforeNode = document.createTextNode(textBeforeCursor);
+        const cursorMarker = document.createElement('span');
+        cursorMarker.textContent = '|';
+        const afterNode = document.createTextNode(textAfterCursor);
+        
+        measurer.appendChild(beforeNode);
+        measurer.appendChild(cursorMarker);
+        measurer.appendChild(afterNode);
+        
+        const markerRect = cursorMarker.getBoundingClientRect();
+        const measurerRect = measurer.getBoundingClientRect();
+        const relativeTop = markerRect.top - measurerRect.top;
+        
+        document.body.removeChild(measurer);
+        
+        return actualPaddingTop + relativeTop;
+        
+    } catch (error) {
+        console.error('Error calculating physical cursor position:', error);
+        // フォールバック
+        const computedStyle = window.getComputedStyle(editorElement);
+        const lineHeight = parseFloat(computedStyle.lineHeight);
+        const actualPaddingTop = parseFloat(editorElement.style.paddingTop) || parseFloat(computedStyle.paddingTop);
+        const textBeforeCursor = editorElement.value.substring(0, cursorPos);
+        const logicalLine = textBeforeCursor.split('\n').length;
+        return actualPaddingTop + (logicalLine - 1) * lineHeight;
+    }
+}
+
+/**
+ * タイプライターモード用の行番号更新
+ */
+function updateLineNumbersForTypewriter() {
+    if (!isEnabled || !editorElement) return;
+    
+    try {
+        // 行番号更新を遅延実行（スクロール完了後）
+        setTimeout(() => {
+            try {
+                // ui-updater.jsのupdateLineNumbers関数を動的インポートで呼び出し
+                import('./ui-updater.js').then(module => {
+                    if (module && module.updateLineNumbers) {
+                        module.updateLineNumbers();
+                    }
+                });
+            } catch (error) {
+                console.warn('⚠️ Failed to update line numbers:', error);
+            }
+        }, 10);
+    } catch (error) {
+        console.warn('⚠️ updateLineNumbersForTypewriter failed:', error);
+    }
+}
+
 
 /**
  * 初期化
