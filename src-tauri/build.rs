@@ -1,8 +1,5 @@
 use std::env;
 use std::path::Path;
-use std::process::Command;
-
-
 
 fn setup_python() {
     // 環境変数でPythonパスが指定されている場合はそれを使用
@@ -11,9 +8,13 @@ fn setup_python() {
         return;
     }
     
-    // macOSでの設定
-    if cfg!(target_os = "macos") {
+    // プラットフォーム別の設定
+    if cfg!(target_os = "windows") {
+        setup_windows_python();
+    } else if cfg!(target_os = "macos") {
         setup_macos_python();
+    } else {
+        println!("cargo:warning=Unsupported platform for automatic Python setup");
     }
 }
 
@@ -52,6 +53,35 @@ fn setup_windows_python() {
     println!("cargo:warning=Please install Python 3.11 or set PYO3_PYTHON environment variable");
 }
 
+fn setup_macos_python() {
+    println!("cargo:warning=Setting up Python for macOS");
+    
+    // 環境変数でPythonパスが指定されている場合はそれを使用
+    if env::var("PYO3_PYTHON").is_ok() {
+        println!("cargo:warning=Using PYO3_PYTHON from environment");
+        return;
+    }
+    
+    // macOS用のPythonパスをチェック
+    let python_paths = [
+        "/usr/local/bin/python3",
+        "/opt/homebrew/bin/python3",
+        "/usr/bin/python3",
+        "/Library/Frameworks/Python.framework/Versions/3.11/bin/python3",
+    ];
+    
+    for python_path in &python_paths {
+        if Path::new(python_path).exists() {
+            println!("cargo:rustc-env=PYO3_PYTHON={}", python_path);
+            println!("cargo:warning=Using Python at: {}", python_path);
+            return;
+        }
+    }
+    
+    println!("cargo:warning=WARNING: No supported Python version found on macOS");
+    println!("cargo:warning=Please install Python 3.11 via Homebrew or set PYO3_PYTHON environment variable");
+}
+
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-env-changed=PYO3_PYTHON");
@@ -61,21 +91,4 @@ fn main() {
     
     // Tauriビルドを実行
     tauri_build::build();
-}
-
-fn setup_python() {
-    // 環境変数でPythonパスが指定されている場合はそれを使用
-    if env::var("PYO3_PYTHON").is_ok() {
-        println!("cargo:warning=Using PYO3_PYTHON from environment");
-        return;
-    }
-    
-    // プラットフォーム別の設定
-    if cfg!(target_os = "windows") {
-        setup_windows_python();
-    } else if cfg!(target_os = "macos") {
-        setup_macos_python();
-    } else {
-        println!("cargo:warning=Unsupported platform for automatic Python setup");
-    }
 }
