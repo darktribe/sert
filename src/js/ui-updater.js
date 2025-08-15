@@ -17,17 +17,80 @@ export function updateLineNumbers() {
     
     console.log('Updating line numbers...');
     
-    const lines = editor.value.split('\n');
-    const lineCount = lines.length;
-    
-    // シンプルに行番号を生成
-    let lineNumbersHTML = '';
-    for (let i = 1; i <= lineCount; i++) {
-        lineNumbersHTML += `<div class="line-number">${i}</div>`;
+    try {
+        const lines = editor.value.split('\n');
+        const lineCount = lines.length;
+        
+        // エディタのスタイル情報を取得
+        const computedStyle = window.getComputedStyle(editor);
+        const fontSize = parseFloat(computedStyle.fontSize);
+        const lineHeight = parseFloat(computedStyle.lineHeight);
+        const paddingTop = parseFloat(computedStyle.paddingTop);
+        const paddingLeft = parseFloat(computedStyle.paddingLeft);
+        const paddingRight = parseFloat(computedStyle.paddingRight);
+        
+        // エディタの実効幅を計算（パディングを除く）
+        const editorWidth = editor.clientWidth - paddingLeft - paddingRight;
+        
+        // 測定用の隠し要素を作成
+        const measurer = document.createElement('div');
+        measurer.style.cssText = `
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            visibility: hidden;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: ${computedStyle.fontFamily};
+            font-size: ${fontSize}px;
+            line-height: ${lineHeight}px;
+            padding: 0;
+            margin: 0;
+            border: none;
+            width: ${editorWidth}px;
+        `;
+        
+        document.body.appendChild(measurer);
+        
+        // 行番号HTML生成と位置計算
+        let lineNumbersHTML = '';
+        let currentTop = 0;
+        
+        for (let i = 0; i < lineCount; i++) {
+            const lineText = lines[i] || ' '; // 空行の場合は1文字分の高さを確保
+            
+            // 各行の実際の高さを測定
+            measurer.textContent = lineText;
+            const actualHeight = measurer.offsetHeight;
+            
+            // 行番号を絶対位置で配置
+            lineNumbersHTML += `<div class="line-number" style="position: absolute; top: ${currentTop}px; right: 8px; line-height: ${lineHeight}px;">${i + 1}</div>`;
+            
+            currentTop += actualHeight;
+        }
+        
+        // 測定用要素を削除
+        document.body.removeChild(measurer);
+        
+        // 行番号コンテナを相対位置に設定
+        lineNumbers.style.position = 'relative';
+        lineNumbers.style.height = `${currentTop + paddingTop * 2}px`;
+        lineNumbers.innerHTML = lineNumbersHTML;
+        
+        console.log(`Line numbers updated: ${lineCount} logical lines, total height: ${currentTop}px`);
+        
+    } catch (error) {
+        console.error('Error updating line numbers:', error);
+        
+        // フォールバック: シンプルな行番号表示
+        const lines = editor.value.split('\n');
+        const lineCount = lines.length;
+        let lineNumbersHTML = '';
+        for (let i = 1; i <= lineCount; i++) {
+            lineNumbersHTML += `<div class="line-number">${i}</div>`;
+        }
+        lineNumbers.innerHTML = lineNumbersHTML;
     }
-    
-    lineNumbers.innerHTML = lineNumbersHTML;
-    console.log(`Line numbers updated: ${lineCount} lines`);
     
     // スクロール位置を同期
     syncScroll();
