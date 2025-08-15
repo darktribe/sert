@@ -1,8 +1,15 @@
 [env]
-PYO3_PYTHON = "/opt/homebrew/opt/python@3.11/bin/python3.11"
+# Windows用: python-build-standaloneのPython 3.11パス
+PYO3_PYTHON = "C:/python-build-standalone/python-3.11.9-x86_64-pc-windows-msvc-shared-pgo/python.exe"
 
-[build]
+[target.x86_64-pc-windows-msvc]
 rustflags = [
-    "-L", "/opt/homebrew/opt/python@3.11/lib",
-    "-L", "/opt/homebrew/opt/python@3.11/Frameworks/Python.framework/Versions/3.11/lib"
+    "-L", "C:/python-build-standalone/python-3.11.9-x86_64-pc-windows-msvc-shared-pgo/libs",
+    "-L", "C:/python-build-standalone/python-3.11.9-x86_64-pc-windows-msvc-shared-pgo"
+]
+
+[target.x86_64-pc-windows-gnu]
+rustflags = [
+    "-L", "C:/python-build-standalone/python-3.11.9-x86_64-pc-windows-msvc-shared-pgo/libs",
+    "-L", "C:/python-build-standalone/python-3.11.9-x86_64-pc-windows-msvc-shared-pgo"
 ]

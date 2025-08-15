@@ -16,8 +16,10 @@ import { updateStatus } from './ui-updater.js';
  * キーボードイベントの処理
  * 各種ショートカットキーを処理する
  */
-export async function handleKeydown(e) {
-    console.log('Key pressed:', e.key, 'Ctrl:', e.ctrlKey, 'Meta:', e.metaKey);
+export async function handleKeydown(e) {    // Windows/Linuxでは Ctrl、macOSでは Cmd を使用
+    const isMainModifier = (e.ctrlKey && !e.metaKey) || (e.metaKey && !e.ctrlKey);
+    
+    console.log('Key pressed:', e.key, 'Ctrl:', e.ctrlKey, 'Meta:', e.metaKey, 'Main modifier:', isMainModifier);
     
     // ===== Tab キー入力処理（最優先） =====
     if (e.key === 'Tab') {
@@ -42,16 +44,17 @@ export async function handleKeydown(e) {
         return false;
     }
     
-    // アプリ終了ショートカット (Ctrl/Cmd+Q, Ctrl/Cmd+W)
-    if ((e.metaKey || e.ctrlKey) && (e.key === 'q' || e.key === 'w')) {
+    // アプリ終了ショートカット (Ctrl+Q, Ctrl+W, Alt+F4)
+    if ((isMainModifier && (e.key === 'q' || e.key === 'w')) || 
+        (e.altKey && e.key === 'F4')) {
         e.preventDefault();
         console.log('Exit shortcut pressed');
         await exitApp();
         return;
     }
     
-    // ファイル上書き保存 (Ctrl/Cmd+S)
-    if ((e.metaKey || e.ctrlKey) && e.key === 's' && !e.shiftKey) {
+    // ファイル上書き保存 (Ctrl+S)
+    if (isMainModifier && e.key === 's' && !e.shiftKey) {
         e.preventDefault();
         console.log('Save shortcut pressed');
         await saveFile();
@@ -59,7 +62,7 @@ export async function handleKeydown(e) {
     }
     
     // 名前を付けて保存 (Ctrl/Cmd+Shift+S)
-    if ((e.metaKey || e.ctrlKey) && e.key === 's' && e.shiftKey) {
+    if (isMainModifier && e.key === 's' && e.shiftKey) {
         e.preventDefault();
         console.log('Save As shortcut pressed');
         await saveAsFile();
@@ -67,7 +70,7 @@ export async function handleKeydown(e) {
     }
     
     // リドゥ (Ctrl/Cmd+Y または Ctrl/Cmd+Shift+Z)
-    if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+    if (isMainModifier && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
         e.preventDefault();
         console.log('Redo shortcut pressed');
         redo();
@@ -75,7 +78,7 @@ export async function handleKeydown(e) {
     }
     
     // アンドゥ (Ctrl/Cmd+Z)
-    if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+    if (isMainModifier && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         console.log('Undo shortcut pressed');
         undo();
@@ -83,7 +86,7 @@ export async function handleKeydown(e) {
     }
     
     // 検索 (Ctrl/Cmd+F)
-    if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+    if (isMainModifier && e.key === 'f') {
         e.preventDefault();
         console.log('Search shortcut pressed');
         showSearchDialog();
@@ -91,7 +94,7 @@ export async function handleKeydown(e) {
     }
     
     // 置換 (Ctrl/Cmd+H)
-    if ((e.metaKey || e.ctrlKey) && e.key === 'h') {
+    if (isMainModifier && e.key === 'h') {
         e.preventDefault();
         console.log('Replace shortcut pressed');
         showReplaceDialog();
@@ -99,7 +102,7 @@ export async function handleKeydown(e) {
     }
     
     // 次を検索 (F3 または Ctrl/Cmd+G)
-    if (e.key === 'F3' || ((e.metaKey || e.ctrlKey) && e.key === 'g' && !e.shiftKey)) {
+    if (e.key === 'F3' || (isMainModifier && e.key === 'g' && !e.shiftKey)) {
         e.preventDefault();
         console.log('Find next shortcut pressed');
         findNext();
@@ -107,7 +110,7 @@ export async function handleKeydown(e) {
     }
     
     // 前を検索 (Shift+F3 または Ctrl/Cmd+Shift+G)
-    if ((e.key === 'F3' && e.shiftKey) || ((e.metaKey || e.ctrlKey) && e.key === 'g' && e.shiftKey)) {
+    if ((e.key === 'F3' && e.shiftKey) || (isMainModifier && e.key === 'g' && e.shiftKey)) {
         e.preventDefault();
         console.log('Find previous shortcut pressed');
         findPrevious();
@@ -160,7 +163,7 @@ export async function handleKeydown(e) {
     }
     
     // 新規作成 (Ctrl/Cmd+N)
-    if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+    if (isMainModifier && e.key === 'n') {
         e.preventDefault();
         console.log('New file shortcut pressed');
         await newFile();
@@ -168,7 +171,7 @@ export async function handleKeydown(e) {
     }
     
     // ファイルを開く (Ctrl/Cmd+O)
-    if ((e.metaKey || e.ctrlKey) && e.key === 'o') {
+    if (isMainModifier && e.key === 'o') {
         e.preventDefault();
         console.log('Open file shortcut pressed');
         await openFile();
@@ -176,7 +179,7 @@ export async function handleKeydown(e) {
     }
     
     // 全選択 (Ctrl/Cmd+A)
-    if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+    if (isMainModifier && e.key === 'a') {
         e.preventDefault();
         console.log('Select all shortcut pressed');
         selectAll();
@@ -184,7 +187,7 @@ export async function handleKeydown(e) {
     }
     
     // コピー (Ctrl/Cmd+C)
-    if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
+    if (isMainModifier && e.key === 'c') {
         e.preventDefault();
         console.log('Copy shortcut pressed');
         copy();
@@ -192,7 +195,7 @@ export async function handleKeydown(e) {
     }
     
     // 切り取り (Ctrl/Cmd+X)
-    if ((e.metaKey || e.ctrlKey) && e.key === 'x') {
+    if (isMainModifier && e.key === 'x') {
         e.preventDefault();
         console.log('Cut shortcut pressed');
         cut();
@@ -200,7 +203,7 @@ export async function handleKeydown(e) {
     }
     
     // 貼り付け (Ctrl/Cmd+V)
-    if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+    if (isMainModifier && e.key === 'v') {
         e.preventDefault();
         console.log('Paste shortcut pressed');
         paste();

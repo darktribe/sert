@@ -928,6 +928,25 @@ fn create_native_menu(app: &tauri::AppHandle) -> Result<tauri::menu::Menu<tauri:
         )?
     };
     
+     // Windows固有のメニュー設定
+    #[cfg(target_os = "windows")]
+    let app_menu = {
+        let about_item = MenuItem::with_id(app, "about", "Vinsertについて", true, None::<&str>)?;
+        let separator = PredefinedMenuItem::separator(app)?;
+        let exit_item = MenuItem::with_id(app, "exit_app", "終了", true, Some("Alt+F4"))?;
+        
+        Submenu::with_items(
+            app,
+            "アプリケーション",
+            true,
+            &[
+                &about_item,
+                &separator,
+                &exit_item,
+            ],
+        )?
+    };
+    
     // ファイルメニュー
     let new_item = MenuItem::with_id(app, "new_file", "新規作成", true, Some("CmdOrCtrl+N"))?;
     let open_item = MenuItem::with_id(app, "open_file", "開く", true, Some("CmdOrCtrl+O"))?;
@@ -951,9 +970,25 @@ fn create_native_menu(app: &tauri::AppHandle) -> Result<tauri::menu::Menu<tauri:
         ],
     )?;
     
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "windows")]
     let file_menu = {
-        let exit_item = MenuItem::with_id(app, "exit_app", "終了", true, Some("CmdOrCtrl+Q"))?;
+        Submenu::with_items(
+            app,
+            "ファイル",
+            true,
+            &[
+                &new_item,
+                &open_item,
+                &file_separator,
+                &save_item,
+                &save_as_item,
+            ],
+        )?
+    };
+    
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    let file_menu = {
+        let exit_item = MenuItem::with_id(app, "exit_app", "終了", true, Some("Ctrl+Q"))?;
         Submenu::with_items(
             app,
             "ファイル",
@@ -1096,7 +1131,35 @@ fn create_native_menu(app: &tauri::AppHandle) -> Result<tauri::menu::Menu<tauri:
         ],
     )?;
     
-    #[cfg(not(target_os = "macos"))]
+    // メニューバーを構築
+    #[cfg(target_os = "macos")]
+    let menu = Menu::with_items(
+        app,
+        &[
+            &app_menu,
+            &file_menu,
+            &edit_menu,
+            &view_menu,
+            &search_menu,
+            &extensions_menu,
+            &window_menu,
+        ],
+    )?;
+    
+    #[cfg(target_os = "windows")]
+    let menu = Menu::with_items(
+        app,
+        &[
+            &app_menu,
+            &file_menu,
+            &edit_menu,
+            &view_menu,
+            &search_menu,
+            &extensions_menu,
+        ],
+    )?;
+    
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     let menu = Menu::with_items(
         app,
         &[
@@ -1121,38 +1184,38 @@ fn handle_menu_event(app: &tauri::AppHandle, event: tauri::menu::MenuEvent) {
     if let Some(webview) = app.webview_windows().get("main") {
         let script = match event.id().0.as_str() {
             // ファイルメニュー
-            "new_file" => "window.newFile && window.newFile();",
-            "open_file" => "window.openFile && window.openFile();",
-            "save_file" => "window.saveFile && window.saveFile();",
-            "save_as_file" => "window.saveAsFile && window.saveAsFile();",
-            "exit_app" => "window.exitApp && window.exitApp();",
+            "new_file" => "try { if (window.newFile) window.newFile(); } catch(e) { console.error('newFile error:', e); }",
+            "open_file" => "try { if (window.openFile) window.openFile(); } catch(e) { console.error('openFile error:', e); }",
+            "save_file" => "try { if (window.saveFile) window.saveFile(); } catch(e) { console.error('saveFile error:', e); }",
+            "save_as_file" => "try { if (window.saveAsFile) window.saveAsFile(); } catch(e) { console.error('saveAsFile error:', e); }",
+            "exit_app" => "try { if (window.exitApp) window.exitApp(); } catch(e) { console.error('exitApp error:', e); }",
             
             // 編集メニュー
-            "undo" => "window.undo && window.undo();",
-            "redo" => "window.redo && window.redo();",
+            "undo" => "try { if (window.undo) window.undo(); } catch(e) { console.error('undo error:', e); }",
+            "redo" => "try { if (window.redo) window.redo(); } catch(e) { console.error('redo error:', e); }",
             
             // 表示メニュー
-            "font_settings" => "window.showFontSettingsDialog && window.showFontSettingsDialog();",
-            "font_size_input" => "window.showFontSizeInputDialog && window.showFontSizeInputDialog();",
-            "increase_font" => "window.increaseFontSize && window.increaseFontSize();",
-            "decrease_font" => "window.decreaseFontSize && window.decreaseFontSize();",
-            "toggle_line_highlight" => "window.toggleLineHighlight && window.toggleLineHighlight();",
-            "toggle_typewriter_mode" => "window.toggleTypewriterMode && window.toggleTypewriterMode();",
-            "toggle_whitespace_visualization" => "window.toggleWhitespaceVisualization && window.toggleWhitespaceVisualization();",
-            "whitespace_settings" => "window.showWhitespaceVisualizationDialog && window.showWhitespaceVisualizationDialog();",
+            "font_settings" => "try { if (window.showFontSettingsDialog) window.showFontSettingsDialog(); } catch(e) { console.error('fontSettings error:', e); }",
+            "font_size_input" => "try { if (window.showFontSizeInputDialog) window.showFontSizeInputDialog(); } catch(e) { console.error('fontSizeInput error:', e); }",
+            "increase_font" => "try { if (window.increaseFontSize) window.increaseFontSize(); } catch(e) { console.error('increaseFontSize error:', e); }",
+            "decrease_font" => "try { if (window.decreaseFontSize) window.decreaseFontSize(); } catch(e) { console.error('decreaseFontSize error:', e); }",
+            "toggle_line_highlight" => "try { if (window.toggleLineHighlight) window.toggleLineHighlight(); } catch(e) { console.error('toggleLineHighlight error:', e); }",
+            "toggle_typewriter_mode" => "try { if (window.toggleTypewriterMode) window.toggleTypewriterMode(); } catch(e) { console.error('toggleTypewriterMode error:', e); }",
+            "toggle_whitespace_visualization" => "try { if (window.toggleWhitespaceVisualization) window.toggleWhitespaceVisualization(); } catch(e) { console.error('toggleWhitespaceVisualization error:', e); }",
+            "whitespace_settings" => "try { if (window.showWhitespaceVisualizationDialog) window.showWhitespaceVisualizationDialog(); } catch(e) { console.error('whitespaceSettings error:', e); }",
             
             // 検索メニュー
-            "show_search" => "window.showSearchDialog && window.showSearchDialog();",
-            "show_replace" => "window.showReplaceDialog && window.showReplaceDialog();",
+            "show_search" => "try { if (window.showSearchDialog) window.showSearchDialog(); } catch(e) { console.error('showSearchDialog error:', e); }",
+            "show_replace" => "try { if (window.showReplaceDialog) window.showReplaceDialog(); } catch(e) { console.error('showReplaceDialog error:', e); }",
             
             // 機能拡張メニュー
-            "extension_settings" => "window.showExtensionSettingsDialog && window.showExtensionSettingsDialog();",
-            "language_settings" => "window.showLanguageSettingsDialog && window.showLanguageSettingsDialog();",
-            "show_theme" => "window.showThemeDialog && window.showThemeDialog();",
-            "open_app_folder" => "window.openAppFolder && window.openAppFolder();",
+            "extension_settings" => "try { if (window.showExtensionSettingsDialog) window.showExtensionSettingsDialog(); } catch(e) { console.error('extensionSettings error:', e); }",
+            "language_settings" => "try { if (window.showLanguageSettingsDialog) window.showLanguageSettingsDialog(); } catch(e) { console.error('languageSettings error:', e); }",
+            "show_theme" => "try { if (window.showThemeDialog) window.showThemeDialog(); } catch(e) { console.error('showTheme error:', e); }",
+            "open_app_folder" => "try { if (window.openAppFolder) window.openAppFolder(); } catch(e) { console.error('openAppFolder error:', e); }",
             
             // アバウトメニュー
-            "about" => "window.showAboutDialog && window.showAboutDialog();",
+            "about" => "try { if (window.showAboutDialog) window.showAboutDialog(); } catch(e) { console.error('showAboutDialog error:', e); }",
             
             _ => {
                 println!("⚠️ Unhandled menu event: {:?}", event.id());
@@ -1160,9 +1223,19 @@ fn handle_menu_event(app: &tauri::AppHandle, event: tauri::menu::MenuEvent) {
             }
         };
         
-        // JavaScriptを実行
+        // JavaScriptを実行（エラーハンドリング付き）
         if let Err(e) = webview.eval(script) {
             println!("❌ Failed to execute menu script: {}", e);
+            
+            // フォールバック: より直接的な方法で実行を試行
+            let fallback_script = format!(
+                "setTimeout(() => {{ try {{ {} }} catch(e) {{ console.error('Fallback execution error:', e); }} }}, 100);",
+                script
+            );
+            
+            if let Err(e2) = webview.eval(&fallback_script) {
+                println!("❌ Fallback execution also failed: {}", e2);
+            }
         } else {
             println!("✅ Menu script executed: {:?}", event.id());
         }
