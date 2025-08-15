@@ -27,7 +27,19 @@ export function setupEventListeners() {
     console.log('✅ Keydown listener added (capture=true)');
     
     // 他のイベントリスナー
-    editor.addEventListener('input', handleInput);
+    editor.addEventListener('input', (e) => {
+        handleInput(e);
+        // 行番号を強制的に更新（折り返し変更を即座に反映）
+        setTimeout(() => {
+            try {
+                updateLineNumbers();
+                updateLineHighlight();
+            } catch (error) {
+                console.warn('⚠️ Failed to update line numbers:', error);
+            }
+        }, 0);
+    });
+    
     editor.addEventListener('scroll', () => {
         syncScroll();
         updateLineHighlight();
@@ -39,8 +51,22 @@ export function setupEventListeners() {
             console.warn('⚠️ Whitespace marker update failed on scroll:', error);
         }
     }, { passive: true });
-    editor.addEventListener('click', updateStatus);
-    editor.addEventListener('keyup', updateStatus);
+    
+    editor.addEventListener('click', () => {
+        updateStatus();
+        updateLineHighlight();
+    });
+    
+    editor.addEventListener('keyup', () => {
+        updateStatus();
+        updateLineHighlight();
+        // キー入力後も行番号を更新（テキスト変更による折り返し変更を反映）
+        try {
+            updateLineNumbers();
+        } catch (error) {
+            console.warn('⚠️ Failed to update line numbers on keyup:', error);
+        }
+    });
     
     // IME関連
     editor.addEventListener('compositionstart', handleCompositionStart);
@@ -62,6 +88,24 @@ export function setupEventListeners() {
             console.warn('⚠️ Whitespace marker update failed on wheel scroll:', error);
         }
     }, { passive: true });
+    
+    // エディタのサイズ変更時（ウィンドウリサイズなど）に行番号を更新
+    try {
+        const resizeObserver = new ResizeObserver(() => {
+            console.log('Editor resized, updating line numbers');
+            setTimeout(() => {
+                try {
+                    updateLineNumbers();
+                    updateLineHighlight();
+                } catch (error) {
+                    console.warn('⚠️ Failed to update on resize:', error);
+                }
+            }, 100);
+        });
+        resizeObserver.observe(editor);
+    } catch (error) {
+        console.warn('⚠️ ResizeObserver not available:', error);
+    }
     
     console.log('✅ Event listeners set up successfully');
 }

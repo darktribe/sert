@@ -44,7 +44,7 @@ export function syncScroll() {
 }
 
 /**
- * 現在の論理行をハイライト
+ * 現在の論理行をハイライト（シンプル確実版）
  */
 export function updateLineHighlight() {
     if (!editor || !isLineHighlightEnabled) {
@@ -58,10 +58,9 @@ export function updateLineHighlight() {
     
     const cursorPos = editor.selectionStart;
     const textBeforeCursor = editor.value.substring(0, cursorPos);
-    const currentLine = textBeforeCursor.split('\n').length;
+    const currentLogicalLine = textBeforeCursor.split('\n').length;
     
-    // 行が変わっていない場合でも、スクロール時のために位置を更新
-    setCurrentHighlightedLine(currentLine);
+    setCurrentHighlightedLine(currentLogicalLine);
     
     // 既存のハイライトを削除
     const existingHighlight = document.querySelector('.line-highlight-overlay');
@@ -69,55 +68,99 @@ export function updateLineHighlight() {
         existingHighlight.remove();
     }
     
-    // 新しいハイライトを作成
-    const lines = editor.value.split('\n');
-    const computedStyle = window.getComputedStyle(editor);
-    const lineHeight = parseFloat(computedStyle.lineHeight);
-    const paddingTop = parseFloat(computedStyle.paddingTop);
-    const editorWidth = editor.clientWidth - 
-                        parseFloat(computedStyle.paddingLeft) - 
-                        parseFloat(computedStyle.paddingRight);
-    
-    // キャンバスを使って各行の高さを計算
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    context.font = computedStyle.font;
-    
-    let topPosition = paddingTop;
-    let highlightHeight = lineHeight;
-    
-    // 現在の行までの高さを計算
-    for (let i = 0; i < currentLine - 1; i++) {
-        const lineText = lines[i] || '';
-        if (lineText === '') {
-            topPosition += lineHeight;
-        } else {
-            const textWidth = context.measureText(lineText).width;
-            const wrappedLines = Math.max(1, Math.ceil(textWidth / editorWidth));
-            topPosition += wrappedLines * lineHeight;
+    // 論理行全体の高さを測定するため、測定用要素を作成
+    try {
+        const lines = editor.value.split('\n');
+        const currentLineText = lines[currentLogicalLine - 1] || '';
+        
+        // 測定用の隠し要素を作成（エディタと同じスタイル）
+        const measurer = document.createElement('div');
+        const computedStyle = window.getComputedStyle(editor);
+        
+        measurer.style.cssText = `
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            visibility: hidden;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: ${computedStyle.fontFamily};
+            font-size: ${computedStyle.fontSize};
+            line-height: ${computedStyle.lineHeight};
+            padding: 0;
+            margin: 0;
+            border: none;
+            width: ${editor.clientWidth - parseFloat(computedStyle.paddingLeft) - parseFloat(computedStyle.paddingRight)}px;
+        `;
+        
+        // 現在の論理行のテキストを設定（空行の場合は1文字分の高さを確保）
+        measurer.textContent = currentLineText || ' ';
+        
+        document.body.appendChild(measurer);
+        
+        // 実際の高さを取得
+        const lineActualHeight = measurer.offsetHeight;
+        
+        // 測定用要素を削除
+        document.body.removeChild(measurer);
+        
+        // 現在の論理行までの累積高さを計算
+        let topPosition = parseFloat(computedStyle.paddingTop);
+        const baseLineHeight = parseFloat(computedStyle.lineHeight);
+        
+        for (let i = 0; i < currentLogicalLine - 1; i++) {
+            const lineText = lines[i] || '';
+            if (lineText === '') {
+                topPosition += baseLineHeight;
+            } else {
+                // 各行の実際の高さを測定
+                measurer.textContent = lineText;
+                document.body.appendChild(measurer);
+                const height = measurer.offsetHeight;
+                document.body.removeChild(measurer);
+                topPosition += height;
+            }
         }
-    }
-    
-    // 現在の論理行の高さを計算（折り返しも考慮）
-    const currentLineText = lines[currentLine - 1] || '';
-    if (currentLineText !== '') {
-        const textWidth = context.measureText(currentLineText).width;
-        const wrappedLines = Math.max(1, Math.ceil(textWidth / editorWidth));
-        highlightHeight = wrappedLines * lineHeight;
-    }
-    
-    // ハイライト要素を作成
-    const highlight = document.createElement('div');
-    highlight.className = 'line-highlight-overlay';
-    highlight.style.top = (topPosition - editor.scrollTop) + 'px';
-    highlight.style.height = highlightHeight + 'px';
-    highlight.style.width = editor.clientWidth + 'px';
-    highlight.style.left = '0';
-    
-    // エディタコンテナに追加
-    const editorContainer = document.querySelector('.editor-container');
-    if (editorContainer) {
-        editorContainer.appendChild(highlight);
+        
+        // ハイライト要素を作成
+        const highlight = document.createElement('div');
+        highlight.className = 'line-highlight-overlay';
+        highlight.style.position = 'absolute';
+        highlight.style.left = '0';
+        highlight.style.top = `${topPosition - editor.scrollTop}px`;
+        highlight.style.width = `${editor.clientWidth}px`;
+        highlight.style.height = `${lineActualHeight}px`;
+        highlight.style.pointerEvents = 'none';
+        highlight.style.zIndex = '1';
+        
+        // エディタコンテナに追加
+        const editorContainer = document.querySelector('.editor-container');
+        if (editorContainer) {
+            editorContainer.appendChild(highlight);
+        }
+        
+    } catch (error) {
+        console.warn('⚠️ Line highlight measurement failed:', error);
+        
+        // フォールバック: 基本的な1行ハイライト
+        const computedStyle = window.getComputedStyle(editor);
+        const lineHeight = parseFloat(computedStyle.lineHeight);
+        const paddingTop = parseFloat(computedStyle.paddingTop);
+        
+        const highlight = document.createElement('div');
+        highlight.className = 'line-highlight-overlay';
+        highlight.style.position = 'absolute';
+        highlight.style.left = '0';
+        highlight.style.top = `${paddingTop + (currentLogicalLine - 1) * lineHeight - editor.scrollTop}px`;
+        highlight.style.width = `${editor.clientWidth}px`;
+        highlight.style.height = `${lineHeight}px`;
+        highlight.style.pointerEvents = 'none';
+        highlight.style.zIndex = '1';
+        
+        const editorContainer = document.querySelector('.editor-container');
+        if (editorContainer) {
+            editorContainer.appendChild(highlight);
+        }
     }
 }
 

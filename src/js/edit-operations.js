@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - 編集操作（コピー・切り取り・貼り付け）修正版
+ * Vinsert Editor - 編集操作（コピー・切り取り・貼り付け）公式プラグイン対応版
  * =====================================================
  */
 
@@ -24,7 +24,7 @@ import { closeAllMenus } from './menu-controller.js';
 import { updateLineNumbers, updateStatus } from './ui-updater.js';
 
 /**
- * テキストのコピー（修正版）
+ * テキストのコピー（公式プラグイン対応版）
  */
 export async function copy() {
     console.log('🔧 Copy operation started');
@@ -47,22 +47,35 @@ export async function copy() {
         
         let copySuccess = false;
         
-        // 方法1: Tauri clipboard API
-        if (window.__TAURI__ && window.__TAURI__.clipboard) {
+        // 方法1: 公式Tauriクリップボードプラグイン（最優先）
+        if (window.__TAURI__ && window.__TAURI_PLUGIN_CLIPBOARD_MANAGER__) {
             try {
-                console.log('🔧 Trying Tauri clipboard API');
-                await window.__TAURI__.clipboard.writeText(selectedText);
+                console.log('🔧 Trying official Tauri clipboard plugin');
+                const { writeText } = window.__TAURI_PLUGIN_CLIPBOARD_MANAGER__;
+                await writeText(selectedText);
                 copySuccess = true;
-                console.log('✅ Tauri clipboard write successful');
+                console.log('✅ Official Tauri clipboard plugin successful');
             } catch (error) {
-                console.warn('⚠️ Tauri clipboard failed:', error);
+                console.warn('⚠️ Official Tauri clipboard plugin failed:', error);
             }
         }
         
-        // 方法2: カスタムTauriコマンド
+        // 方法2: 標準Tauriクリップボード API
+        if (!copySuccess && window.__TAURI__ && window.__TAURI__.writeText) {
+            try {
+                console.log('🔧 Trying standard Tauri clipboard API');
+                await window.__TAURI__.writeText(selectedText);
+                copySuccess = true;
+                console.log('✅ Standard Tauri clipboard API successful');
+            } catch (error) {
+                console.warn('⚠️ Standard Tauri clipboard API failed:', error);
+            }
+        }
+        
+        // 方法3: カスタムTauriコマンド（フォールバック）
         if (!copySuccess && tauriInvoke) {
             try {
-                console.log('🔧 Trying custom Tauri command');
+                console.log('🔧 Trying custom Tauri command (fallback)');
                 await tauriInvoke('write_clipboard', { text: selectedText });
                 copySuccess = true;
                 console.log('✅ Custom Tauri command successful');
@@ -71,19 +84,19 @@ export async function copy() {
             }
         }
         
-        // 方法3: ブラウザAPI
+        // 方法4: ブラウザAPI（最後の手段）
         if (!copySuccess && navigator.clipboard) {
             try {
                 console.log('🔧 Trying browser clipboard API');
                 await navigator.clipboard.writeText(selectedText);
                 copySuccess = true;
-                console.log('✅ Browser clipboard write successful');
+                console.log('✅ Browser clipboard API successful');
             } catch (error) {
-                console.warn('⚠️ Browser clipboard failed:', error);
+                console.warn('⚠️ Browser clipboard API failed:', error);
             }
         }
         
-        // 方法4: execCommand（最後の手段）
+        // 方法5: execCommand（最後の手段）
         if (!copySuccess) {
             try {
                 console.log('🔧 Trying execCommand fallback');
@@ -104,8 +117,7 @@ export async function copy() {
         
         if (!copySuccess) {
             console.error('❌ All copy methods failed');
-            // エラーメッセージを表示（透明ウィンドウを避けるため、コンソールのみ）
-            console.error('❌ コピー操作が失敗しました。クリップボードへのアクセス権限を確認してください。');
+            showCopyError();
         } else {
             console.log('✅ Copy operation completed successfully');
         }
@@ -113,6 +125,7 @@ export async function copy() {
     } catch (error) {
         console.error('❌ Copy operation error:', error);
         setLastOperationType(null);
+        showCopyError();
     }
     
     closeAllMenus();
@@ -131,7 +144,7 @@ export async function copy() {
 }
 
 /**
- * テキストの切り取り（修正版）
+ * テキストの切り取り（公式プラグイン対応版）
  */
 export async function cut() {
     console.log('🔧 Cut operation started');
@@ -171,19 +184,32 @@ export async function cut() {
         let cutSuccess = false;
         
         // まずクリップボードにコピー
-        // 方法1: Tauri clipboard API
-        if (window.__TAURI__ && window.__TAURI__.clipboard) {
+        // 方法1: 公式Tauriクリップボードプラグイン（最優先）
+        if (window.__TAURI__ && window.__TAURI_PLUGIN_CLIPBOARD_MANAGER__) {
             try {
-                console.log('🔧 Trying Tauri clipboard API for cut');
-                await window.__TAURI__.clipboard.writeText(selectedText);
+                console.log('🔧 Trying official Tauri clipboard plugin for cut');
+                const { writeText } = window.__TAURI_PLUGIN_CLIPBOARD_MANAGER__;
+                await writeText(selectedText);
                 cutSuccess = true;
-                console.log('✅ Tauri clipboard write successful for cut');
+                console.log('✅ Official Tauri clipboard plugin successful for cut');
             } catch (error) {
-                console.warn('⚠️ Tauri clipboard failed for cut:', error);
+                console.warn('⚠️ Official Tauri clipboard plugin failed for cut:', error);
             }
         }
         
-        // 方法2: カスタムTauriコマンド
+        // 方法2: 標準Tauriクリップボード API
+        if (!cutSuccess && window.__TAURI__ && window.__TAURI__.writeText) {
+            try {
+                console.log('🔧 Trying standard Tauri clipboard API for cut');
+                await window.__TAURI__.writeText(selectedText);
+                cutSuccess = true;
+                console.log('✅ Standard Tauri clipboard API successful for cut');
+            } catch (error) {
+                console.warn('⚠️ Standard Tauri clipboard API failed for cut:', error);
+            }
+        }
+        
+        // 方法3: カスタムTauriコマンド（フォールバック）
         if (!cutSuccess && tauriInvoke) {
             try {
                 console.log('🔧 Trying custom Tauri command for cut');
@@ -195,19 +221,19 @@ export async function cut() {
             }
         }
         
-        // 方法3: ブラウザAPI
+        // 方法4: ブラウザAPI
         if (!cutSuccess && navigator.clipboard) {
             try {
                 console.log('🔧 Trying browser clipboard API for cut');
                 await navigator.clipboard.writeText(selectedText);
                 cutSuccess = true;
-                console.log('✅ Browser clipboard write successful for cut');
+                console.log('✅ Browser clipboard API successful for cut');
             } catch (error) {
-                console.warn('⚠️ Browser clipboard failed for cut:', error);
+                console.warn('⚠️ Browser clipboard API failed for cut:', error);
             }
         }
         
-        // 方法4: execCommand（最後の手段）
+        // 方法5: execCommand（最後の手段）
         if (!cutSuccess) {
             try {
                 console.log('🔧 Trying execCommand fallback for cut');
@@ -287,12 +313,13 @@ export async function cut() {
             console.log('✅ Cut operation completed successfully');
         } else {
             console.error('❌ All cut methods failed');
-            console.error('❌ カット操作が失敗しました。クリップボードへのアクセス権限を確認してください。');
+            showCutError();
         }
         
     } catch (error) {
         console.error('❌ Cut operation error:', error);
         setLastOperationType(null);
+        showCutError();
     }
     
     closeAllMenus();
@@ -311,7 +338,7 @@ export async function cut() {
 }
 
 /**
- * テキストの貼り付け（修正版）
+ * テキストの貼り付け（公式プラグイン対応版）
  */
 export async function paste() {
     console.log('🔧 Paste operation started');
@@ -337,23 +364,36 @@ export async function paste() {
         let clipboardText = '';
         let pasteSuccess = false;
         
-        // 方法1: Tauri clipboard API
-        if (window.__TAURI__ && window.__TAURI__.clipboard) {
+        // 方法1: 公式Tauriクリップボードプラグイン（最優先）
+        if (window.__TAURI__ && window.__TAURI_PLUGIN_CLIPBOARD_MANAGER__) {
             try {
-                console.log('🔧 Trying Tauri clipboard API for paste');
-                clipboardText = await window.__TAURI__.clipboard.readText();
+                console.log('🔧 Trying official Tauri clipboard plugin for paste');
+                const { readText } = window.__TAURI_PLUGIN_CLIPBOARD_MANAGER__;
+                clipboardText = await readText() || '';
                 pasteSuccess = true;
-                console.log('✅ Tauri clipboard read successful, text length:', clipboardText.length);
+                console.log('✅ Official Tauri clipboard plugin successful for paste, text length:', clipboardText.length);
             } catch (error) {
-                console.warn('⚠️ Tauri clipboard read failed:', error);
+                console.warn('⚠️ Official Tauri clipboard plugin failed for paste:', error);
             }
         }
         
-        // 方法2: カスタムTauriコマンド
+        // 方法2: 標準Tauriクリップボード API
+        if (!pasteSuccess && window.__TAURI__ && window.__TAURI__.readText) {
+            try {
+                console.log('🔧 Trying standard Tauri clipboard API for paste');
+                clipboardText = await window.__TAURI__.readText() || '';
+                pasteSuccess = true;
+                console.log('✅ Standard Tauri clipboard API successful for paste, text length:', clipboardText.length);
+            } catch (error) {
+                console.warn('⚠️ Standard Tauri clipboard API failed for paste:', error);
+            }
+        }
+        
+        // 方法3: カスタムTauriコマンド（フォールバック）
         if (!pasteSuccess && tauriInvoke) {
             try {
                 console.log('🔧 Trying custom Tauri command for paste');
-                clipboardText = await tauriInvoke('read_clipboard');
+                clipboardText = await tauriInvoke('read_clipboard') || '';
                 pasteSuccess = true;
                 console.log('✅ Custom Tauri command successful for paste, text length:', clipboardText.length);
             } catch (error) {
@@ -361,19 +401,19 @@ export async function paste() {
             }
         }
         
-        // 方法3: ブラウザAPI
+        // 方法4: ブラウザAPI
         if (!pasteSuccess && navigator.clipboard) {
             try {
                 console.log('🔧 Trying browser clipboard API for paste');
-                clipboardText = await navigator.clipboard.readText();
+                clipboardText = await navigator.clipboard.readText() || '';
                 pasteSuccess = true;
-                console.log('✅ Browser clipboard read successful, text length:', clipboardText.length);
+                console.log('✅ Browser clipboard API successful for paste, text length:', clipboardText.length);
             } catch (error) {
-                console.warn('⚠️ Browser clipboard read failed:', error);
+                console.warn('⚠️ Browser clipboard API failed for paste:', error);
             }
         }
         
-        // 方法4: execCommand（最後の手段）
+        // 方法5: execCommand（最後の手段）
         if (!pasteSuccess) {
             try {
                 console.log('🔧 Trying execCommand fallback for paste');
@@ -460,13 +500,17 @@ export async function paste() {
             updateStatus();
             
             console.log('✅ Paste operation completed successfully');
+        } else if (pasteSuccess && !clipboardText) {
+            console.log('⚠️ Clipboard is empty');
+            showPasteEmptyError();
         } else {
-            console.error('❌ All paste methods failed or clipboard is empty');
-            console.error('❌ 貼り付け操作が失敗しました。クリップボードにテキストがあることを確認してください。');
+            console.error('❌ All paste methods failed');
+            showPasteError();
         }
         
     } catch (error) {
         console.error('❌ Paste operation error:', error);
+        showPasteError();
     }
     
     closeAllMenus();
@@ -493,4 +537,33 @@ export function selectAll() {
     } catch (error) {
         console.error('❌ Select all error:', error);
     }
+}
+
+/**
+ * エラーメッセージ表示（非透明ウィンドウ対応版）
+ */
+function showCopyError() {
+    // コンソールエラーログのみ（UIアラートは透明ウィンドウの原因になる可能性がある）
+    console.error('💔 コピー操作が失敗しました。以下を確認してください：');
+    console.error('   1. アプリケーションにクリップボードアクセス権限があるか');
+    console.error('   2. セキュリティソフトがクリップボードアクセスをブロックしていないか');
+    console.error('   3. 他のアプリケーションがクリップボードを使用していないか');
+}
+
+function showCutError() {
+    console.error('💔 切り取り操作が失敗しました。以下を確認してください：');
+    console.error('   1. アプリケーションにクリップボードアクセス権限があるか');
+    console.error('   2. セキュリティソフトがクリップボードアクセスをブロックしていないか');
+    console.error('   3. 他のアプリケーションがクリップボードを使用していないか');
+}
+
+function showPasteError() {
+    console.error('💔 貼り付け操作が失敗しました。以下を確認してください：');
+    console.error('   1. アプリケーションにクリップボードアクセス権限があるか');
+    console.error('   2. セキュリティソフトがクリップボードアクセスをブロックしていないか');
+    console.error('   3. 他のアプリケーションがクリップボードを使用していないか');
+}
+
+function showPasteEmptyError() {
+    console.log('📋 クリップボードが空です。先にテキストをコピーしてください。');
 }

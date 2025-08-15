@@ -1,23 +1,26 @@
 {
-  "name": "Vinsert",
+  "name": "vinsert",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-  "dev": "vite",
-  "build": "vite build",
-  "preview": "vite preview",
-  "tauri": "tauri",
-  "tauri:dev": "tauri dev",
-  "tauri:build": "tauri build",
-  "tauri:build:windows": "tauri build --target x86_64-pc-windows-msvc",
-  "tauri:build:windows-msi": "tauri build --target x86_64-pc-windows-msvc --bundles msi",
-  "tauri:build:windows-exe": "tauri build --target x86_64-pc-windows-msvc --bundles nsis"
-},
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:build:windows": "tauri build --target x86_64-pc-windows-msvc",
+    "tauri:build:windows-msi": "tauri build --target x86_64-pc-windows-msvc --bundles msi",
+    "tauri:build:windows-exe": "tauri build --target x86_64-pc-windows-msvc --bundles nsis"
+  },
   "devDependencies": {
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/cli": "^2.7.1",
     "@tauri-apps/plugin-opener": "^2.4.0",
     "vite": "^5.4.19"
+  },
+  "dependencies": {
+    "@tauri-apps/plugin-clipboard-manager": "^2.3.0"
   }
 }

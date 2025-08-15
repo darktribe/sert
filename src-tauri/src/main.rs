@@ -314,199 +314,48 @@ fn exit_app() {
 }
 
 // =====================================================
-// クリップボード操作（クロスプラットフォーム対応）
+// 公式Tauriクリップボードプラグインを使用（修正版）
 // =====================================================
 
 /**
- * クリップボードにテキストを書き込む
- * Windows/macOS/Linux対応
+ * クリップボードにテキストを書き込む（公式プラグイン使用・修正版）
  */
 #[tauri::command]
-fn write_clipboard(text: String) -> Result<(), String> {
-    println!("📋 Writing to clipboard: {} characters", text.len());
+fn write_clipboard(app: tauri::AppHandle, text: String) -> Result<(), String> {
+    println!("📋 Writing to clipboard using official plugin: {} characters", text.len());
     
-    #[cfg(target_os = "windows")]
-    {
-        use std::process::{Command, Stdio};
-        use std::io::Write;
-        
-        let mut child = Command::new("powershell")
-            .args(["-Command", "Set-Clipboard"])
-            .stdin(Stdio::piped())
-            .spawn()
-            .map_err(|e| format!("Failed to spawn powershell: {}", e))?;
-        
-        if let Some(stdin) = child.stdin.as_mut() {
-            stdin.write_all(text.as_bytes())
-                .map_err(|e| format!("Failed to write to powershell: {}", e))?;
-        }
-        
-        let status = child.wait()
-            .map_err(|e| format!("Failed to wait for powershell: {}", e))?;
-        
-        if status.success() {
-            println!("✅ Clipboard write successful (Windows)");
+    use tauri_plugin_clipboard_manager::ClipboardExt;
+    
+    match app.clipboard().write_text(text) {
+        Ok(()) => {
+            println!("✅ Clipboard write successful (official plugin)");
             Ok(())
-        } else {
-            Err("Clipboard write failed (Windows)".to_string())
         }
-    }
-    
-    #[cfg(target_os = "macos")]
-    {
-        use std::process::{Command, Stdio};
-        use std::io::Write;
-        
-        let mut child = Command::new("pbcopy")
-            .stdin(Stdio::piped())
-            .spawn()
-            .map_err(|e| format!("Failed to spawn pbcopy: {}", e))?;
-        
-        if let Some(stdin) = child.stdin.as_mut() {
-            stdin.write_all(text.as_bytes())
-                .map_err(|e| format!("Failed to write to pbcopy: {}", e))?;
+        Err(e) => {
+            println!("❌ Clipboard write failed (official plugin): {}", e);
+            Err(format!("Clipboard write failed: {}", e))
         }
-        
-        let status = child.wait()
-            .map_err(|e| format!("Failed to wait for pbcopy: {}", e))?;
-        
-        if status.success() {
-            println!("✅ Clipboard write successful (macOS)");
-            Ok(())
-        } else {
-            Err("Clipboard write failed (macOS)".to_string())
-        }
-    }
-    
-    #[cfg(target_os = "linux")]
-    {
-        use std::process::{Command, Stdio};
-        use std::io::Write;
-        
-        // xclipを試行
-        let mut child = Command::new("xclip")
-            .args(["-selection", "clipboard"])
-            .stdin(Stdio::piped())
-            .spawn();
-        
-        if let Ok(mut child_proc) = child {
-            if let Some(stdin) = child_proc.stdin.as_mut() {
-                if stdin.write_all(text.as_bytes()).is_ok() {
-                    if let Ok(status) = child_proc.wait() {
-                        if status.success() {
-                            println!("✅ Clipboard write successful (Linux/xclip)");
-                            return Ok(());
-                        }
-                    }
-                }
-            }
-        }
-        
-        // xclipが失敗した場合、xselを試行
-        let mut child = Command::new("xsel")
-            .args(["-b", "-i"])
-            .stdin(Stdio::piped())
-            .spawn()
-            .map_err(|e| format!("Failed to spawn xsel: {}", e))?;
-        
-        if let Some(stdin) = child.stdin.as_mut() {
-            stdin.write_all(text.as_bytes())
-                .map_err(|e| format!("Failed to write to xsel: {}", e))?;
-        }
-        
-        let status = child.wait()
-            .map_err(|e| format!("Failed to wait for xsel: {}", e))?;
-        
-        if status.success() {
-            println!("✅ Clipboard write successful (Linux/xsel)");
-            Ok(())
-        } else {
-            Err("Clipboard write failed (Linux)".to_string())
-        }
-    }
-    
-    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
-    {
-        Err("Clipboard operation not supported on this platform".to_string())
     }
 }
 
 /**
- * クリップボードからテキストを読み込む
- * Windows/macOS/Linux対応
+ * クリップボードからテキストを読み込む（公式プラグイン使用・修正版）
  */
 #[tauri::command]
-fn read_clipboard() -> Result<String, String> {
-    println!("📋 Reading from clipboard");
+fn read_clipboard(app: tauri::AppHandle) -> Result<String, String> {
+    println!("📋 Reading from clipboard using official plugin");
     
-    #[cfg(target_os = "windows")]
-    {
-        use std::process::Command;
-        let output = Command::new("powershell")
-            .args(["-Command", "Get-Clipboard"])
-            .output()
-            .map_err(|e| format!("Failed to execute clipboard read command: {}", e))?;
-        
-        if output.status.success() {
-            let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            println!("✅ Clipboard read successful (Windows): {} characters", text.len());
+    use tauri_plugin_clipboard_manager::ClipboardExt;
+    
+    match app.clipboard().read_text() {
+        Ok(text) => {
+            println!("✅ Clipboard read successful (official plugin): {} characters", text.len());
             Ok(text)
-        } else {
-            Err("Clipboard read failed (Windows)".to_string())
         }
-    }
-    
-    #[cfg(target_os = "macos")]
-    {
-        use std::process::Command;
-        let output = Command::new("pbpaste")
-            .output()
-            .map_err(|e| format!("Failed to execute pbpaste: {}", e))?;
-        
-        if output.status.success() {
-            let text = String::from_utf8_lossy(&output.stdout).to_string();
-            println!("✅ Clipboard read successful (macOS): {} characters", text.len());
-            Ok(text)
-        } else {
-            Err("Clipboard read failed (macOS)".to_string())
+        Err(e) => {
+            println!("❌ Clipboard read failed (official plugin): {}", e);
+            Err(format!("Clipboard read failed: {}", e))
         }
-    }
-    
-    #[cfg(target_os = "linux")]
-    {
-        use std::process::Command;
-        
-        // xclipを試行
-        let output = Command::new("xclip")
-            .args(["-selection", "clipboard", "-o"])
-            .output();
-        
-        if let Ok(output) = output {
-            if output.status.success() {
-                let text = String::from_utf8_lossy(&output.stdout).to_string();
-                println!("✅ Clipboard read successful (Linux/xclip): {} characters", text.len());
-                return Ok(text);
-            }
-        }
-        
-        // xclipが失敗した場合、xselを試行
-        let output = Command::new("xsel")
-            .args(["-b", "-o"])
-            .output()
-            .map_err(|e| format!("Failed to execute xsel: {}", e))?;
-        
-        if output.status.success() {
-            let text = String::from_utf8_lossy(&output.stdout).to_string();
-            println!("✅ Clipboard read successful (Linux/xsel): {} characters", text.len());
-            Ok(text)
-        } else {
-            Err("Clipboard read failed (Linux)".to_string())
-        }
-    }
-    
-    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
-    {
-        Err("Clipboard operation not supported on this platform".to_string())
     }
 }
 
@@ -759,12 +608,13 @@ fn main() {
     }
     
     tauri::Builder::default()
-        // プラグインの初期化
+        // プラグインの初期化（公式clipboardプラグインを追加）
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_clipboard_manager::init()) // 公式クリップボードプラグインを追加
         
         // Tauriコマンドの登録
         .invoke_handler(tauri::generate_handler![
@@ -779,7 +629,7 @@ fn main() {
             // アプリケーション制御
             exit_app,
             
-            // クリップボード操作
+            // クリップボード操作（公式プラグイン使用）
             write_clipboard,
             read_clipboard,
             
@@ -880,7 +730,7 @@ fn main() {
             }
             println!("=== End Python Details ===");
             
-            println!("📋 Clipboard operations enabled");
+            println!("📋 Clipboard operations enabled (official plugin)");
             println!("📁 File operations enabled (JavaScript-based dialogs)");
             println!("🍎 Native menu system enabled");
             println!("🎯 Sert Editor ready!");
