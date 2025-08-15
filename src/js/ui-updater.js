@@ -54,7 +54,7 @@ export function updateLineNumbers() {
         
         // 行番号HTML生成と位置計算
         let lineNumbersHTML = '';
-        let currentTop = 0;
+        let currentTop = paddingTop; // エディタのpaddingTopから開始
         
         for (let i = 0; i < lineCount; i++) {
             const lineText = lines[i] || ' '; // 空行の場合は1文字分の高さを確保
@@ -63,7 +63,7 @@ export function updateLineNumbers() {
             measurer.textContent = lineText;
             const actualHeight = measurer.offsetHeight;
             
-            // 行番号を絶対位置で配置
+            // 行番号を絶対位置で配置（エディタのpaddingTopと一致させる）
             lineNumbersHTML += `<div class="line-number" style="position: absolute; top: ${currentTop}px; right: 8px; line-height: ${lineHeight}px;">${i + 1}</div>`;
             
             currentTop += actualHeight;
@@ -74,7 +74,7 @@ export function updateLineNumbers() {
         
         // 行番号コンテナを相対位置に設定
         lineNumbers.style.position = 'relative';
-        lineNumbers.style.height = `${currentTop + paddingTop * 2}px`;
+        lineNumbers.style.height = `${currentTop + paddingTop}px`; // 上下のpaddingを考慮
         lineNumbers.innerHTML = lineNumbersHTML;
         
         console.log(`Line numbers updated: ${lineCount} logical lines, total height: ${currentTop}px`);
