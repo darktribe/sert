@@ -99,6 +99,7 @@ function createMarkersContainer() {
         pointer-events: none;
         z-index: 5;
         overflow: hidden;
+        will-change: transform;
     `;
     
     // エディタのスクロール位置と同期するためのスタイル
@@ -180,6 +181,12 @@ function performWhitespaceMarkersUpdate() {
         const realMetrics = measureRealEditorMetrics();
         console.log('👁️ Real editor metrics:', realMetrics);
         
+        // realMetricsがnullの場合は処理を中断
+        if (!realMetrics) {
+            console.warn('⚠️ Real metrics is null, skipping whitespace visualization');
+            return;
+        }
+        
         // スクロール位置を取得
         const scrollTop = editor.scrollTop;
         const scrollLeft = editor.scrollLeft;
@@ -197,21 +204,55 @@ function performWhitespaceMarkersUpdate() {
         
         console.log(`👁️ Visible range: ${visibleStartLine} to ${visibleEndLine}, scrollTop: ${scrollTop}`);
         
-        // 行ごとに処理
+        // 行ごとに処理（シンプル版・論理行基準）
         const lines = content.split('\n');
-        let currentY = paddingTop;
+        
+        // 各論理行の実際の高さを事前計算
+        const lineMeasurer = document.createElement('div');
+        const editorStyles = window.getComputedStyle(editor);
+        const leftPadding = parseFloat(editorStyles.paddingLeft);
+        const rightPadding = parseFloat(editorStyles.paddingRight);
+        const measuringWidth = editor.clientWidth - leftPadding - rightPadding;
+        
+        lineMeasurer.style.cssText = `
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            visibility: hidden;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: ${editorStyles.fontFamily};
+            font-size: ${editorStyles.fontSize};
+            line-height: ${editorStyles.lineHeight};
+            padding: 0;
+            margin: 0;
+            border: none;
+            width: ${measuringWidth}px;
+        `;
+        
+        document.body.appendChild(lineMeasurer);
+        
+        // 各論理行の開始位置を計算
+        let accumulatedY = paddingTop;
         
         for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+            const line = lines[lineIndex];
+            const lineText = line || ' ';
+            
+            // この論理行の高さを測定
+            lineMeasurer.textContent = lineText;
+            const actualLineHeight = lineMeasurer.offsetHeight || lineHeight;
+            
             // 表示範囲の判定
-            if (lineIndex < visibleStartLine - 2 || lineIndex > visibleEndLine + 2) {
-                currentY += lineHeight;
+            if (accumulatedY + actualLineHeight < effectiveTop - lineHeight || 
+                accumulatedY > effectiveTop + effectiveHeight + lineHeight) {
+                accumulatedY += actualLineHeight;
                 continue;
             }
             
-            const line = lines[lineIndex];
-            let currentX = paddingLeft + lineNumbersWidth - scrollLeft;
+            // 行内の文字を処理
+            let currentX = leftPadding + lineNumbersWidth - scrollLeft;
             
-            // 行内の各文字を処理（実エディタ測定ベース）
             for (let charIndex = 0; charIndex < line.length; charIndex++) {
                 const char = line[charIndex];
                 
@@ -220,49 +261,43 @@ function performWhitespaceMarkersUpdate() {
                 let charWidth = 0;
                 
                 if (char === '\u3000' && whitespaceVisualization.showFullWidthSpace) {
-                    // 全角スペース
                     markerType = 'fullwidth-space';
                     charWidth = realMetrics.fullWidthSpaceWidth;
                 } else if (char === ' ' && whitespaceVisualization.showHalfWidthSpace) {
-                    // 半角スペース
                     markerType = 'halfwidth-space';
                     charWidth = realMetrics.halfWidthSpaceWidth;
                 } else if (char === '\t' && whitespaceVisualization.showTab) {
-                    // タブ文字 - 実エディタでの実際のタブ幅を使用
                     markerType = 'tab';
-                    
-                    // 現在位置までの実際の表示幅を正確に計算
-                    const textBeforeTab = line.substring(0, charIndex);
-                    const actualWidthBeforeTab = measureRealTextWidth(textBeforeTab, realMetrics);
-                    
-                    // 実エディタのタブストップ計算
-                    const tabStopWidth = realMetrics.tabStopWidth;
-                    const nextTabStopWidth = Math.ceil((actualWidthBeforeTab + 1) / tabStopWidth) * tabStopWidth;
-                    const tabWidth = Math.max(realMetrics.halfWidthSpaceWidth, nextTabStopWidth - actualWidthBeforeTab);
-                    
-                    charWidth = tabWidth;
-                    
-                    console.log(`Tab: actual width before=${actualWidthBeforeTab.toFixed(2)}px, tab width=${tabWidth.toFixed(2)}px, tab stop=${tabStopWidth.toFixed(2)}px`);
+                    // エディタの実際のtab-sizeを取得
+                    const editorTabSize = parseInt(getComputedStyle(editor).tabSize) || 4;
+                    const actualTabWidth = realMetrics.halfWidthSpaceWidth * editorTabSize;
+                    const currentPosition = currentX - (leftPadding + lineNumbersWidth - scrollLeft);
+                    const nextTabStop = Math.ceil((currentPosition + 1) / actualTabWidth) * actualTabWidth;
+                    charWidth = nextTabStop - currentPosition;
                 } else {
-                    // 通常の文字
                     charWidth = measureRealCharWidth(char, realMetrics);
                 }
                 
                 // マーカーを作成
                 if (markerType) {
-                    const absoluteY = currentY - scrollTop;
+                    const absoluteX = currentX;
+                    const absoluteY = accumulatedY - scrollTop;
                     
                     // 画面内に表示される範囲のみマーカーを作成
-                    if (absoluteY > -lineHeight && absoluteY < editorHeight + lineHeight) {
-                        createWhitespaceMarker(markerType, currentX, absoluteY, charWidth, lineHeight);
+                    if (absoluteY > -lineHeight && absoluteY < editorHeight + lineHeight &&
+                        absoluteX > -50 && absoluteX < editor.clientWidth + 50) {
+                        // スクロール位置を考慮した絶対位置で作成
+                        createWhitespaceMarker(markerType, absoluteX, absoluteY, charWidth, lineHeight);
+                        console.log(`👁️ Created marker ${markerType} at x=${absoluteX}, y=${absoluteY} (scroll: ${scrollTop})`);
                     }
                 }
-                
                 currentX += charWidth;
             }
             
-            currentY += lineHeight;
+            accumulatedY += actualLineHeight;
         }
+        
+        document.body.removeChild(lineMeasurer);
     } catch (error) {
         console.error('❌ Error in performWhitespaceMarkersUpdate:', error);
         console.error('Stack trace:', error.stack);
@@ -273,12 +308,17 @@ function performWhitespaceMarkersUpdate() {
 /**
  * 実エディタでの文字幅測定（DOM実測定方式）
  */
+/**
+ * 実エディタでの文字幅測定（DOM実測定方式）
+ */
 function measureRealEditorMetrics() {
     if (!editor) return null;
     
+    let measurer = null;
+    
     try {
         // 測定用の隠し要素を作成
-        const measurer = document.createElement('div');
+        measurer = document.createElement('div');
         measurer.style.cssText = `
             position: absolute;
             top: -9999px;
@@ -328,9 +368,6 @@ function measureRealEditorMetrics() {
         }
         const averageAsciiWidth = totalAsciiWidth / testChars.length;
         
-        // 清掃
-        document.body.removeChild(measurer);
-        
         const metrics = {
             halfWidthSpaceWidth,
             fullWidthSpaceWidth,
@@ -347,7 +384,30 @@ function measureRealEditorMetrics() {
         
     } catch (error) {
         console.error('❌ Real editor metrics measurement error:', error);
-        return null;
+        
+        // フォールバック: 推定値を返す
+        const computedStyle = getComputedStyle(editor);
+        const fontSize = parseFloat(computedStyle.fontSize);
+        
+        return {
+            halfWidthSpaceWidth: fontSize * 0.5,
+            fullWidthSpaceWidth: fontSize,
+            tabStopWidth: fontSize * 2,
+            singleTabWidth: fontSize * 2,
+            doubleTabWidth: fontSize * 4,
+            averageAsciiWidth: fontSize * 0.6,
+            spaceToFullSpaceRatio: 0.5,
+            isRealMeasurement: false
+        };
+    } finally {
+        // 安全な削除処理
+        if (measurer && measurer.parentNode) {
+            try {
+                document.body.removeChild(measurer);
+            } catch (cleanupError) {
+                console.warn('⚠️ Cleanup error (ignored):', cleanupError);
+            }
+        }
     }
 }
 
@@ -677,20 +737,17 @@ export function updateWhitespaceMarkersOnScroll() {
     
     updateScheduled = true;
     
-    // スクロール時は即座に更新（遅延なし）
+    // スクロール時は全体を即座に再計算
     try {
+        console.log('👁️ Updating whitespace markers on scroll, scrollTop:', editor.scrollTop);
+        
+        // マーカーを一度全てクリアして再作成
+        removeAllMarkers();
         performWhitespaceMarkersUpdate();
+        
         console.log('👁️ Whitespace markers updated on scroll (immediate)');
     } catch (error) {
         console.error('❌ Error updating whitespace markers on scroll:', error);
-        
-        // エラー時はマーカーを一度クリアして即座に再試行
-        removeAllMarkers();
-        try {
-            performWhitespaceMarkersUpdate();
-        } catch (retryError) {
-            console.error('❌ Immediate retry also failed:', retryError);
-        }
     } finally {
         updateScheduled = false;
     }

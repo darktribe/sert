@@ -80,6 +80,16 @@ window.showWhitespaceVisualizationDialog = async function() {
     }
 };
 
+// 空白文字可視化のスクロール更新をグローバルに登録
+window.updateWhitespaceMarkersOnScroll = async function() {
+    try {
+        const { updateWhitespaceMarkersOnScroll } = await import('./js/whitespace-visualizer.js');
+        updateWhitespaceMarkersOnScroll();
+    } catch (error) {
+        console.warn('⚠️ Whitespace scroll update not available:', error);
+    }
+};
+
 console.log('✅ Global functions registered');
 
 // 拡張機能システムの遅延読み込み

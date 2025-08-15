@@ -41,16 +41,30 @@ export function setupEventListeners() {
     });
     
     editor.addEventListener('scroll', () => {
+        // スクロール時は即座に全て更新
         syncScroll();
         updateLineHighlight();
-        // 空白文字可視化マーカーの更新（即座同期版）
+        
+        // 空白文字可視化マーカーの更新（即座実行）
         try {
             updateWhitespaceMarkersOnScroll();
         } catch (error) {
-            // エラーは無視（オプション機能のため）
             console.warn('⚠️ Whitespace marker update failed on scroll:', error);
         }
     }, { passive: true });
+    
+    // カーソル移動やキー操作でのスクロール同期（即座実行）
+    editor.addEventListener('keydown', (e) => {
+        // 矢印キーやPageUp/PageDownなどのスクロールを伴うキー
+        const scrollKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End'];
+        if (scrollKeys.includes(e.key)) {
+            // 次のフレームで即座に同期
+            requestAnimationFrame(() => {
+                syncScroll();
+                updateLineHighlight();
+            });
+        }
+    });
     
     editor.addEventListener('click', () => {
         updateStatus();
@@ -77,16 +91,31 @@ export function setupEventListeners() {
     document.addEventListener('click', handleGlobalClick);
     document.addEventListener('keydown', handleMenuEscape);
     
-    // マウスホイールスクロール時の空白文字マーカー更新
-    editor.addEventListener('wheel', () => {
-        try {
-            // ホイールスクロール後に空白文字マーカーを更新
-            setTimeout(() => {
-                updateWhitespaceMarkersIfNeeded();
-            }, 16); // 1フレーム後に更新
-        } catch (error) {
-            console.warn('⚠️ Whitespace marker update failed on wheel scroll:', error);
-        }
+    // マウスホイールスクロール時の即座更新
+    editor.addEventListener('wheel', (e) => {
+        // マウスホイール直後に即座更新
+        requestAnimationFrame(() => {
+            try {
+                console.log('🖱️ Mouse wheel detected, updating all elements');
+                syncScroll();
+                updateLineHighlight();
+                
+                // 空白文字マーカーを強制的に更新
+                if (window.updateWhitespaceMarkersOnScroll) {
+                    window.updateWhitespaceMarkersOnScroll();
+                } else {
+                    import('./whitespace-visualizer.js').then(module => {
+                        if (module && module.updateWhitespaceMarkersOnScroll) {
+                            module.updateWhitespaceMarkersOnScroll();
+                        }
+                    });
+                }
+                
+                console.log('🖱️ Mouse wheel scroll updated completely');
+            } catch (error) {
+                console.warn('⚠️ Mouse wheel update failed:', error);
+            }
+        });
     }, { passive: true });
     
     // エディタのサイズ変更時（ウィンドウリサイズなど）に行番号を更新

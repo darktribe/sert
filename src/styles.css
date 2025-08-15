@@ -246,7 +246,8 @@ body, html {
   background-color: #1e1e1e;
   position: relative;
   min-height: 0;
-  height: calc(100% - 54px);
+  height: calc(100vh - 64px); /* メニューバー + ステータスバー + 余裕 */
+  max-height: calc(100vh - 64px);
 }
 
 .editor-container::before {
@@ -270,7 +271,7 @@ body, html {
   text-align: right;
   user-select: none;
   border-right: 1px solid var(--line-numbers-border-color);
-  overflow-y: hidden;
+  overflow-y: scroll;
   overflow-x: hidden;
   min-width: 50px;
   max-width: 80px;
@@ -295,6 +296,13 @@ body, html {
   box-sizing: border-box;
   text-align: right;
   padding-right: 8px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  color: var(--line-numbers-text-color);
+  line-height: 1.5; /* エディタと同じline-height */
+  height: auto;
+  min-height: 1.5em;
 }
 
 .editor-textarea {
@@ -324,6 +332,8 @@ body, html {
   position: relative;
   z-index: 2;
   caret-color: var(--editor-cursor-color);
+  max-height: calc(100vh - 54px - 10px); /* メニューバー + ステータスバー + 余裕 */
+  height: calc(100vh - 54px - 10px);
 }
 
 .editor-textarea::selection {

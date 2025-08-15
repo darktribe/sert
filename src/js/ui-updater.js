@@ -23,16 +23,12 @@ export function updateLineNumbers() {
         
         // エディタのスタイル情報を取得
         const computedStyle = window.getComputedStyle(editor);
-        const fontSize = parseFloat(computedStyle.fontSize);
-        const lineHeight = parseFloat(computedStyle.lineHeight);
         const paddingTop = parseFloat(computedStyle.paddingTop);
         const paddingLeft = parseFloat(computedStyle.paddingLeft);
         const paddingRight = parseFloat(computedStyle.paddingRight);
-        
-        // エディタの実効幅を計算（パディングを除く）
         const editorWidth = editor.clientWidth - paddingLeft - paddingRight;
         
-        // 測定用の隠し要素を作成
+        // エディタと同じ条件で測定用要素を作成
         const measurer = document.createElement('div');
         measurer.style.cssText = `
             position: absolute;
@@ -42,8 +38,9 @@ export function updateLineNumbers() {
             white-space: pre-wrap;
             word-wrap: break-word;
             font-family: ${computedStyle.fontFamily};
-            font-size: ${fontSize}px;
-            line-height: ${lineHeight}px;
+            font-size: ${computedStyle.fontSize};
+            line-height: ${computedStyle.lineHeight};
+            tab-size: ${computedStyle.tabSize};
             padding: 0;
             margin: 0;
             border: none;
@@ -52,46 +49,38 @@ export function updateLineNumbers() {
         
         document.body.appendChild(measurer);
         
-        // 行番号HTML生成と位置計算 - 論理行の先頭にのみ配置
+        // 行番号HTML生成（論理行の先頭に配置）
         let lineNumbersHTML = '';
-        // タイプライターモードの場合、実際のpaddingTopを取得
-        const actualPaddingTop = parseFloat(editor.style.paddingTop) || paddingTop;
-        const isTypewriterMode = actualPaddingTop > 20;
-        
-        // タイプライターモードではスクロール位置を考慮
-        const scrollOffset = isTypewriterMode ? editor.scrollTop : 0;
-        let currentTop = actualPaddingTop - scrollOffset;
+        let currentTop = paddingTop;
         
         for (let i = 0; i < lineCount; i++) {
-            const lineText = lines[i] || ' '; // 空行の場合は1文字分の高さを確保
+            const lineText = lines[i] || ' ';
             
-            // 論理行番号を先頭位置に配置（タイプライターモードではスクロール分を考慮）
-            lineNumbersHTML += `<div class="line-number" style="position: absolute; top: ${currentTop}px; right: 8px; line-height: ${lineHeight}px;">${i + 1}</div>`;
-            
-            // この論理行の実際の表示高さを測定
+            // この論理行の実際の高さを測定
             measurer.textContent = lineText;
             const actualHeight = measurer.offsetHeight;
             
-            // 次の論理行の開始位置を更新
+            // 行番号を論理行の先頭に配置（絶対位置で）
+            const displayTop = currentTop - editor.scrollTop;
+            lineNumbersHTML += `<div class="line-number" style="position: absolute; top: ${displayTop}px; right: 8px; height: ${actualHeight}px; line-height: ${parseFloat(computedStyle.lineHeight)}px;">${i + 1}</div>`;
+            
             currentTop += actualHeight;
         }
         
         // 測定用要素を削除
         document.body.removeChild(measurer);
         
-        // 行番号コンテナを相対位置に設定
+        // 行番号コンテナを設定
         lineNumbers.style.position = 'relative';
-        // タイプライターモードではスクロール分を加味した高さに調整
-        const totalHeight = isTypewriterMode ? currentTop + scrollOffset + actualPaddingTop : currentTop + paddingTop;
-        lineNumbers.style.height = `${totalHeight}px`;
+        lineNumbers.style.height = `${currentTop + paddingTop}px`;
         lineNumbers.innerHTML = lineNumbersHTML;
         
-        console.log(`Line numbers updated: ${lineCount} logical lines, total height: ${currentTop}px`);
+        console.log(`Line numbers updated: ${lineCount} logical lines`);
         
     } catch (error) {
         console.error('Error updating line numbers:', error);
         
-        // フォールバック: 基本的な論理行番号
+        // フォールバック: シンプルな行番号表示
         const lines = editor.value.split('\n');
         const lineCount = lines.length;
         let lineNumbersHTML = '';
@@ -101,18 +90,15 @@ export function updateLineNumbers() {
         lineNumbers.innerHTML = lineNumbersHTML;
     }
     
-    // スクロール位置を同期
-    syncScroll();
+    // スクロール位置は既に計算済み
 }
 
 /**
  * 行番号とエディタのスクロール同期
  */
 export function syncScroll() {
-    const lineNumbers = document.getElementById('line-numbers');
-    if (lineNumbers && editor) {
-        lineNumbers.scrollTop = editor.scrollTop;
-    }
+    // スクロール時は行番号を再生成して位置を更新
+    updateLineNumbers();
 }
 
 /**
@@ -129,9 +115,13 @@ export function updateLineHighlight() {
     }
     
     try {
+        // カーソル位置から正確な論理行を計算
         const cursorPos = editor.selectionStart;
         const textBeforeCursor = editor.value.substring(0, cursorPos);
-        const currentLogicalLine = textBeforeCursor.split('\n').length;
+        const logicalLines = textBeforeCursor.split('\n');
+        const currentLogicalLine = logicalLines.length;
+        
+        console.log(`Cursor at position ${cursorPos}, logical line ${currentLogicalLine}`);
         
         setCurrentHighlightedLine(currentLogicalLine);
         
@@ -145,17 +135,17 @@ export function updateLineHighlight() {
         const lines = editor.value.split('\n');
         const currentLineText = lines[currentLogicalLine - 1] || '';
         
-        // 論理行全体の高さと位置を計算
-        const { top, height } = calculateLogicalLinePosition(currentLogicalLine, currentLineText);
+        // 論理行全体の位置と高さを正確に計算
+        const logicalLineInfo = calculateLogicalLineInfo(currentLogicalLine, currentLineText);
         
         // ハイライト要素を作成（論理行全体をハイライト）
         const highlight = document.createElement('div');
         highlight.className = 'line-highlight-overlay';
         highlight.style.position = 'absolute';
         highlight.style.left = '0';
-        highlight.style.top = `${top - editor.scrollTop}px`;
+        highlight.style.top = `${logicalLineInfo.top}px`;
         highlight.style.width = `${editor.clientWidth}px`;
-        highlight.style.height = `${height}px`;
+        highlight.style.height = `${logicalLineInfo.height}px`;
         highlight.style.pointerEvents = 'none';
         highlight.style.zIndex = '1';
         
@@ -165,10 +155,77 @@ export function updateLineHighlight() {
             editorContainer.appendChild(highlight);
         }
         
-        console.log(`Line highlight: logical line ${currentLogicalLine}, top: ${top}, height: ${height}`);
+        console.log(`Line highlight: logical line ${currentLogicalLine}, top: ${logicalLineInfo.top}, height: ${logicalLineInfo.height}`);
         
     } catch (error) {
         console.warn('⚠️ Line highlight error:', error);
+    }
+}
+
+/**
+ * 論理行の正確な位置と高さを計算
+ */
+function calculateLogicalLineInfo(logicalLineNumber, lineText) {
+    try {
+        const computedStyle = window.getComputedStyle(editor);
+        const paddingTop = parseFloat(computedStyle.paddingTop);
+        const paddingLeft = parseFloat(computedStyle.paddingLeft);
+        const paddingRight = parseFloat(computedStyle.paddingRight);
+        const editorWidth = editor.clientWidth - paddingLeft - paddingRight;
+        
+        // エディタと同じ条件で測定用要素を作成
+        const measurer = document.createElement('div');
+        measurer.style.cssText = `
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            visibility: hidden;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: ${computedStyle.fontFamily};
+            font-size: ${computedStyle.fontSize};
+            line-height: ${computedStyle.lineHeight};
+            tab-size: ${computedStyle.tabSize};
+            padding: 0;
+            margin: 0;
+            border: none;
+            width: ${editorWidth}px;
+        `;
+        
+        document.body.appendChild(measurer);
+        
+        // 対象論理行より前の全ての行の累積高さを計算
+        const lines = editor.value.split('\n');
+        let cumulativeTop = paddingTop;
+        
+        for (let i = 0; i < logicalLineNumber - 1; i++) {
+            const prevLineText = lines[i] || ' ';
+            measurer.textContent = prevLineText;
+            cumulativeTop += measurer.offsetHeight;
+        }
+        
+        // 現在の論理行の実際の高さを測定
+        measurer.textContent = lineText || ' ';
+        const actualLineHeight = measurer.offsetHeight;
+        
+        document.body.removeChild(measurer);
+        
+        return {
+            top: cumulativeTop - editor.scrollTop,
+            height: actualLineHeight
+        };
+        
+    } catch (error) {
+        console.error('Error calculating logical line info:', error);
+        // フォールバック
+        const computedStyle = window.getComputedStyle(editor);
+        const lineHeight = parseFloat(computedStyle.lineHeight);
+        const paddingTop = parseFloat(computedStyle.paddingTop);
+        
+        return {
+            top: paddingTop + (logicalLineNumber - 1) * lineHeight - editor.scrollTop,
+            height: lineHeight
+        };
     }
 }
 
@@ -361,6 +418,12 @@ export function updateStatus() {
     
     // 空白文字可視化も更新
     updateWhitespaceMarkersIfEnabled();
+    // 最下段での表示調整
+    adjustBottomLineVisibility();
+    // 最下段での自動スクロール調整
+    setTimeout(() => {
+        adjustBottomVisibility();
+    }, 50);
 }
 
 /**
@@ -526,5 +589,88 @@ export function updateAfterFontChange() {
         });
     } catch (error) {
         console.warn('⚠️ Tab size update after font change failed:', error);
+    }
+}
+
+/**
+ * 最下段での表示調整（ステータスバーで隠れないように）
+ */
+function adjustBottomLineVisibility() {
+    if (!editor) return;
+    
+    try {
+        const cursorPos = editor.selectionStart;
+        const textBeforeCursor = editor.value.substring(0, cursorPos);
+        const currentLogicalLine = textBeforeCursor.split('\n').length;
+        const totalLines = editor.value.split('\n').length;
+        
+        // 最下段にいる場合
+        if (currentLogicalLine === totalLines) {
+            const statusBar = document.querySelector('.status-bar');
+            const statusBarHeight = statusBar ? statusBar.offsetHeight : 24;
+            
+            // エディタの下端からステータスバーの高さ + 余裕分を引いた位置
+            const adjustmentHeight = statusBarHeight + 10;
+            
+            // 現在のスクロール位置を取得
+            const currentScrollTop = editor.scrollTop;
+            const maxScrollTop = editor.scrollHeight - editor.clientHeight;
+            
+            // 最下段で、かつスクロールが最下端近くの場合は少し上にスクロール
+            if (currentScrollTop >= maxScrollTop - adjustmentHeight) {
+                const newScrollTop = Math.max(0, maxScrollTop - adjustmentHeight);
+                if (newScrollTop !== currentScrollTop) {
+                    editor.scrollTop = newScrollTop;
+                    
+                    // 行番号も同期
+                    const lineNumbers = document.getElementById('line-numbers');
+                    if (lineNumbers) {
+                        lineNumbers.scrollTop = newScrollTop;
+                    }
+                    
+                    console.log(`📜 Adjusted bottom line visibility: scrollTop=${newScrollTop}`);
+                }
+            }
+        }
+    } catch (error) {
+        console.warn('⚠️ Bottom line visibility adjustment failed:', error);
+    }
+}
+
+/**
+ * 最下段での表示調整
+ */
+function adjustBottomVisibility() {
+    if (!editor) return;
+    
+    try {
+        const cursorPos = editor.selectionStart;
+        const lines = editor.value.split('\n');
+        const totalLines = lines.length;
+        
+        // カーソルがある行を計算
+        const textBeforeCursor = editor.value.substring(0, cursorPos);
+        const currentLine = textBeforeCursor.split('\n').length;
+        
+        // 最後の3行以内にいる場合は調整
+        if (currentLine >= totalLines - 2 && totalLines > 5) {
+            const statusBarHeight = 24;
+            const bottomMargin = statusBarHeight + 40; // 十分な余裕
+            
+            // エディタの実際の表示可能領域を計算
+            const effectiveClientHeight = editor.clientHeight - statusBarHeight;
+            const maxScrollTop = editor.scrollHeight - effectiveClientHeight;
+            const currentScrollTop = editor.scrollTop;
+            
+            // 下端近くの場合は調整
+            if (currentScrollTop >= maxScrollTop - bottomMargin) {
+                const newScrollTop = Math.max(0, maxScrollTop - bottomMargin);
+                editor.scrollTop = newScrollTop;
+                syncScroll();
+                console.log('📜 Adjusted for bottom visibility:', newScrollTop);
+            }
+        }
+    } catch (error) {
+        console.warn('⚠️ Bottom visibility adjustment failed:', error);
     }
 }

@@ -17,6 +17,7 @@ import {
 } from './globals.js';
 import { saveToUndoStack } from './undo-redo.js';
 import { updateLineNumbers, updateStatus } from './ui-updater.js';
+import { syncScroll } from './ui-updater.js';
 
 /**
  * 空白文字可視化マーカーを必要に応じて更新
@@ -105,5 +106,63 @@ export function handleInput(e) {
 
     updateLineNumbers();
     updateStatus();
+    // 最下段での改行チェック
+    checkBottomLineNewline();
     console.log('=== END INPUT EVENT ===');
+}
+
+/**
+ * 最下段での改行時の自動スクロール
+ */
+/**
+ * 最下段での改行時の自動スクロール
+ */
+/**
+ * 最下段での改行時の自動スクロール
+ */
+function checkBottomLineNewline() {
+    try {
+        const lines = editor.value.split('\n');
+        const totalLines = lines.length;
+        
+        // 前回の行数と比較（改行が発生したかチェック）
+        if (!editor._lastLineCount) {
+            editor._lastLineCount = totalLines;
+            return;
+        }
+        
+        const lineIncreased = totalLines > editor._lastLineCount;
+        editor._lastLineCount = totalLines;
+        
+        if (lineIncreased) {
+            // 改行後に自動スクロール調整
+            requestAnimationFrame(() => {
+                const cursorPos = editor.selectionStart;
+                const textBeforeCursor = editor.value.substring(0, cursorPos);
+                const currentLine = textBeforeCursor.split('\n').length;
+                
+                // 現在のカーソル行の位置を計算
+                const computedStyle = getComputedStyle(editor);
+                const lineHeight = parseFloat(computedStyle.lineHeight);
+                const paddingTop = parseFloat(computedStyle.paddingTop);
+                const statusBarHeight = 24;
+                
+                const cursorLineTop = paddingTop + (currentLine - 1) * lineHeight;
+                const cursorLineBottom = cursorLineTop + lineHeight;
+                
+                // 表示領域の下端（ステータスバーを除く）
+                const visibleBottom = editor.scrollTop + editor.clientHeight - statusBarHeight - 10;
+                
+                // カーソル行がステータスバーにかかる場合は上にスクロール
+                if (cursorLineBottom > visibleBottom) {
+                    const newScrollTop = cursorLineBottom - editor.clientHeight + statusBarHeight + 20;
+                    editor.scrollTop = Math.max(0, newScrollTop);
+                    syncScroll();
+                    console.log('📜 Auto-scrolled for new line visibility:', editor.scrollTop);
+                }
+            });
+        }
+    } catch (error) {
+        console.warn('⚠️ Bottom line newline check failed:', error);
+    }
 }
