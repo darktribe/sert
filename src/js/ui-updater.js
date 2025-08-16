@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - UI更新機能（多言語化対応版）
+ * Vinsert Editor - UI更新機能（タイプライターモード行番号位置修正版）
  * =====================================================
  */
 
@@ -11,6 +11,9 @@ import { t } from './locales.js';
 // 行番号更新の重複実行を防ぐフラグ
 let lineNumbersUpdateScheduled = false;
 
+// デバッグモードフラグ（必要時のみログ出力）
+const DEBUG_MODE = false;
+
 /**
  * エディタから直接各論理行の位置と高さを実測（export版）
  */
@@ -19,15 +22,21 @@ export function getRealLogicalLinePositions(lines) {
 }
 
 /**
- * エディタから直接各論理行の位置と高さを実測（修正版）
+ * エディタから直接各論理行の位置と高さを実測（タイプライターモード対応版）
  */
 function getRealLogicalLinePositionsInternal(lines) {
     try {
-        // 測定用の隠し要素を作成（エディタと完全に同じスタイル）
-        const measurer = document.createElement('div');
+        // エディタの現在のスタイルを取得
         const computedStyle = window.getComputedStyle(editor);
         
-        // エディタの行番号エリアの幅を取得
+        // タイプライターモードの検出と実際のpadding値を取得
+        const isTypewriterMode = editor.style.paddingTop && parseFloat(editor.style.paddingTop) > 20;
+        const actualPaddingTop = parseFloat(editor.style.paddingTop) || parseFloat(computedStyle.paddingTop);
+        const actualPaddingLeft = parseFloat(computedStyle.paddingLeft);
+        const actualPaddingRight = parseFloat(computedStyle.paddingRight);
+        
+        // 測定用の隠し要素を作成（エディタと完全に同じスタイル）
+        const measurer = document.createElement('div');
         const lineNumbers = document.getElementById('line-numbers');
         const lineNumbersWidth = lineNumbers ? lineNumbers.offsetWidth : 0;
         
@@ -47,15 +56,18 @@ function getRealLogicalLinePositionsInternal(lines) {
             padding: 0;
             margin: 0;
             border: none;
-            width: ${editor.clientWidth - parseFloat(computedStyle.paddingLeft) - parseFloat(computedStyle.paddingRight)}px;
+            width: ${editor.clientWidth - actualPaddingLeft - actualPaddingRight}px;
         `;
         
         document.body.appendChild(measurer);
         
         const lineHeight = parseFloat(computedStyle.lineHeight);
-        const paddingTop = parseFloat(computedStyle.paddingTop);
-        let currentTop = paddingTop;
+        let currentTop = actualPaddingTop; // 実際のpaddingTopを使用
         const positions = [];
+        
+        if (DEBUG_MODE && isTypewriterMode) {
+            console.log(`🖥️ Typewriter mode detected: paddingTop=${actualPaddingTop}px`);
+        }
         
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
@@ -64,7 +76,8 @@ function getRealLogicalLinePositionsInternal(lines) {
             if (line.length === 0) {
                 positions.push({
                     top: currentTop,
-                    height: lineHeight
+                    height: lineHeight,
+                    actualPaddingTop: actualPaddingTop
                 });
                 currentTop += lineHeight;
                 continue;
@@ -77,7 +90,8 @@ function getRealLogicalLinePositionsInternal(lines) {
             
             positions.push({
                 top: currentTop,
-                height: actualHeight
+                height: actualHeight,
+                actualPaddingTop: actualPaddingTop
             });
             
             currentTop += actualHeight;
@@ -87,22 +101,23 @@ function getRealLogicalLinePositionsInternal(lines) {
         return positions;
         
     } catch (error) {
-        console.error('Error getting real logical line positions:', error);
+        if (DEBUG_MODE) console.error('Error getting real logical line positions:', error);
         
         // フォールバック
         const computedStyle = window.getComputedStyle(editor);
         const lineHeight = parseFloat(computedStyle.lineHeight);
-        const paddingTop = parseFloat(computedStyle.paddingTop);
+        const actualPaddingTop = parseFloat(editor.style.paddingTop) || parseFloat(computedStyle.paddingTop);
         
         return lines.map((_, i) => ({
-            top: paddingTop + i * lineHeight,
-            height: lineHeight
+            top: actualPaddingTop + i * lineHeight,
+            height: lineHeight,
+            actualPaddingTop: actualPaddingTop
         }));
     }
 }
 
 /**
- * 行番号の更新（シンプルスクロール対応版）
+ * 行番号の更新（タイプライターモード行番号位置修正版）
  */
 export function updateLineNumbers() {
     const lineNumbers = document.getElementById('line-numbers');
@@ -114,7 +129,7 @@ export function updateLineNumbers() {
     }
     
     lineNumbersUpdateScheduled = true;
-    console.log('Updating line numbers...');
+    if (DEBUG_MODE) console.log('Updating line numbers...');
     
     try {
         const lines = editor.value.split('\n');
@@ -125,51 +140,101 @@ export function updateLineNumbers() {
         const originalSelectionEnd = editor.selectionEnd;
         const originalScrollTop = editor.scrollTop;
         
-       // 各論理行の実測位置と高さを取得
+        // 各論理行の実測位置と高さを取得
         const linePositions = getRealLogicalLinePositionsInternal(lines);
         
         // タイプライターモードの検出
         const isTypewriterMode = editor.style.paddingTop && parseFloat(editor.style.paddingTop) > 20;
+        const actualPaddingTop = parseFloat(editor.style.paddingTop) || parseFloat(window.getComputedStyle(editor).paddingTop);
+        const baseLineHeight = parseFloat(window.getComputedStyle(editor).lineHeight);
         
-        // 論理行番号を通常のブロック要素として配置
+        if (DEBUG_MODE && isTypewriterMode) {
+            console.log(`🖥️ Typewriter mode: actualPaddingTop=${actualPaddingTop}px, baseLineHeight=${baseLineHeight}px`);
+        }
+        
+        // 論理行番号を配置
         let lineNumbersHTML = '';
         
         for (let i = 0; i < lineCount; i++) {
             const linePosition = linePositions[i];
             
-            // タイプライターモード判定
-            const isTypewriterModeHere = editor.style.paddingTop && parseFloat(editor.style.paddingTop) > 20;
-            const baseLineHeight = parseFloat(getComputedStyle(editor).lineHeight);
-            
-            if (isTypewriterModeHere) {
-                // タイプライターモード：行番号を論理行の最上部に表示
-                lineNumbersHTML += `<div class="line-number" style="height: ${linePosition.height}px; display: flex; align-items: flex-start; justify-content: flex-end; box-sizing: border-box; position: relative; line-height: ${baseLineHeight}px;">
-                    <span style="position: absolute; top: 0; line-height: ${baseLineHeight}px;">${i + 1}</span>
+            if (isTypewriterMode) {
+                // タイプライターモード：行番号をエディタと同じ位置に調整
+                // 行番号コンテナにもタイプライターモードのpaddingTopを適用
+                lineNumbersHTML += `<div class="line-number" style="
+                    height: ${linePosition.height}px;
+                    display: flex;
+                    align-items: flex-start;
+                    justify-content: flex-end;
+                    box-sizing: border-box;
+                    position: relative;
+                    line-height: ${baseLineHeight}px;
+                    margin: 0;
+                    padding: 0;
+                ">
+                    <span style="
+                        position: absolute;
+                        top: 0;
+                        right: 8px;
+                        line-height: ${baseLineHeight}px;
+                        height: ${baseLineHeight}px;
+                        display: flex;
+                        align-items: center;
+                    ">${i + 1}</span>
                 </div>`;
             } else {
-                // 通常モード：行番号を論理行の最上部に表示
-                lineNumbersHTML += `<div class="line-number" style="height: ${linePosition.height}px; display: flex; align-items: flex-start; justify-content: flex-end; box-sizing: border-box; position: relative; line-height: ${baseLineHeight}px;">
-                    <span style="position: absolute; top: 0; line-height: ${baseLineHeight}px;">${i + 1}</span>
+                // 通常モード：論理行の最上部に表示
+                lineNumbersHTML += `<div class="line-number" style="
+                    height: ${linePosition.height}px;
+                    display: flex;
+                    align-items: flex-start;
+                    justify-content: flex-end;
+                    box-sizing: border-box;
+                    position: relative;
+                    line-height: ${baseLineHeight}px;
+                ">
+                    <span style="
+                        position: absolute;
+                        top: 0;
+                        right: 8px;
+                        line-height: ${baseLineHeight}px;
+                    ">${i + 1}</span>
                 </div>`;
             }
         }
+        
+        // 行番号コンテナのスタイル設定
+        lineNumbers.style.position = 'relative';
+        lineNumbers.style.height = 'auto';
+        
+        // タイプライターモード時は行番号コンテナにも同じpaddingTopを適用
+        if (isTypewriterMode) {
+            lineNumbers.style.paddingTop = `${actualPaddingTop}px`;
+            lineNumbers.style.paddingBottom = `${actualPaddingTop}px`;
+            if (DEBUG_MODE) {
+                console.log(`🖥️ Applied padding to line numbers: top=${actualPaddingTop}px, bottom=${actualPaddingTop}px`);
+            }
+        } else {
+            // 通常モードでは標準のpadding
+            lineNumbers.style.paddingTop = '10px';
+            lineNumbers.style.paddingBottom = '10px';
+        }
+        
+        lineNumbers.innerHTML = lineNumbersHTML;
         
         // 元のカーソル位置とスクロール位置を復元
         editor.setSelectionRange(originalSelectionStart, originalSelectionEnd);
         editor.scrollTop = originalScrollTop;
         
-        // 行番号コンテナを設定
-        lineNumbers.style.position = 'relative';
-        lineNumbers.style.height = 'auto';
-        lineNumbers.innerHTML = lineNumbersHTML;
-        
-        console.log('Line numbers HTML:', lineNumbersHTML.substring(0, 200) + '...');
-        console.log(`Line numbers updated: ${lineCount} logical lines (block elements)`);
+        if (DEBUG_MODE) {
+            console.log('Line numbers HTML:', lineNumbersHTML.substring(0, 200) + '...');
+            console.log(`Line numbers updated: ${lineCount} logical lines, typewriter mode: ${isTypewriterMode}`);
+        }
         
         lineNumbersUpdateScheduled = false;
     } catch (error) {
         lineNumbersUpdateScheduled = false;
-        console.error('Error updating line numbers:', error);
+        if (DEBUG_MODE) console.error('Error updating line numbers:', error);
         
         // フォールバック: シンプルな行番号表示
         const lines = editor.value.split('\n');
@@ -183,19 +248,22 @@ export function updateLineNumbers() {
 }
 
 /**
- * 行番号とエディタのスクロール同期
+ * 行番号とエディタのスクロール同期（タイプライターモード対応版）
  */
 export function syncScroll() {
     const lineNumbers = document.getElementById('line-numbers');
     if (lineNumbers && editor) {
         // 行番号コンテナをエディタと同期してスクロール
         lineNumbers.scrollTop = editor.scrollTop;
-        console.log('📜 Line numbers scrolled to:', editor.scrollTop, 'editor scrollTop:', editor.scrollTop);
+        
+        if (DEBUG_MODE) {
+            console.log('📜 Line numbers scrolled to:', editor.scrollTop, 'editor scrollTop:', editor.scrollTop);
+        }
     }
 }
 
 /**
- * 現在の論理行をハイライト（行番号と同じ計算方法を使用）
+ * 現在の論理行をハイライト（タイプライターモード対応版）
  */
 export function updateLineHighlight() {
     if (!editor || !isLineHighlightEnabled) {
@@ -226,7 +294,7 @@ export function updateLineHighlight() {
         
         const currentLinePosition = linePositions[currentLogicalLine - 1];
         if (!currentLinePosition) {
-            console.warn('⚠️ Could not get position for line', currentLogicalLine);
+            if (DEBUG_MODE) console.warn('⚠️ Could not get position for line', currentLogicalLine);
             return;
         }
         
@@ -235,9 +303,6 @@ export function updateLineHighlight() {
         
         // タイプライターモードの検出
         const isTypewriterMode = editor.style.paddingTop && parseFloat(editor.style.paddingTop) > 20;
-        
-        // タイプライターモード判定
-        const isTypewriterModeHere = editor.style.paddingTop && parseFloat(editor.style.paddingTop) > 20;
         
         // ハイライト要素を作成
         const highlight = document.createElement('div');
@@ -250,14 +315,15 @@ export function updateLineHighlight() {
         highlight.style.pointerEvents = 'none';
         highlight.style.zIndex = '1';
         
-        // タイプライターモード時とそうでない時で同じように論理行全体をハイライト
-        console.log(`🎨 Line highlight: line ${currentLogicalLine}, top=${displayTop}, height=${currentLinePosition.height}, typewriter=${isTypewriterModeHere}`);
+        if (DEBUG_MODE) {
+            console.log(`🎨 Line highlight: line ${currentLogicalLine}, top=${displayTop}, height=${currentLinePosition.height}, typewriter=${isTypewriterMode}`);
+        }
         
         // 行ハイライトが画面外に出る場合はログに記録
         const editorHeight = editor.clientHeight;
         
         if (displayTop < 0 || displayTop > editorHeight) {
-            console.warn(`⚠️ Highlight may be off-screen: displayTop=${displayTop}, editorHeight=${editorHeight}`);
+            if (DEBUG_MODE) console.warn(`⚠️ Highlight may be off-screen: displayTop=${displayTop}, editorHeight=${editorHeight}`);
         }
         
         // エディタコンテナに追加
@@ -266,10 +332,12 @@ export function updateLineHighlight() {
             editorContainer.appendChild(highlight);
         }
         
-        console.log(`Line highlight: logical line ${currentLogicalLine}, top: ${displayTop}, height: ${currentLinePosition.height} (same method as line numbers)`);
+        if (DEBUG_MODE) {
+            console.log(`Line highlight: logical line ${currentLogicalLine}, top: ${displayTop}, height: ${currentLinePosition.height}`);
+        }
         
     } catch (error) {
-        console.warn('⚠️ Line highlight error:', error);
+        if (DEBUG_MODE) console.warn('⚠️ Line highlight error:', error);
     }
 }
 
@@ -326,7 +394,7 @@ function calculatePhysicalCursorPosition(cursorPos) {
         return actualPaddingTop + relativeTop;
         
     } catch (error) {
-        console.error('Error calculating physical cursor position:', error);
+        if (DEBUG_MODE) console.error('Error calculating physical cursor position:', error);
         // フォールバック
         const computedStyle = window.getComputedStyle(editor);
         const lineHeight = parseFloat(computedStyle.lineHeight);
@@ -408,7 +476,7 @@ function updateWhitespaceMarkersIfEnabled() {
                     try {
                         module.updateWhitespaceMarkers();
                     } catch (updateError) {
-                        console.warn('⚠️ Whitespace markers update failed:', updateError);
+                        if (DEBUG_MODE) console.warn('⚠️ Whitespace markers update failed:', updateError);
                     }
                 }, 50);
             }
@@ -417,7 +485,7 @@ function updateWhitespaceMarkersIfEnabled() {
         });
     } catch (error) {
         // エラーは無視（空白文字可視化はオプション機能のため）
-        console.warn('⚠️ Whitespace markers update error:', error);
+        if (DEBUG_MODE) console.warn('⚠️ Whitespace markers update error:', error);
     }
 }
 
@@ -432,7 +500,7 @@ export function updateWhitespaceMarkersOnScroll() {
                 try {
                     module.updateWhitespaceMarkersOnScroll();
                 } catch (updateError) {
-                    console.warn('⚠️ Scroll-triggered whitespace update failed:', updateError);
+                    if (DEBUG_MODE) console.warn('⚠️ Scroll-triggered whitespace update failed:', updateError);
                 }
             }
         }).catch(() => {
@@ -440,7 +508,7 @@ export function updateWhitespaceMarkersOnScroll() {
         });
     } catch (error) {
         // エラーは無視
-        console.warn('⚠️ Whitespace scroll update error:', error);
+        if (DEBUG_MODE) console.warn('⚠️ Whitespace scroll update error:', error);
     }
 }
 
@@ -450,7 +518,7 @@ export function updateWhitespaceMarkersOnScroll() {
 function getFileNameFromPath(filePath) {
     if (!filePath) return null;
     
-    console.log('🏷️ Extracting filename from path:', filePath);
+    if (DEBUG_MODE) console.log('🏷️ Extracting filename from path:', filePath);
     
     // WindowsとUnix系両方のパス区切り文字に対応
     const pathSeparators = ['/', '\\'];
@@ -464,7 +532,7 @@ function getFileNameFromPath(filePath) {
         }
     }
     
-    console.log('📁 Extracted filename:', fileName);
+    if (DEBUG_MODE) console.log('📁 Extracted filename:', fileName);
     return fileName;
 }
 
@@ -473,8 +541,8 @@ function getFileNameFromPath(filePath) {
  */
 export async function updateWindowTitle() {
     try {
-        console.log('🏷️ Updating window title...');
-        console.log('Current file path:', currentFilePath);
+        if (DEBUG_MODE) console.log('🏷️ Updating window title...');
+        if (DEBUG_MODE) console.log('Current file path:', currentFilePath);
         
         let newTitle;
         
@@ -489,31 +557,31 @@ export async function updateWindowTitle() {
             newTitle = t('window.defaultTitle');
         }
         
-        console.log('🏷️ New title:', newTitle);
+        if (DEBUG_MODE) console.log('🏷️ New title:', newTitle);
         
         // Tauri 2.5のウィンドウタイトル更新API
         if (window.__TAURI__ && window.__TAURI__.window) {
-            console.log('🏷️ Using Tauri window API');
+            if (DEBUG_MODE) console.log('🏷️ Using Tauri window API');
             const { getCurrentWindow } = window.__TAURI__.window;
             const currentWindow = getCurrentWindow();
             
             await currentWindow.setTitle(newTitle);
-            console.log('✅ Window title updated successfully via Tauri API');
+            if (DEBUG_MODE) console.log('✅ Window title updated successfully via Tauri API');
             
         } else if (tauriInvoke) {
-            console.log('🏷️ Fallback: Using Tauri invoke (if available)');
+            if (DEBUG_MODE) console.log('🏷️ Fallback: Using Tauri invoke (if available)');
             // Tauri invokeでのフォールバック（カスタムコマンドが必要）
-            console.log('⚠️ Tauri invoke fallback not implemented for setTitle');
+            if (DEBUG_MODE) console.log('⚠️ Tauri invoke fallback not implemented for setTitle');
             
         } else {
-            console.log('🏷️ Fallback: Using document.title');
+            if (DEBUG_MODE) console.log('🏷️ Fallback: Using document.title');
             // 最後の手段: document.title（開発環境用）
             document.title = newTitle;
-            console.log('✅ Document title updated as fallback');
+            if (DEBUG_MODE) console.log('✅ Document title updated as fallback');
         }
         
     } catch (error) {
-        console.error('❌ Failed to update window title:', error);
+        if (DEBUG_MODE) console.error('❌ Failed to update window title:', error);
         
         // エラー時のフォールバック
         try {
@@ -521,9 +589,9 @@ export async function updateWindowTitle() {
                 t('window.titleFormat', { filename: getFileNameFromPath(currentFilePath) || t('window.defaultTitle').replace('Sert - ', '') }) : 
                 t('window.defaultTitle');
             document.title = fallbackTitle;
-            console.log('✅ Fallback title set:', fallbackTitle);
+            if (DEBUG_MODE) console.log('✅ Fallback title set:', fallbackTitle);
         } catch (fallbackError) {
-            console.error('❌ Even fallback title update failed:', fallbackError);
+            if (DEBUG_MODE) console.error('❌ Even fallback title update failed:', fallbackError);
         }
     }
 }
@@ -557,6 +625,6 @@ export function updateAfterFontChange() {
             }
         });
     } catch (error) {
-        console.warn('⚠️ Tab size update after font change failed:', error);
+        if (DEBUG_MODE) console.warn('⚠️ Tab size update after font change failed:', error);
     }
 }

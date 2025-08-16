@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - イベントリスナー設定
+ * Vinsert Editor - イベントリスナー設定（ログ出力削減版）
  * =====================================================
  */
 
@@ -11,11 +11,14 @@ import { updateLineNumbers, syncScroll, updateLineHighlight, updateStatus } from
 import { handleCompositionStart, handleCompositionEnd, handleCompositionUpdate } from './ime-handler.js';
 import { handleGlobalClick, handleMenuEscape } from './menu-controller.js';
 
+// デバッグモードフラグ（必要時のみログ出力）
+const DEBUG_MODE = false;
+
 /**
  * エディタのイベントリスナーを設定
  */
 export function setupEventListeners() {
-    console.log('Setting up event listeners...');
+    if (DEBUG_MODE) console.log('Setting up event listeners...');
     
     if (!editor) {
         console.error('❌ Editor element not available');
@@ -24,7 +27,7 @@ export function setupEventListeners() {
     
     // キーボードイベントを最優先で設定
     editor.addEventListener('keydown', handleKeydown, true);
-    console.log('✅ Keydown listener added (capture=true)');
+    if (DEBUG_MODE) console.log('✅ Keydown listener added (capture=true)');
     
     // 他のイベントリスナー
     editor.addEventListener('input', (e) => {
@@ -35,7 +38,7 @@ export function setupEventListeners() {
                 updateLineNumbers();
                 updateLineHighlight();
             } catch (error) {
-                console.warn('⚠️ Failed to update line numbers:', error);
+                if (DEBUG_MODE) console.warn('⚠️ Failed to update line numbers:', error);
             }
         }, 0);
     });
@@ -53,7 +56,7 @@ export function setupEventListeners() {
                 }
             });
         } catch (error) {
-            console.warn('⚠️ Whitespace marker update failed on scroll:', error);
+            if (DEBUG_MODE) console.warn('⚠️ Whitespace marker update failed on scroll:', error);
         }
     }, { passive: true });
     
@@ -83,7 +86,7 @@ export function setupEventListeners() {
         try {
             updateLineNumbers();
         } catch (error) {
-            console.warn('⚠️ Failed to update line numbers on keyup:', error);
+            if (DEBUG_MODE) console.warn('⚠️ Failed to update line numbers on keyup:', error);
         }
     });
     
@@ -101,7 +104,7 @@ export function setupEventListeners() {
         // マウスホイール直後に即座更新
         requestAnimationFrame(() => {
             try {
-                console.log('🖱️ Mouse wheel detected, updating all elements');
+                if (DEBUG_MODE) console.log('🖱️ Mouse wheel detected, updating all elements');
                 syncScroll();
                 // updateLineHighlight(); // マウスホイール時は行ハイライト更新しない
                 
@@ -116,9 +119,9 @@ export function setupEventListeners() {
                     });
                 }
                 
-                console.log('🖱️ Mouse wheel scroll updated completely');
+                if (DEBUG_MODE) console.log('🖱️ Mouse wheel scroll updated completely');
             } catch (error) {
-                console.warn('⚠️ Mouse wheel update failed:', error);
+                if (DEBUG_MODE) console.warn('⚠️ Mouse wheel update failed:', error);
             }
         });
     }, { passive: true });
@@ -126,22 +129,22 @@ export function setupEventListeners() {
     // エディタのサイズ変更時（ウィンドウリサイズなど）に行番号を更新
     try {
         const resizeObserver = new ResizeObserver(() => {
-            console.log('Editor resized, updating line numbers');
+            if (DEBUG_MODE) console.log('Editor resized, updating line numbers');
             setTimeout(() => {
                 try {
                     updateLineNumbers();
                     updateLineHighlight();
                 } catch (error) {
-                    console.warn('⚠️ Failed to update on resize:', error);
+                    if (DEBUG_MODE) console.warn('⚠️ Failed to update on resize:', error);
                 }
             }, 100);
         });
         resizeObserver.observe(editor);
     } catch (error) {
-        console.warn('⚠️ ResizeObserver not available:', error);
+        if (DEBUG_MODE) console.warn('⚠️ ResizeObserver not available:', error);
     }
     
-    console.log('✅ Event listeners set up successfully');
+    if (DEBUG_MODE) console.log('✅ Event listeners set up successfully');
 }
 
 /**

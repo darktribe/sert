@@ -1,6 +1,6 @@
 /*
  * =====================================================
- * Vinsert Editor - 確認ダイアログ表示（多言語化対応版）
+ * Vinsert Editor - 確認ダイアログ表示（ドラッグ機能簡素化版）
  * =====================================================
  */
 
@@ -8,12 +8,26 @@ import { editor } from './globals.js';
 import { t } from './locales.js';
 
 /**
- * 新規作成確認ダイアログを表示（キーボードナビゲーション対応）
+ * ドラッグ機能を追加するヘルパー関数（簡素化版）
+ */
+function enableDialogDragSimple(dialogElement) {
+    // グローバル関数が利用可能かチェック
+    if (window.enableDialogDrag && typeof window.enableDialogDrag === 'function') {
+        return window.enableDialogDrag(dialogElement);
+    }
+    
+    console.log('ℹ️ Dialog drag function not available, skipping');
+    return false;
+}
+
+/**
+ * 新規作成確認ダイアログを表示（簡素化版）
  */
 export async function showNewFileDialog() {
     return new Promise((resolve) => {
         const dialogOverlay = document.createElement('div');
         dialogOverlay.id = 'new-file-dialog-overlay';
+        dialogOverlay.className = 'search-dialog-overlay';
         dialogOverlay.style.cssText = `
             position: fixed;
             top: 0;
@@ -29,59 +43,41 @@ export async function showNewFileDialog() {
         `;
         
         const dialog = document.createElement('div');
+        dialog.className = 'search-dialog';
         dialog.style.cssText = `
             background-color: #2d2d30;
             border: 1px solid #3e3e40;
             border-radius: 6px;
-            padding: 20px;
             min-width: 400px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
             color: #d4d4d4;
         `;
         
         dialog.innerHTML = `
-            <div style="margin-bottom: 16px; font-size: 16px; font-weight: bold;">
-                ${t('dialogs.newFile.title')}
-            </div>
-            <div style="margin-bottom: 20px; color: #cccccc;">
-                ${t('dialogs.newFile.message')}
-            </div>
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button id="save-and-new-btn" tabindex="1" style="
-                    background-color: #0e639c;
-                    color: white;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    transition: background-color 0.2s, box-shadow 0.2s;
-                ">${t('dialogs.newFile.saveAndNew')}</button>
-                <button id="new-without-saving-btn" tabindex="2" style="
-                    background-color: #d14949;
-                    color: white;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    transition: background-color 0.2s, box-shadow 0.2s;
-                ">${t('dialogs.newFile.newWithoutSaving')}</button>
-                <button id="cancel-new-btn" tabindex="3" style="
-                    background-color: #5a5a5a;
-                    color: white;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    transition: background-color 0.2s, box-shadow 0.2s;
-                ">${t('dialogs.newFile.cancel')}</button>
+            <div class="search-dialog-header">${t('dialogs.newFile.title')}</div>
+            <div class="search-dialog-content">
+                <div style="margin-bottom: 20px; color: #cccccc;">
+                    ${t('dialogs.newFile.message')}
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button id="save-and-new-btn" tabindex="1" class="search-button search-button-primary">
+                        ${t('dialogs.newFile.saveAndNew')}
+                    </button>
+                    <button id="new-without-saving-btn" tabindex="2" class="search-button search-button-danger">
+                        ${t('dialogs.newFile.newWithoutSaving')}
+                    </button>
+                    <button id="cancel-new-btn" tabindex="3" class="search-button search-button-cancel">
+                        ${t('dialogs.newFile.cancel')}
+                    </button>
+                </div>
             </div>
         `;
         
         dialogOverlay.appendChild(dialog);
         document.body.appendChild(dialogOverlay);
+        
+        // ドラッグ機能を追加（遅延実行）
+        setTimeout(() => enableDialogDragSimple(dialog), 100);
         
         // ダイアログの共通処理を呼び出し
         setupDialogNavigation(dialogOverlay, ['save-and-new-btn', 'new-without-saving-btn', 'cancel-new-btn'], 
@@ -90,12 +86,13 @@ export async function showNewFileDialog() {
 }
 
 /**
- * ファイルを開く確認ダイアログを表示（キーボードナビゲーション対応）
+ * ファイルを開く確認ダイアログを表示（簡素化版）
  */
 export async function showOpenFileDialog() {
     return new Promise((resolve) => {
         const dialogOverlay = document.createElement('div');
         dialogOverlay.id = 'open-file-dialog-overlay';
+        dialogOverlay.className = 'search-dialog-overlay';
         dialogOverlay.style.cssText = `
             position: fixed;
             top: 0;
@@ -111,59 +108,41 @@ export async function showOpenFileDialog() {
         `;
         
         const dialog = document.createElement('div');
+        dialog.className = 'search-dialog';
         dialog.style.cssText = `
             background-color: #2d2d30;
             border: 1px solid #3e3e40;
             border-radius: 6px;
-            padding: 20px;
             min-width: 400px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
             color: #d4d4d4;
         `;
         
         dialog.innerHTML = `
-            <div style="margin-bottom: 16px; font-size: 16px; font-weight: bold;">
-                ${t('dialogs.openFile.title')}
-            </div>
-            <div style="margin-bottom: 20px; color: #cccccc;">
-                ${t('dialogs.openFile.message')}
-            </div>
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button id="save-and-open-btn" tabindex="1" style="
-                    background-color: #0e639c;
-                    color: white;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    transition: background-color 0.2s, box-shadow 0.2s;
-                ">${t('dialogs.openFile.saveAndOpen')}</button>
-                <button id="open-without-saving-btn" tabindex="2" style="
-                    background-color: #d14949;
-                    color: white;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    transition: background-color 0.2s, box-shadow 0.2s;
-                ">${t('dialogs.openFile.openWithoutSaving')}</button>
-                <button id="cancel-open-btn" tabindex="3" style="
-                    background-color: #5a5a5a;
-                    color: white;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    transition: background-color 0.2s, box-shadow 0.2s;
-                ">${t('dialogs.openFile.cancel')}</button>
+            <div class="search-dialog-header">${t('dialogs.openFile.title')}</div>
+            <div class="search-dialog-content">
+                <div style="margin-bottom: 20px; color: #cccccc;">
+                    ${t('dialogs.openFile.message')}
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button id="save-and-open-btn" tabindex="1" class="search-button search-button-primary">
+                        ${t('dialogs.openFile.saveAndOpen')}
+                    </button>
+                    <button id="open-without-saving-btn" tabindex="2" class="search-button search-button-danger">
+                        ${t('dialogs.openFile.openWithoutSaving')}
+                    </button>
+                    <button id="cancel-open-btn" tabindex="3" class="search-button search-button-cancel">
+                        ${t('dialogs.openFile.cancel')}
+                    </button>
+                </div>
             </div>
         `;
         
         dialogOverlay.appendChild(dialog);
         document.body.appendChild(dialogOverlay);
+        
+        // ドラッグ機能を追加（遅延実行）
+        setTimeout(() => enableDialogDragSimple(dialog), 100);
         
         // ダイアログの共通処理を呼び出し
         setupDialogNavigation(dialogOverlay, ['save-and-open-btn', 'open-without-saving-btn', 'cancel-open-btn'], 
@@ -172,7 +151,7 @@ export async function showOpenFileDialog() {
 }
 
 /**
- * 終了確認ダイアログを表示（キーボードナビゲーション対応）
+ * 終了確認ダイアログを表示（簡素化版）
  */
 export async function showExitDialog() {
     return new Promise((resolve) => {
@@ -180,6 +159,7 @@ export async function showExitDialog() {
         
         const dialogOverlay = document.createElement('div');
         dialogOverlay.id = 'exit-dialog-overlay';
+        dialogOverlay.className = 'search-dialog-overlay';
         dialogOverlay.style.cssText = `
             position: fixed;
             top: 0;
@@ -195,54 +175,33 @@ export async function showExitDialog() {
         `;
         
         const dialog = document.createElement('div');
+        dialog.className = 'search-dialog';
         dialog.style.cssText = `
             background-color: #2d2d30;
             border: 1px solid #3e3e40;
             border-radius: 6px;
-            padding: 20px;
             min-width: 400px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
             color: #d4d4d4;
         `;
         
         dialog.innerHTML = `
-            <div style="margin-bottom: 16px; font-size: 16px; font-weight: bold;">
-                ${t('dialogs.exit.title')}
-            </div>
-            <div style="margin-bottom: 20px; color: #cccccc;">
-                ${t('dialogs.exit.message')}
-            </div>
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button id="save-and-exit-btn" tabindex="1" style="
-                    background-color: #0e639c;
-                    color: white;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    transition: background-color 0.2s, box-shadow 0.2s;
-                ">${t('dialogs.exit.saveAndExit')}</button>
-                <button id="exit-without-saving-btn" tabindex="2" style="
-                    background-color: #d14949;
-                    color: white;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    transition: background-color 0.2s, box-shadow 0.2s;
-                ">${t('dialogs.exit.exitWithoutSaving')}</button>
-                <button id="cancel-exit-btn" tabindex="3" style="
-                    background-color: #5a5a5a;
-                    color: white;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    transition: background-color 0.2s, box-shadow 0.2s;
-                ">${t('dialogs.exit.cancel')}</button>
+            <div class="search-dialog-header">${t('dialogs.exit.title')}</div>
+            <div class="search-dialog-content">
+                <div style="margin-bottom: 20px; color: #cccccc;">
+                    ${t('dialogs.exit.message')}
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button id="save-and-exit-btn" tabindex="1" class="search-button search-button-primary">
+                        ${t('dialogs.exit.saveAndExit')}
+                    </button>
+                    <button id="exit-without-saving-btn" tabindex="2" class="search-button search-button-danger">
+                        ${t('dialogs.exit.exitWithoutSaving')}
+                    </button>
+                    <button id="cancel-exit-btn" tabindex="3" class="search-button search-button-cancel">
+                        ${t('dialogs.exit.cancel')}
+                    </button>
+                </div>
             </div>
         `;
         
@@ -250,6 +209,9 @@ export async function showExitDialog() {
         document.body.appendChild(dialogOverlay);
         
         console.log('🚪 Exit dialog added to DOM');
+        
+        // ドラッグ機能を追加（遅延実行）
+        setTimeout(() => enableDialogDragSimple(dialog), 100);
         
         // フォーカスを確実に設定
         setTimeout(() => {
@@ -263,7 +225,7 @@ export async function showExitDialog() {
             } catch (focusError) {
                 console.error('❌ Dialog focus failed:', focusError);
             }
-        }, 100);
+        }, 150);
         
         // ダイアログの共通処理を呼び出し
         setupDialogNavigation(dialogOverlay, ['save-and-exit-btn', 'exit-without-saving-btn', 'cancel-exit-btn'], 
@@ -272,7 +234,7 @@ export async function showExitDialog() {
 }
 
 /**
- * アバウトダイアログを表示
+ * アバウトダイアログを表示（簡素化版）
  */
 export async function showAboutDialog() {
     return new Promise((resolve) => {
@@ -305,6 +267,9 @@ export async function showAboutDialog() {
         
         dialogOverlay.appendChild(dialog);
         document.body.appendChild(dialogOverlay);
+        
+        // ドラッグ機能を追加（遅延実行）
+        setTimeout(() => enableDialogDragSimple(dialog), 100);
         
         setupAboutDialogEvents(dialogOverlay, resolve);
     });
@@ -380,7 +345,7 @@ function setupAboutDialogEvents(dialogOverlay, resolve) {
 }
 
 /**
- * ダイアログの共通キーボードナビゲーション処理
+ * ダイアログの共通キーボードナビゲーション処理（既存コード）
  */
 function setupDialogNavigation(dialogOverlay, buttonIds, returnValues, resolve) {
     console.log('🚪 Setting up dialog navigation...');

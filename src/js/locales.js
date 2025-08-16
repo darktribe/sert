@@ -1085,21 +1085,6 @@ async function loadLanguageFromFile(languageCode) {
 }
 
 /**
- * HTMLの属性やテキストコンテンツを更新するヘルパー関数
- */
-export function updateElementText(selector, key, attribute = null, params = {}) {
-    const element = document.querySelector(selector);
-    if (element) {
-        const text = t(key, params);
-        if (attribute) {
-            element.setAttribute(attribute, text);
-        } else {
-            element.textContent = text;
-        }
-    }
-}
-
-/**
  * localesディレクトリのパスを取得（デバッグ用）
  */
 export function getLocalesDirectoryPath() {
