@@ -22,17 +22,15 @@ export function getRealLogicalLinePositions(lines) {
  * エディタから直接各論理行の位置と高さを実測（修正版）
  */
 function getRealLogicalLinePositionsInternal(lines) {
-    const positions = [];
-    
     try {
-        // 現在のカーソル位置を保存
-        const originalSelectionStart = editor.selectionStart;
-        const originalSelectionEnd = editor.selectionEnd;
-        const originalScrollTop = editor.scrollTop;
-        
-        // 測定用の隠し要素を作成
+        // 測定用の隠し要素を作成（エディタと完全に同じスタイル）
         const measurer = document.createElement('div');
         const computedStyle = window.getComputedStyle(editor);
+        
+        // エディタの行番号エリアの幅を取得
+        const lineNumbers = document.getElementById('line-numbers');
+        const lineNumbersWidth = lineNumbers ? lineNumbers.offsetWidth : 0;
+        
         measurer.style.cssText = `
             position: absolute;
             top: -9999px;
@@ -43,6 +41,9 @@ function getRealLogicalLinePositionsInternal(lines) {
             font-family: ${computedStyle.fontFamily};
             font-size: ${computedStyle.fontSize};
             line-height: ${computedStyle.lineHeight};
+            font-variant-numeric: ${computedStyle.fontVariantNumeric};
+            letter-spacing: ${computedStyle.letterSpacing};
+            word-spacing: ${computedStyle.wordSpacing};
             padding: 0;
             margin: 0;
             border: none;
@@ -54,15 +55,23 @@ function getRealLogicalLinePositionsInternal(lines) {
         const lineHeight = parseFloat(computedStyle.lineHeight);
         const paddingTop = parseFloat(computedStyle.paddingTop);
         let currentTop = paddingTop;
+        const positions = [];
         
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
-            const lineText = line || ' '; // 空行の場合はスペースで測定
             
-            // 論理行の内容を測定用要素に設定
-            measurer.textContent = lineText;
+            // 空行の場合は標準の行高さを使用
+            if (line.length === 0) {
+                positions.push({
+                    top: currentTop,
+                    height: lineHeight
+                });
+                currentTop += lineHeight;
+                continue;
+            }
             
-            // 折り返しを考慮した実際の高さを取得
+            // 行の内容を測定
+            measurer.textContent = line;
             const measurerHeight = measurer.offsetHeight;
             const actualHeight = Math.max(measurerHeight, lineHeight);
             
@@ -75,11 +84,6 @@ function getRealLogicalLinePositionsInternal(lines) {
         }
         
         document.body.removeChild(measurer);
-        
-        // 元のカーソル位置とスクロール位置を復元
-        editor.setSelectionRange(originalSelectionStart, originalSelectionEnd);
-        editor.scrollTop = originalScrollTop;
-        
         return positions;
         
     } catch (error) {

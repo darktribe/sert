@@ -189,11 +189,11 @@ function performWhitespaceMarkersUpdate() {
         // タイプライターモードの検出
         const isTypewriterMode = editor.style.paddingTop && parseFloat(editor.style.paddingTop) > 20;
         
-        // 行ごとに処理（論理行の実測位置を使用）
+        // 行ごとに処理（論理行の正確な位置を使用）
         const lines = content.split('\n');
         
-        // エディタから直接実測値を取得（行番号と同じ方法）
-        const linePositions = getRealLogicalLinePositions(lines);
+        // 論理行の正確な位置を計算
+        const linePositions = calculateLogicalLinePositions(lines);
         
         console.log(`👁️ Processing ${lines.length} lines, typewriter mode: ${isTypewriterMode}`);
         
@@ -201,20 +201,15 @@ function performWhitespaceMarkersUpdate() {
             const line = lines[lineIndex];
             const linePosition = linePositions[lineIndex];
             
-            if (!linePosition) {
-                console.warn(`⚠️ No position found for line ${lineIndex}`);
-                continue;
-            }
+            if (!linePosition) continue;
             
-            // 実測値を使用した表示位置
-            const absoluteY = linePosition.top;
-            const displayY = absoluteY - scrollTop;
+            // 表示位置を計算
+            const displayY = linePosition.top - scrollTop;
             
-            console.log(`👁️ Line ${lineIndex}: absoluteY=${absoluteY}, displayY=${displayY}, height=${linePosition.height}`);
+            console.log(`👁️ Line ${lineIndex}: top=${linePosition.top}, displayY=${displayY}, height=${linePosition.height}`);
             
-            // 表示範囲の判定（タイプライターモード考慮）
-            const margin = isTypewriterMode ? linePosition.height * 2 : linePosition.height;
-            if (displayY < -margin || displayY > editor.clientHeight + margin) {
+            // 表示範囲の判定
+            if (displayY < -linePosition.height || displayY > editor.clientHeight + linePosition.height) {
                 continue;
             }
             
@@ -264,8 +259,8 @@ function performWhitespaceMarkersUpdate() {
                     const markerY = displayY;
                     
                     // 画面内に表示される範囲のみマーカーを作成
-                    if (markerX > -100 && markerX < editor.clientWidth + 100 &&
-                        markerY > -100 && markerY < editor.clientHeight + 100) {
+                    if (markerX > -50 && markerX < editor.clientWidth + 50 &&
+                        markerY > -50 && markerY < editor.clientHeight + 50) {
                         createWhitespaceMarker(markerType, markerX, markerY, charWidth, lineHeight);
                         console.log(`👁️ Created marker ${markerType} at line ${lineIndex}, x=${markerX}, y=${markerY}, width=${charWidth}`);
                     }
@@ -994,5 +989,80 @@ function measureActualTextWidth(text) {
     } catch (error) {
         console.warn('⚠️ DOM text measurement failed:', error);
         return 0;
+    }
+}
+
+/**
+ * 論理行の正確な位置とサイズを計算
+ */
+function calculateLogicalLinePositions(lines) {
+    try {
+        // 測定用の隠し要素を作成（エディタと同じスタイル）
+        const measurer = document.createElement('div');
+        const computedStyle = window.getComputedStyle(editor);
+        
+        measurer.style.cssText = `
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            visibility: hidden;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: ${computedStyle.fontFamily};
+            font-size: ${computedStyle.fontSize};
+            line-height: ${computedStyle.lineHeight};
+            padding: 0;
+            margin: 0;
+            border: none;
+            width: ${editor.clientWidth - parseFloat(computedStyle.paddingLeft) - parseFloat(computedStyle.paddingRight)}px;
+        `;
+        
+        document.body.appendChild(measurer);
+        
+        const lineHeight = parseFloat(computedStyle.lineHeight);
+        const paddingTop = parseFloat(computedStyle.paddingTop);
+        let currentTop = paddingTop;
+        const positions = [];
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            
+            // 空行の場合
+            if (line.length === 0) {
+                positions.push({
+                    top: currentTop,
+                    height: lineHeight
+                });
+                currentTop += lineHeight;
+                continue;
+            }
+            
+            // 行の内容を測定
+            measurer.textContent = line;
+            const measurerHeight = measurer.offsetHeight;
+            
+            positions.push({
+                top: currentTop,
+                height: measurerHeight
+            });
+            
+            currentTop += measurerHeight;
+        }
+        
+        document.body.removeChild(measurer);
+        return positions;
+        
+    } catch (error) {
+        console.error('Error calculating logical line positions:', error);
+        
+        // フォールバック
+        const computedStyle = window.getComputedStyle(editor);
+        const lineHeight = parseFloat(computedStyle.lineHeight);
+        const paddingTop = parseFloat(computedStyle.paddingTop);
+        
+        return lines.map((_, i) => ({
+            top: paddingTop + i * lineHeight,
+            height: lineHeight
+        }));
     }
 }
