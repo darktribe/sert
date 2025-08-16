@@ -149,7 +149,7 @@ export function updateWhitespaceMarkers() {
 
 
 /**
- * 実際のマーカー更新処理（実エディタ測定方式）
+ * 実際のマーカー更新処理（修正版）
  */
 function performWhitespaceMarkersUpdate() {
     // 既存のマーカーをクリア
@@ -161,106 +161,54 @@ function performWhitespaceMarkersUpdate() {
     }
     
     try {
+        console.log('👁️ Starting whitespace markers update');
+        
         // エディタのスタイル情報を取得
         const computedStyle = window.getComputedStyle(editor);
-        const fontSize = parseFloat(computedStyle.fontSize);
         const lineHeight = parseFloat(computedStyle.lineHeight);
-        let paddingLeft = parseFloat(computedStyle.paddingLeft);
-        let paddingTop = parseFloat(computedStyle.paddingTop);
-        
-        // タイプライターモードの検出とpadding調整
-        const isTypewriterMode = paddingTop > 20;
-        if (isTypewriterMode) {
-            console.log('👁️ Typewriter mode detected, adjusting calculations');
-        }
+        const paddingLeft = parseFloat(computedStyle.paddingLeft);
+        const paddingTop = parseFloat(computedStyle.paddingTop);
         
         // 行番号エリアの幅を取得
         const lineNumbers = document.getElementById('line-numbers');
-        const lineNumbersPanelWidth = lineNumbers ? lineNumbers.offsetWidth : 0;
-        
-        // 実エディタでの文字幅測定
-        const realMetrics = measureRealEditorMetrics();
-        console.log('👁️ Real editor metrics:', realMetrics);
-        
-        // realMetricsがnullの場合は処理を中断
-        if (!realMetrics) {
-            console.warn('⚠️ Real metrics is null, skipping whitespace visualization');
-            return;
-        }
+        const lineNumbersWidth = lineNumbers ? lineNumbers.offsetWidth : 0;
         
         // スクロール位置を取得
         const scrollTop = editor.scrollTop;
         const scrollLeft = editor.scrollLeft;
         
-        // 表示可能範囲を計算
-        const editorHeight = editor.clientHeight;
-        const effectiveTop = isTypewriterMode ? scrollTop - paddingTop + 20 : scrollTop;
-        const effectiveHeight = editorHeight + (isTypewriterMode ? paddingTop * 2 : 0);
+        // 実エディタでの文字幅測定
+        const realMetrics = measureRealEditorMetrics();
+        if (!realMetrics) {
+            console.warn('⚠️ Real metrics is null, skipping whitespace visualization');
+            return;
+        }
         
-        const visibleStartLine = Math.max(0, Math.floor(effectiveTop / lineHeight) - 5);
-        const visibleEndLine = Math.min(
-            content.split('\n').length, 
-            Math.ceil((effectiveTop + effectiveHeight) / lineHeight) + 5
-        );
+        console.log('👁️ Real metrics:', realMetrics);
         
-        console.log(`👁️ Visible range: ${visibleStartLine} to ${visibleEndLine}, scrollTop: ${scrollTop}`);
-        
-        // 行ごとに処理（シンプル版・論理行基準）
+        // 行ごとに処理
         const lines = content.split('\n');
-        
-        // エディタから直接実測値を取得（行番号と同じ方法）
-        const linePositions = getRealLogicalLinePositions(lines);
-        
-        const editorStyles = window.getComputedStyle(editor);
-        const leftPadding = parseFloat(editorStyles.paddingLeft);
-        const rightPadding = parseFloat(editorStyles.paddingRight);
-        const lineNumbersPanelWidth = document.getElementById('line-numbers')?.offsetWidth || 60;
-        
-        lineMeasurer.style.cssText = `
-            position: absolute;
-            top: -9999px;
-            left: -9999px;
-            visibility: hidden;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            font-family: ${editorStyles.fontFamily};
-            font-size: ${editorStyles.fontSize};
-            line-height: ${editorStyles.lineHeight};
-            padding: 0;
-            margin: 0;
-            border: none;
-            width: ${measuringWidth}px;
-        `;
-        
-        document.body.appendChild(lineMeasurer);
+        let currentY = paddingTop;
         
         for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
             const line = lines[lineIndex];
-            const lineText = line || ' ';
-            
-            // 実測値から論理行の位置と高さを取得
-            const linePosition = linePositions[lineIndex];
-            if (!linePosition) continue;
-            
-            const actualLineHeight = linePosition.height;
-            const accumulatedY = linePosition.top;
             
             // 表示範囲の判定
-            if (accumulatedY + actualLineHeight < effectiveTop - lineHeight || 
-                accumulatedY > effectiveTop + effectiveHeight + lineHeight) {
+            const displayY = currentY - scrollTop;
+            if (displayY < -lineHeight || displayY > editor.clientHeight + lineHeight) {
+                currentY += lineHeight;
                 continue;
             }
             
             // 行内の文字を処理
-            let currentX = leftPadding + lineNumbersPanelWidth - scrollLeft;
+            let currentX = paddingLeft + lineNumbersWidth;
             
             for (let charIndex = 0; charIndex < line.length; charIndex++) {
                 const char = line[charIndex];
+                let markerType = null;
+                let charWidth = realMetrics.averageAsciiWidth;
                 
                 // 空白文字の種類を判定
-                let markerType = null;
-                let charWidth = 0;
-                
                 if (char === '\u3000' && whitespaceVisualization.showFullWidthSpace) {
                     markerType = 'fullwidth-space';
                     charWidth = realMetrics.fullWidthSpaceWidth;
@@ -269,46 +217,40 @@ function performWhitespaceMarkersUpdate() {
                     charWidth = realMetrics.halfWidthSpaceWidth;
                 } else if (char === '\t' && whitespaceVisualization.showTab) {
                     markerType = 'tab';
-                    // エディタの実際のtab-sizeを取得
-                    const editorTabSize = parseInt(getComputedStyle(editor).tabSize) || 4;
-                    const actualTabWidth = realMetrics.halfWidthSpaceWidth * editorTabSize;
-                    const currentPosition = currentX - (leftPadding + lineNumbersPanelWidth - scrollLeft);
-                    const nextTabStop = Math.ceil((currentPosition + 1) / actualTabWidth) * actualTabWidth;
-                    charWidth = nextTabStop - currentPosition;
-                } else {
-                    charWidth = measureRealCharWidth(char, realMetrics);
+                    charWidth = realMetrics.tabStopWidth;
+                } else if (char === '\u3000') {
+                    charWidth = realMetrics.fullWidthSpaceWidth;
+                } else if (char === ' ') {
+                    charWidth = realMetrics.halfWidthSpaceWidth;
                 }
                 
                 // マーカーを作成
                 if (markerType) {
-                    const absoluteX = currentX;
-                    const absoluteY = accumulatedY - scrollTop;
+                    const markerX = currentX - scrollLeft;
+                    const markerY = displayY;
                     
                     // 画面内に表示される範囲のみマーカーを作成
-                    if (absoluteY > -lineHeight && absoluteY < editorHeight + lineHeight &&
-                        absoluteX > -50 && absoluteX < editor.clientWidth + 50) {
-                        // スクロール位置を考慮した絶対位置で作成
-                        createWhitespaceMarker(markerType, absoluteX, absoluteY, charWidth, lineHeight);
-                        console.log(`👁️ Created marker ${markerType} at x=${absoluteX}, y=${absoluteY} (scroll: ${scrollTop})`);
+                    if (markerX > -50 && markerX < editor.clientWidth + 50 &&
+                        markerY > -lineHeight && markerY < editor.clientHeight + lineHeight) {
+                        createWhitespaceMarker(markerType, markerX, markerY, charWidth, lineHeight);
+                        console.log(`👁️ Created marker ${markerType} at x=${markerX}, y=${markerY}`);
                     }
                 }
+                
                 currentX += charWidth;
             }
             
-            accumulatedY += actualLineHeight;
+            currentY += lineHeight;
         }
         
-        document.body.removeChild(lineMeasurer);
+        console.log('👁️ Whitespace markers update completed');
+        
     } catch (error) {
         console.error('❌ Error in performWhitespaceMarkersUpdate:', error);
-        console.error('Stack trace:', error.stack);
         removeAllMarkers();
     }
 }
 
-/**
- * 実エディタでの文字幅測定（DOM実測定方式）
- */
 /**
  * 実エディタでの文字幅測定（DOM実測定方式）
  */
