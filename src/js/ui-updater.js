@@ -12,148 +12,16 @@ import { t } from './locales.js';
 let lineNumbersUpdateScheduled = false;
 
 /**
- * 行番号の更新（シンプルスクロール対応版）
+ * エディタから直接各論理行の位置と高さを実測（export版）
  */
-export function updateLineNumbers() {
-    const lineNumbers = document.getElementById('line-numbers');
-    if (!lineNumbers || !editor) return;
-    
-    // 重複実行を防ぐ
-    if (lineNumbersUpdateScheduled) {
-        return;
-    }
-    
-    lineNumbersUpdateScheduled = true;
-    console.log('Updating line numbers...');
-    
-    try {
-        const lines = editor.value.split('\n');
-        const lineCount = lines.length;
-        
-        // 現在のカーソル位置とスクロール位置を保存
-        const originalSelectionStart = editor.selectionStart;
-        const originalSelectionEnd = editor.selectionEnd;
-        const originalScrollTop = editor.scrollTop;
-        
-        // 各論理行の実際の高さを取得
-        const lineHeights = getLogicalLineHeights(lines);
-        
-        // 論理行番号を通常のブロック要素として配置
-        let lineNumbersHTML = '';
-        
-        for (let i = 0; i < lineCount; i++) {
-            const lineHeight = lineHeights[i];
-            
-            // 論理行の上端に揃えて配置
-            lineNumbersHTML += `<div class="line-number" style="height: ${lineHeight}px; line-height: 1.5; display: flex; align-items: flex-start; justify-content: flex-end; padding-top: 0; box-sizing: border-box;">${i + 1}</div>`;
-        }
-        
-        // 元のカーソル位置とスクロール位置を復元
-        editor.setSelectionRange(originalSelectionStart, originalSelectionEnd);
-        editor.scrollTop = originalScrollTop;
-        
-        // 行番号コンテナを設定
-        lineNumbers.style.position = 'relative';
-        lineNumbers.style.height = 'auto';
-        lineNumbers.innerHTML = lineNumbersHTML;
-        
-        console.log('Line numbers HTML:', lineNumbersHTML.substring(0, 200) + '...');
-        console.log(`Line numbers updated: ${lineCount} logical lines (block elements)`);
-        lineNumbersUpdateScheduled = false;
-    } catch (error) {
-        lineNumbersUpdateScheduled = false;
-        console.error('Error updating line numbers:', error);
-        
-        // フォールバック: シンプルな行番号表示
-        const lines = editor.value.split('\n');
-        const lineCount = lines.length;
-        let lineNumbersHTML = '';
-        for (let i = 1; i <= lineCount; i++) {
-            lineNumbersHTML += `<div class="line-number">${i}</div>`;
-        }
-        lineNumbers.innerHTML = lineNumbersHTML;
-    }
+export function getRealLogicalLinePositions(lines) {
+    return getRealLogicalLinePositionsInternal(lines);
 }
 
 /**
- * 行番号とエディタのスクロール同期（即座更新版）
+ * エディタから直接各論理行の位置と高さを実測（内部用）
  */
-export function syncScroll() {
-    const lineNumbers = document.getElementById('line-numbers');
-    if (lineNumbers && editor) {
-        // 行番号コンテナをエディタと同期してスクロール
-        lineNumbers.scrollTop = editor.scrollTop;
-        console.log('📜 Line numbers scrolled to:', editor.scrollTop, 'editor scrollTop:', editor.scrollTop);
-    }
-}
-
-/**
- * 現在の論理行をハイライト（行番号と同じ計算方法を使用）
- */
-export function updateLineHighlight() {
-    if (!editor || !isLineHighlightEnabled) {
-        // ハイライトが無効な場合は既存のハイライトを削除
-        const existingHighlight = document.querySelector('.line-highlight-overlay');
-        if (existingHighlight) {
-            existingHighlight.remove();
-        }
-        return;
-    }
-    
-    try {
-        const cursorPos = editor.selectionStart;
-        const textBeforeCursor = editor.value.substring(0, cursorPos);
-        const currentLogicalLine = textBeforeCursor.split('\n').length;
-        
-        setCurrentHighlightedLine(currentLogicalLine);
-        
-        // 既存のハイライトを削除
-        const existingHighlight = document.querySelector('.line-highlight-overlay');
-        if (existingHighlight) {
-            existingHighlight.remove();
-        }
-        
-        // 行番号と同じ方法で論理行の位置と高さを計算（実測値使用）
-        const lines = editor.value.split('\n');
-        const linePositions = getRealLogicalLinePositions(lines);
-        
-        const currentLinePosition = linePositions[currentLogicalLine - 1];
-        if (!currentLinePosition) {
-            console.warn('⚠️ Could not get position for line', currentLogicalLine);
-            return;
-        }
-        
-        // スクロール位置を考慮した表示位置
-        const displayTop = currentLinePosition.top - editor.scrollTop;
-        
-        // ハイライト要素を作成
-        const highlight = document.createElement('div');
-        highlight.className = 'line-highlight-overlay';
-        highlight.style.position = 'absolute';
-        highlight.style.left = '0';
-        highlight.style.top = `${displayTop}px`;
-        highlight.style.width = `${editor.clientWidth}px`;
-        highlight.style.height = `${currentLinePosition.height}px`;
-        highlight.style.pointerEvents = 'none';
-        highlight.style.zIndex = '1';
-        
-        // エディタコンテナに追加
-        const editorContainer = document.querySelector('.editor-container');
-        if (editorContainer) {
-            editorContainer.appendChild(highlight);
-        }
-        
-        console.log(`Line highlight: logical line ${currentLogicalLine}, top: ${displayTop}, height: ${currentLineHeight} (same method as line numbers)`);
-        
-    } catch (error) {
-        console.warn('⚠️ Line highlight error:', error);
-    }
-}
-
-/**
- * エディタから直接各論理行の位置と高さを実測
- */
-function getRealLogicalLinePositions(lines) {
+function getRealLogicalLinePositionsInternal(lines) {
     const positions = [];
     
     try {
@@ -286,62 +154,149 @@ function getTextNodeOffset(element, textNode) {
 }
 
 /**
- * テキストエリアの実測値を使用して各論理行の位置を取得（最適化版）
+ * 行番号の更新（シンプルスクロール対応版）
  */
-function getLogicalLinePositions(lines) {
-    const positions = [];
+export function updateLineNumbers() {
+    const lineNumbers = document.getElementById('line-numbers');
+    if (!lineNumbers || !editor) return;
+    
+    // 重複実行を防ぐ
+    if (lineNumbersUpdateScheduled) {
+        return;
+    }
+    
+    lineNumbersUpdateScheduled = true;
+    console.log('Updating line numbers...');
     
     try {
-        // 現在のカーソル位置を保存
+        const lines = editor.value.split('\n');
+        const lineCount = lines.length;
+        
+        // 現在のカーソル位置とスクロール位置を保存
         const originalSelectionStart = editor.selectionStart;
         const originalSelectionEnd = editor.selectionEnd;
+        const originalScrollTop = editor.scrollTop;
         
-        let textPosition = 0;
+        // 各論理行の実測位置と高さを取得
+        const linePositions = getRealLogicalLinePositionsInternal(lines);
         
-        for (let i = 0; i < lines.length; i++) {
-            // 論理行の開始位置にカーソルを移動
-            editor.setSelectionRange(textPosition, textPosition);
-            editor.focus(); // フォーカスを確保
+        // 論理行番号を通常のブロック要素として配置
+        let lineNumbersHTML = '';
+        
+        for (let i = 0; i < lineCount; i++) {
+            const linePosition = linePositions[i];
             
-            // 実際のテキストエリアでの位置を取得
-            const rect = getCaretRectFromTextarea(textPosition);
-            
-            // 論理行の高さを計算（長い行の場合は実測、短い行は基本値）
-            let lineHeight = rect.height;
-            
-            if (lines[i].length > 50) { // 長い行の場合のみ詳細測定
-                const lineEndPosition = textPosition + lines[i].length;
-                editor.setSelectionRange(lineEndPosition, lineEndPosition);
-                const endRect = getCaretRectFromTextarea(lineEndPosition);
-                lineHeight = Math.max(endRect.top - rect.top + endRect.height, rect.height);
-            }
-            
-            positions.push({
-                top: rect.top,
-                height: lineHeight
-            });
-            
-            // 次の論理行の開始位置（改行文字分も含む）
-            textPosition += lines[i].length + 1;
+            // 論理行の上端に揃えて配置（実測値使用）
+            lineNumbersHTML += `<div class="line-number" style="height: ${linePosition.height}px; line-height: 1.5; display: flex; align-items: flex-start; justify-content: flex-end; padding-top: 0; box-sizing: border-box;">${i + 1}</div>`;
         }
         
-        // 元のカーソル位置を復元
+        // 元のカーソル位置とスクロール位置を復元
         editor.setSelectionRange(originalSelectionStart, originalSelectionEnd);
+        editor.scrollTop = originalScrollTop;
         
-        return positions;
+        // 行番号コンテナを設定
+        lineNumbers.style.position = 'relative';
+        lineNumbers.style.height = 'auto';
+        lineNumbers.innerHTML = lineNumbersHTML;
+        
+        console.log('Line numbers HTML:', lineNumbersHTML.substring(0, 200) + '...');
+        console.log(`Line numbers updated: ${lineCount} logical lines (block elements)`);
+        
+        lineNumbersUpdateScheduled = false;
+    } catch (error) {
+        lineNumbersUpdateScheduled = false;
+        console.error('Error updating line numbers:', error);
+        
+        // フォールバック: シンプルな行番号表示
+        const lines = editor.value.split('\n');
+        const lineCount = lines.length;
+        let lineNumbersHTML = '';
+        for (let i = 1; i <= lineCount; i++) {
+            lineNumbersHTML += `<div class="line-number">${i}</div>`;
+        }
+        lineNumbers.innerHTML = lineNumbersHTML;
+    }
+}
+
+/**
+ * 行番号とエディタのスクロール同期
+ */
+export function syncScroll() {
+    const lineNumbers = document.getElementById('line-numbers');
+    if (lineNumbers && editor) {
+        // 行番号コンテナをエディタと同期してスクロール
+        lineNumbers.scrollTop = editor.scrollTop;
+        console.log('📜 Line numbers scrolled to:', editor.scrollTop, 'editor scrollTop:', editor.scrollTop);
+    }
+}
+
+/**
+ * 現在の論理行をハイライト（行番号と同じ計算方法を使用）
+ */
+export function updateLineHighlight() {
+    if (!editor || !isLineHighlightEnabled) {
+        // ハイライトが無効な場合は既存のハイライトを削除
+        const existingHighlight = document.querySelector('.line-highlight-overlay');
+        if (existingHighlight) {
+            existingHighlight.remove();
+        }
+        return;
+    }
+    
+    try {
+        const cursorPos = editor.selectionStart;
+        const textBeforeCursor = editor.value.substring(0, cursorPos);
+        const currentLogicalLine = textBeforeCursor.split('\n').length;
+        
+        setCurrentHighlightedLine(currentLogicalLine);
+        
+        // 既存のハイライトを削除
+        const existingHighlight = document.querySelector('.line-highlight-overlay');
+        if (existingHighlight) {
+            existingHighlight.remove();
+        }
+        
+        // 行番号と同じ方法で論理行の位置と高さを計算（実測値使用）
+        const lines = editor.value.split('\n');
+        const linePositions = getRealLogicalLinePositionsInternal(lines);
+        
+        const currentLinePosition = linePositions[currentLogicalLine - 1];
+        if (!currentLinePosition) {
+            console.warn('⚠️ Could not get position for line', currentLogicalLine);
+            return;
+        }
+        
+        // スクロール位置を考慮した表示位置
+        const displayTop = currentLinePosition.top - editor.scrollTop;
+        
+        // ハイライト要素を作成
+        const highlight = document.createElement('div');
+        highlight.className = 'line-highlight-overlay';
+        highlight.style.position = 'absolute';
+        highlight.style.left = '0';
+        highlight.style.top = `${displayTop}px`;
+        highlight.style.width = `${editor.clientWidth}px`;
+        highlight.style.height = `${currentLinePosition.height}px`;
+        highlight.style.pointerEvents = 'none';
+        highlight.style.zIndex = '1';
+        
+        // 行ハイライトが画面外に出る場合はログに記録
+        const editorHeight = editor.clientHeight;
+        
+        if (displayTop < 0 || displayTop > editorHeight) {
+            console.warn(`⚠️ Highlight may be off-screen: displayTop=${displayTop}, editorHeight=${editorHeight}`);
+        }
+        
+        // エディタコンテナに追加
+        const editorContainer = document.querySelector('.editor-container');
+        if (editorContainer) {
+            editorContainer.appendChild(highlight);
+        }
+        
+        console.log(`Line highlight: logical line ${currentLogicalLine}, top: ${displayTop}, height: ${currentLinePosition.height} (same method as line numbers)`);
         
     } catch (error) {
-        console.error('Error getting logical line positions:', error);
-        
-        // フォールバック: 基本計算
-        const computedStyle = window.getComputedStyle(editor);
-        const lineHeight = parseFloat(computedStyle.lineHeight);
-        const paddingTop = parseFloat(computedStyle.paddingTop);
-        
-        return lines.map((_, i) => ({
-            top: paddingTop + i * lineHeight,
-            height: lineHeight
-        }));
+        console.warn('⚠️ Line highlight error:', error);
     }
 }
 
@@ -351,25 +306,24 @@ function getLogicalLinePositions(lines) {
 function calculateLogicalLinePosition(logicalLineNumber, lineText) {
     // 新しい統一された方法を使用
     const lines = editor.value.split('\n');
-    // 各論理行の実測位置と高さを取得
-        const linePositions = getRealLogicalLinePositions(lines);
+    const linePositions = getRealLogicalLinePositionsInternal(lines);
     
-    const computedStyle = window.getComputedStyle(editor);
-    const paddingTop = parseFloat(computedStyle.paddingTop);
-    
-    let cumulativeTop = paddingTop;
-    for (let i = 0; i < lineCount; i++) {
-            const linePosition = linePositions[i];
-            
-            // 論理行の上端に揃えて配置（実測値使用）
-            lineNumbersHTML += `<div class="line-number" style="height: ${linePosition.height}px; line-height: 1.5; display: flex; align-items: flex-start; justify-content: flex-end; padding-top: 0; box-sizing: border-box;">${i + 1}</div>`;
-        }
-    
-    const currentLineHeight = lineHeights[logicalLineNumber - 1] || parseFloat(computedStyle.lineHeight);
+    const currentLinePosition = linePositions[logicalLineNumber - 1];
+    if (!currentLinePosition) {
+        // フォールバック
+        const computedStyle = window.getComputedStyle(editor);
+        const lineHeight = parseFloat(computedStyle.lineHeight);
+        const paddingTop = parseFloat(computedStyle.paddingTop);
+        
+        return {
+            top: paddingTop + (logicalLineNumber - 1) * lineHeight - editor.scrollTop,
+            height: lineHeight
+        };
+    }
     
     return {
-        top: cumulativeTop - editor.scrollTop,
-        height: currentLineHeight
+        top: currentLinePosition.top - editor.scrollTop,
+        height: currentLinePosition.height
     };
 }
 

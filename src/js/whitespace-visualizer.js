@@ -11,6 +11,7 @@ import {
 } from './globals.js';
 import { closeAllMenus } from './menu-controller.js';
 import { t } from './locales.js';
+import { getRealLogicalLinePositions } from './ui-updater.js';
 
 // 可視化マーカーのコンテナ
 let markersContainer = null;
@@ -175,7 +176,7 @@ function performWhitespaceMarkersUpdate() {
         
         // 行番号エリアの幅を取得
         const lineNumbers = document.getElementById('line-numbers');
-        const lineNumbersWidth = lineNumbers ? lineNumbers.offsetWidth : 0;
+        const lineNumbersPanelWidth = lineNumbers ? lineNumbers.offsetWidth : 0;
         
         // 実エディタでの文字幅測定
         const realMetrics = measureRealEditorMetrics();
@@ -207,12 +208,13 @@ function performWhitespaceMarkersUpdate() {
         // 行ごとに処理（シンプル版・論理行基準）
         const lines = content.split('\n');
         
-        // 各論理行の実際の高さを事前計算
-        const lineMeasurer = document.createElement('div');
+        // エディタから直接実測値を取得（行番号と同じ方法）
+        const linePositions = getRealLogicalLinePositions(lines);
+        
         const editorStyles = window.getComputedStyle(editor);
         const leftPadding = parseFloat(editorStyles.paddingLeft);
         const rightPadding = parseFloat(editorStyles.paddingRight);
-        const measuringWidth = editor.clientWidth - leftPadding - rightPadding;
+        const lineNumbersPanelWidth = document.getElementById('line-numbers')?.offsetWidth || 60;
         
         lineMeasurer.style.cssText = `
             position: absolute;
@@ -232,26 +234,25 @@ function performWhitespaceMarkersUpdate() {
         
         document.body.appendChild(lineMeasurer);
         
-        // 各論理行の開始位置を計算
-        let accumulatedY = paddingTop;
-        
         for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
             const line = lines[lineIndex];
             const lineText = line || ' ';
             
-            // この論理行の高さを測定
-            lineMeasurer.textContent = lineText;
-            const actualLineHeight = lineMeasurer.offsetHeight || lineHeight;
+            // 実測値から論理行の位置と高さを取得
+            const linePosition = linePositions[lineIndex];
+            if (!linePosition) continue;
+            
+            const actualLineHeight = linePosition.height;
+            const accumulatedY = linePosition.top;
             
             // 表示範囲の判定
             if (accumulatedY + actualLineHeight < effectiveTop - lineHeight || 
                 accumulatedY > effectiveTop + effectiveHeight + lineHeight) {
-                accumulatedY += actualLineHeight;
                 continue;
             }
             
             // 行内の文字を処理
-            let currentX = leftPadding + lineNumbersWidth - scrollLeft;
+            let currentX = leftPadding + lineNumbersPanelWidth - scrollLeft;
             
             for (let charIndex = 0; charIndex < line.length; charIndex++) {
                 const char = line[charIndex];
@@ -271,7 +272,7 @@ function performWhitespaceMarkersUpdate() {
                     // エディタの実際のtab-sizeを取得
                     const editorTabSize = parseInt(getComputedStyle(editor).tabSize) || 4;
                     const actualTabWidth = realMetrics.halfWidthSpaceWidth * editorTabSize;
-                    const currentPosition = currentX - (leftPadding + lineNumbersWidth - scrollLeft);
+                    const currentPosition = currentX - (leftPadding + lineNumbersPanelWidth - scrollLeft);
                     const nextTabStop = Math.ceil((currentPosition + 1) / actualTabWidth) * actualTabWidth;
                     charWidth = nextTabStop - currentPosition;
                 } else {
@@ -613,15 +614,16 @@ function createWhitespaceMarker(type, x, y, width, height) {
         
         // 基本スタイル（位置はスクロールを考慮済み）
         marker.style.cssText = `
-            position: absolute;
-            left: ${Math.round(x)}px;
-            top: ${Math.round(y)}px;
-            width: ${Math.round(width)}px;
-            height: ${Math.round(height)}px;
-            pointer-events: none;
-            z-index: 6;
-            will-change: transform;
-        `;
+        position: absolute;
+        left: ${x}px;
+        top: ${y}px;
+        width: ${width}px;
+        height: ${height}px;
+        pointer-events: none;
+        z-index: 10;
+        visibility: visible;
+        opacity: 1;
+    `;
         
         // マーカータイプ別のスタイル
         switch (type) {
