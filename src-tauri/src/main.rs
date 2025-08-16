@@ -135,15 +135,6 @@ fn get_python_info() -> Result<String, String> {
         
         // 組み込みPython判定
         let is_embedded = detect_embedded_python(&executable);
-        
-        // 現在のPYTHON_TYPEも取得
-        let current_python_type = unsafe { PYTHON_TYPE };
-        let python_type_display = match current_python_type {
-            PythonType::Embedded => "🔗 EMBEDDED (組み込みPython)",
-            PythonType::System => "🖥️ SYSTEM (システムPython)",
-            PythonType::Unknown => "❓ UNKNOWN (不明)"
-        };
-        
         let python_type = if is_embedded {
             "🔗 EMBEDDED (組み込みPython)"
         } else {
@@ -156,37 +147,22 @@ fn get_python_info() -> Result<String, String> {
             .unwrap_or_else(|_| vec![]);
         
         let site_packages_info = site_packages.iter()
-            .take(3) // 上位3件のみ表示
             .map(|p| format!("  - {}", p))
             .collect::<Vec<_>>()
             .join("\n");
         
         let result = format!(
             "🐍 Python環境情報 🐍\n\n\
-            📊 起動時判定: {}\n\
-            📊 現在の環境タイプ: {}\n\
+            📊 環境タイプ: {}\n\
             📋 バージョン: {}\n\
             📁 実行ファイル: {}\n\
-            🎯 判定結果: {}\n\n\
-            📦 Python Path (上位3件):\n{}\n\
-            \n🔍 組み込み判定条件:\n\
-            - パスに 'python-standalone' が含まれる: {}\n\
-            - アプリディレクトリ内のPython: {}\n",
-            python_type_display,
+            🎯 判定: {}\n\n\
+            📦 Python Path:\n{}\n",
             python_type,
             version,
             executable,
             if is_embedded { "アプリケーション組み込み" } else { "システム環境" },
-            if site_packages_info.is_empty() { "  (なし)".to_string() } else { site_packages_info },
-            executable.contains("python-standalone"),
-            {
-                if let Ok(current_exe) = std::env::current_exe() {
-                    if let Some(exe_dir) = current_exe.parent() {
-                        let exe_dir_str = exe_dir.to_string_lossy();
-                        executable.starts_with(exe_dir_str.as_ref())
-                    } else { false }
-                } else { false }
-            }
+            site_packages_info
         );
         
         Ok(result)
@@ -194,7 +170,7 @@ fn get_python_info() -> Result<String, String> {
 }
 
 /**
- * 開発者向け詳細Python環境診断（修正版・1つだけ）
+ * 開発者向け詳細Python環境診断
  */
 #[tauri::command]
 fn debug_python_environment() -> Result<String, String> {
@@ -202,30 +178,9 @@ fn debug_python_environment() -> Result<String, String> {
         let mut result = String::new();
         
         // 基本環境情報
-        result.push_str("🔍 PYTHON環境詳細診断 (強化版)\n");
-        result.push_str("=" .repeat(60).as_str());
+        result.push_str("🔍 PYTHON環境詳細診断\n");
+        result.push_str("=" .repeat(50).as_str());
         result.push_str("\n\n");
-        
-        // 現在のグローバル状態を表示
-        let current_python_type = unsafe { PYTHON_TYPE };
-        result.push_str(&format!("📊 起動時判定結果: {:?}\n", current_python_type));
-        
-        match current_python_type {
-            PythonType::Embedded => {
-                result.push_str("🟢 【組み込みPython環境】が検出されました\n");
-                result.push_str("   ✓ アプリケーション内蔵のPython環境を使用\n");
-                result.push_str("   ✓ ユーザーのPython環境に依存しない独立動作\n");
-            },
-            PythonType::System => {
-                result.push_str("🔵 【ユーザー環境Python】が検出されました\n");
-                result.push_str("   ✓ システムまたはユーザーインストールのPython環境を使用\n");
-                result.push_str("   ✓ 拡張機能はユーザー環境のライブラリを利用可能\n");
-            },
-            PythonType::Unknown => {
-                result.push_str("🔴 【不明・エラー】Python環境の判定に失敗\n");
-            }
-        }
-        result.push_str("\n");
         
         // Python実行ファイル情報
         match py.import_bound("sys") {
@@ -236,9 +191,9 @@ fn debug_python_environment() -> Result<String, String> {
                     
                 result.push_str(&format!("📁 Python実行ファイル: {}\n", executable));
                 
-                // 組み込み判定の詳細（現在時点での再評価）
-                let is_embedded_now = detect_embedded_python(&executable);
-                result.push_str(&format!("🎯 現在時点での組み込み判定: {}\n", is_embedded_now));
+                // 組み込み判定の詳細
+                let is_embedded = detect_embedded_python(&executable);
+                result.push_str(&format!("🎯 組み込み判定: {}\n", is_embedded));
                 
                 // 判定理由の詳細
                 result.push_str("🔍 判定根拠:\n");
@@ -319,7 +274,7 @@ fn debug_python_environment() -> Result<String, String> {
         }
         
         result.push_str("\n");
-        result.push_str("=" .repeat(60).as_str());
+        result.push_str("=" .repeat(50).as_str());
         
         Ok(result)
     })

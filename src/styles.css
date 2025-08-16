@@ -1152,7 +1152,7 @@ body, html {
  * Extension System - Suggestion Box
  * =====================================================
  */
-.enhanced-suggestion-box {
+.suggestion-box, .enhanced-suggestion-box {
   background-color: #2d2d30;
   border: 2px solid #007acc;
   border-radius: 6px;
@@ -1233,6 +1233,15 @@ body, html {
   background: #7a7a7a;
 }
 
+.editor-textarea.html-content {
+  border-left: 3px solid rgba(224, 108, 117, 0.5);
+}
+
+.html-highlight {
+  color: #e06c75 !important;
+  font-weight: 500;
+}
+
 .editor-textarea:focus {
   box-shadow: 0 0 0 1px rgba(224, 108, 117, 0.3);
 }
@@ -1247,6 +1256,19 @@ body, html {
     transform: translateY(0) scale(1);
   }
 }
+
+/*
+ * =====================================================
+ * Responsive Design
+ * =====================================================
+ */
+@media (max-width: 768px) {
+  .search-dialog, .font-settings-dialog, .font-size-input-dialog,
+  .theme-dialog, .language-dialog, .whitespace-dialog {
+    min-width: 90vw;
+    max-width: 95vw;
+    margin: 10px;
+  }
   
   .font-size-controls {
     flex-direction: column;

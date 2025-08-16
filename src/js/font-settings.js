@@ -810,6 +810,25 @@ export function decreaseFontSize() {
 }
 
 /**
+ * 検出されたフォント一覧を取得（デバッグ用）
+ */
+export function getDetectedFonts() {
+    return detectedFonts || fallbackFonts;
+}
+
+/**
+ * フォント検出を強制的に再実行
+ */
+export async function refreshFontDetection() {
+    console.log('🔄 Refreshing font detection...');
+    detectedFonts = null;
+    fontDetectionInProgress = false;
+    return await detectSystemFonts();
+}
+
+
+
+/**
  * Canvas APIを使用して現在のフォントの文字幅を測定
  */
 function measureCharacterWidth() {
@@ -873,6 +892,25 @@ function updateCSSTabSize(tabSize) {
    } catch (error) {
        console.warn('⚠️ Failed to update CSS tab-size:', error);
    }
+}
+
+/**
+ * タブサイズを手動で設定（デバッグ用）
+ */
+export function setCustomTabSize(size) {
+    const tabSize = Math.max(1, Math.min(16, parseInt(size) || 4));
+    updateCSSTabSize(tabSize);
+    console.log(`🔧 Manual tab size set to: ${tabSize}`);
+}
+
+/**
+ * 現在のタブサイズを取得（デバッグ用）
+ */
+export function getCurrentTabSize() {
+    if (!editor) return null;
+    
+    const computedStyle = window.getComputedStyle(editor);
+    return computedStyle.tabSize || '4';
 }
 
 /**

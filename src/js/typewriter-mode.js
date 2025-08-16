@@ -1,182 +1,136 @@
 /*
  * =====================================================
- * Vinsert Editor - タイプライターモード（新規作成版）
+ * Vinsert Editor - タイプライターモード機能
  * =====================================================
  */
 
-import { editor } from './globals.js';
-
-// タイプライターモードの状態
-let isTypewriterModeEnabled = false;
-
-// デバッグモードフラグ（必要時のみログ出力）
-const DEBUG_MODE = false;
-
-// スクロールイベントのデバウンス用
-let scrollTimeout = null;
-let lastScrollUpdate = 0;
-
-/**
- * タイプライターモードの初期化
- */
-export function initTypewriterMode() {
-    if (DEBUG_MODE) console.log('🖥️ Initializing typewriter mode...');
-    
-    // 保存された設定を読み込み
-    loadTypewriterModeSetting();
-    
-    // 初期状態を適用
-    applyTypewriterMode(isTypewriterModeEnabled);
-    
-    if (DEBUG_MODE) console.log(`✅ Typewriter mode initialized: ${isTypewriterModeEnabled ? 'enabled' : 'disabled'}`);
-}
+let isEnabled = false;
+let editorElement = null;
+let lineNumbersElement = null;
+let animationFrame = null;
 
 /**
  * タイプライターモードの切り替え
  */
 export function toggleTypewriterMode() {
-    isTypewriterModeEnabled = !isTypewriterModeEnabled;
-    if (DEBUG_MODE) console.log(`🖥️ Typewriter mode toggled: ${isTypewriterModeEnabled ? 'enabled' : 'disabled'}`);
+    editorElement = document.getElementById('editor');
+    lineNumbersElement = document.getElementById('line-numbers');
     
-    // 設定を保存
-    saveTypewriterModeSetting();
+    if (!editorElement) return;
     
-    // モードを適用
-    applyTypewriterMode(isTypewriterModeEnabled);
+    isEnabled = !isEnabled;
     
-    // メニューのチェックマークを更新
-    updateTypewriterModeMenuState();
+    // メニューのチェックマーク更新
+    updateMenuCheckmark();
     
-    // UI更新
-    requestAnimationFrame(() => {
-        try {
-            import('./ui-updater.js').then(module => {
-                if (module.updateLineNumbers) module.updateLineNumbers();
-                if (module.updateLineHighlight) module.updateLineHighlight();
-            });
-        } catch (error) {
-            if (DEBUG_MODE) console.warn('⚠️ UI update failed after typewriter mode toggle:', error);
+    // 保存
+    try {
+        localStorage.setItem('vinsert-typewriter-mode', isEnabled ? 'true' : 'false');
+    } catch (e) {}
+    
+    if (isEnabled) {
+        // パディング追加
+        const halfHeight = Math.floor(editorElement.clientHeight / 2);
+        editorElement.style.paddingTop = `${halfHeight}px`;
+        editorElement.style.paddingBottom = `${halfHeight}px`;
+        if (lineNumbersElement) {
+            lineNumbersElement.style.paddingTop = `${halfHeight}px`;
+            lineNumbersElement.style.paddingBottom = `${halfHeight}px`;
         }
-    });
-}
-
-/**
- * タイプライターモードを適用
- */
-function applyTypewriterMode(enabled) {
-    if (!editor) {
-        if (DEBUG_MODE) console.warn('⚠️ Editor not available for typewriter mode');
-        return;
-    }
-    
-    if (enabled) {
-        enableTypewriterMode();
-    } else {
-        disableTypewriterMode();
-    }
-}
-
-/**
- * タイプライターモードを有効化
- */
-function enableTypewriterMode() {
-    if (DEBUG_MODE) console.log('🖥️ Enabling typewriter mode...');
-    
-    // エディタのスタイルを設定
-    const editorHeight = editor.clientHeight;
-    const centerOffset = Math.max(0, (editorHeight / 2) - 20); // 中央より少し上
-    
-    editor.style.paddingTop = `${centerOffset}px`;
-    editor.style.paddingBottom = `${centerOffset}px`;
-    
-    // スクロールイベントリスナーを追加
-    addTypewriterScrollListener();
-    
-    // 初回のカーソル中央配置
-    setTimeout(() => centerCursorInView(), 100);
-    
-    if (DEBUG_MODE) console.log(`✅ Typewriter mode enabled with center offset: ${centerOffset}px`);
-}
-
-/**
- * タイプライターモードを無効化
- */
-function disableTypewriterMode() {
-    if (DEBUG_MODE) console.log('🖥️ Disabling typewriter mode...');
-    
-    // エディタのスタイルをリセット
-    editor.style.paddingTop = '10px';
-    editor.style.paddingBottom = '10px';
-    
-    // スクロールイベントリスナーを削除
-    removeTypewriterScrollListener();
-    
-    if (DEBUG_MODE) console.log('✅ Typewriter mode disabled');
-}
-
-/**
- * タイプライター用スクロールリスナーを追加
- */
-function addTypewriterScrollListener() {
-    if (editor.typewriterScrollHandler) {
-        // 既存のリスナーを削除
-        editor.removeEventListener('input', editor.typewriterScrollHandler);
-        editor.removeEventListener('keyup', editor.typewriterScrollHandler);
-        editor.removeEventListener('click', editor.typewriterScrollHandler);
-    }
-    
-    // 新しいハンドラーを作成
-    editor.typewriterScrollHandler = debounce(centerCursorInView, 50);
-    
-    // イベントリスナーを追加
-    editor.addEventListener('input', editor.typewriterScrollHandler);
-    editor.addEventListener('keyup', editor.typewriterScrollHandler);
-    editor.addEventListener('click', editor.typewriterScrollHandler);
-    
-    if (DEBUG_MODE) console.log('✅ Typewriter scroll listeners added');
-}
-
-/**
- * タイプライター用スクロールリスナーを削除
- */
-function removeTypewriterScrollListener() {
-    if (editor.typewriterScrollHandler) {
-        editor.removeEventListener('input', editor.typewriterScrollHandler);
-        editor.removeEventListener('keyup', editor.typewriterScrollHandler);
-        editor.removeEventListener('click', editor.typewriterScrollHandler);
-        delete editor.typewriterScrollHandler;
         
-        if (DEBUG_MODE) console.log('✅ Typewriter scroll listeners removed');
+        // 継続的な監視を開始
+        startContinuousCenter();
+    } else {
+        // パディングを元に戻す
+        editorElement.style.paddingTop = '10px';
+        editorElement.style.paddingBottom = '10px';
+        if (lineNumbersElement) {
+            lineNumbersElement.style.paddingTop = '10px';
+            lineNumbersElement.style.paddingBottom = '10px';
+        }
+        
+        // 監視を停止
+        stopContinuousCenter();
+    }
+    
+    // メニューを閉じる
+    document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
+}
+
+/**
+ * メニューのチェックマーク更新
+ */
+function updateMenuCheckmark() {
+    const menuOption = document.getElementById('typewriter-mode-menu-option');
+    if (menuOption) {
+        const checkmark = menuOption.querySelector('.menu-checkmark');
+        if (checkmark) {
+            checkmark.style.visibility = isEnabled ? 'visible' : 'hidden';
+        }
     }
 }
 
 /**
- * カーソルを画面中央に配置
+ * 継続的にカーソル位置を中央に保つ
  */
-function centerCursorInView() {
-    if (!isTypewriterModeEnabled || !editor) return;
+function startContinuousCenter() {
+    // 前回のループをキャンセル
+    stopContinuousCenter();
+    
+    function centerLoop() {
+        if (!isEnabled) return;
+        
+        centerCurrentLine();
+        animationFrame = requestAnimationFrame(centerLoop);
+    }
+    
+    centerLoop();
+}
+
+/**
+ * 継続的な中央配置を停止
+ */
+function stopContinuousCenter() {
+    if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+        animationFrame = null;
+    }
+}
+
+/**
+ * 現在のカーソル位置の物理行を中央に配置
+ */
+function centerCurrentLine() {
+    if (!editorElement || !isEnabled) return;
     
     try {
-        const now = Date.now();
-        if (now - lastScrollUpdate < 16) return; // 60fps制限
-        lastScrollUpdate = now;
+        // カーソル位置を取得
+        const cursorPos = editorElement.selectionStart;
         
-        const cursorPos = editor.selectionStart;
+        // カーソルの物理的な位置を正確に計算
         const physicalCursorTop = calculatePhysicalCursorPosition(cursorPos);
-        const editorHeight = editor.clientHeight;
-        const targetCenter = editorHeight / 2;
         
-        // 必要なスクロール量を計算
-        const currentScroll = editor.scrollTop;
-        const targetScroll = physicalCursorTop - targetCenter;
+        // エディタの中央位置を計算
+        const editorCenter = editorElement.clientHeight / 2;
+        
+        // カーソルが表示されている物理行を中央に配置
+        const targetScrollTop = physicalCursorTop - editorCenter;
         
         // スクロールを実行
-        editor.scrollTop = Math.max(0, targetScroll);
+        editorElement.scrollTop = Math.max(0, targetScrollTop);
         
-        // ログ出力は削除（過度なログを防ぐため）
+        // 行番号を同期
+        if (lineNumbersElement) {
+            lineNumbersElement.scrollTop = editorElement.scrollTop;
+        }
+        
+        // タイプライターモードでは行番号位置を更新
+        updateLineNumbersForTypewriter();
+        
+        console.log(`Typewriter: centered physical cursor position ${physicalCursorTop}, scroll: ${editorElement.scrollTop}`);
         
     } catch (error) {
-        if (DEBUG_MODE) console.warn('⚠️ Typewriter cursor centering failed:', error);
+        console.error('❌ Error in centerCurrentLine:', error);
     }
 }
 
@@ -185,11 +139,11 @@ function centerCursorInView() {
  */
 function calculatePhysicalCursorPosition(cursorPos) {
     try {
-        const computedStyle = window.getComputedStyle(editor);
-        const actualPaddingTop = parseFloat(editor.style.paddingTop) || parseFloat(computedStyle.paddingTop);
+        const computedStyle = window.getComputedStyle(editorElement);
+        const actualPaddingTop = parseFloat(editorElement.style.paddingTop) || parseFloat(computedStyle.paddingTop);
         const paddingLeft = parseFloat(computedStyle.paddingLeft);
         const paddingRight = parseFloat(computedStyle.paddingRight);
-        const editorWidth = editor.clientWidth - paddingLeft - paddingRight;
+        const editorWidth = editorElement.clientWidth - paddingLeft - paddingRight;
         
         // 測定用要素を作成
         const measurer = document.createElement('div');
@@ -212,8 +166,8 @@ function calculatePhysicalCursorPosition(cursorPos) {
         document.body.appendChild(measurer);
         
         // カーソル位置にマーカーを挿入して正確な位置を取得
-        const textBeforeCursor = editor.value.substring(0, cursorPos);
-        const textAfterCursor = editor.value.substring(cursorPos);
+        const textBeforeCursor = editorElement.value.substring(0, cursorPos);
+        const textAfterCursor = editorElement.value.substring(cursorPos);
         
         const beforeNode = document.createTextNode(textBeforeCursor);
         const cursorMarker = document.createElement('span');
@@ -233,93 +187,81 @@ function calculatePhysicalCursorPosition(cursorPos) {
         return actualPaddingTop + relativeTop;
         
     } catch (error) {
-        if (DEBUG_MODE) console.error('⚠️ Physical cursor position calculation failed:', error);
-        
-        // フォールバック: 簡単な行ベース計算
-        const computedStyle = window.getComputedStyle(editor);
+        console.error('Error calculating physical cursor position:', error);
+        // フォールバック
+        const computedStyle = window.getComputedStyle(editorElement);
         const lineHeight = parseFloat(computedStyle.lineHeight);
-        const actualPaddingTop = parseFloat(editor.style.paddingTop) || parseFloat(computedStyle.paddingTop);
-        const textBeforeCursor = editor.value.substring(0, cursorPos);
+        const actualPaddingTop = parseFloat(editorElement.style.paddingTop) || parseFloat(computedStyle.paddingTop);
+        const textBeforeCursor = editorElement.value.substring(0, cursorPos);
         const logicalLine = textBeforeCursor.split('\n').length;
-        
         return actualPaddingTop + (logicalLine - 1) * lineHeight;
     }
 }
 
 /**
- * デバウンス関数
+ * タイプライターモード用の行番号更新
  */
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-/**
- * タイプライターモード設定を保存
- */
-function saveTypewriterModeSetting() {
-    try {
-        localStorage.setItem('vinsert-typewriter-mode', isTypewriterModeEnabled ? 'true' : 'false');
-        if (DEBUG_MODE) console.log('💾 Typewriter mode setting saved:', isTypewriterModeEnabled);
-    } catch (error) {
-        if (DEBUG_MODE) console.warn('⚠️ Could not save typewriter mode setting:', error);
-    }
-}
-
-/**
- * タイプライターモード設定を読み込み
- */
-function loadTypewriterModeSetting() {
-    try {
-        const saved = localStorage.getItem('vinsert-typewriter-mode');
-        if (saved !== null) {
-            isTypewriterModeEnabled = saved === 'true';
-            if (DEBUG_MODE) console.log('📂 Typewriter mode setting loaded:', isTypewriterModeEnabled);
-        }
-    } catch (error) {
-        if (DEBUG_MODE) console.warn('⚠️ Could not load typewriter mode setting:', error);
-    }
-}
-
-/**
- * メニューのチェックマーク状態を更新
- */
-function updateTypewriterModeMenuState() {
-    try {
-        const menuOption = document.getElementById('typewriter-mode-menu-option');
-        if (menuOption) {
-            const checkmark = menuOption.querySelector('.menu-checkmark');
-            if (checkmark) {
-                checkmark.style.visibility = isTypewriterModeEnabled ? 'visible' : 'hidden';
-            }
-        }
-    } catch (error) {
-        if (DEBUG_MODE) console.warn('⚠️ Could not update typewriter mode menu state:', error);
-    }
-}
-
-/**
- * タイプライターモードの状態を取得
- */
-export function isTypewriterModeActive() {
-    return isTypewriterModeEnabled;
-}
-
-/**
- * タイプライターモードを強制的に設定
- */
-export function setTypewriterMode(enabled) {
-    isTypewriterModeEnabled = enabled;
-    saveTypewriterModeSetting();
-    applyTypewriterMode(enabled);
-    updateTypewriterModeMenuState();
+function updateLineNumbersForTypewriter() {
+    if (!isEnabled || !editorElement) return;
     
-    if (DEBUG_MODE) console.log(`🖥️ Typewriter mode force set to: ${enabled}`);
+    try {
+        // 行番号更新を遅延実行（スクロール完了後）
+        setTimeout(() => {
+            try {
+                // ui-updater.jsのupdateLineNumbers関数を動的インポートで呼び出し
+                import('./ui-updater.js').then(module => {
+                    if (module && module.updateLineNumbers) {
+                        module.updateLineNumbers();
+                    }
+                });
+            } catch (error) {
+                console.warn('⚠️ Failed to update line numbers:', error);
+            }
+        }, 10);
+    } catch (error) {
+        console.warn('⚠️ updateLineNumbersForTypewriter failed:', error);
+    }
+}
+
+
+/**
+ * 初期化
+ */
+export function initTypewriterMode() {
+    try {
+        // ローカルストレージから設定を読み込み
+        const saved = localStorage.getItem('vinsert-typewriter-mode');
+        if (saved === 'true') {
+            isEnabled = true;
+            
+            // DOM要素を取得
+            editorElement = document.getElementById('editor');
+            lineNumbersElement = document.getElementById('line-numbers');
+            
+            // メニューのチェックマークを更新
+            updateMenuCheckmark();
+            
+            if (editorElement) {
+                // パディング追加
+                const halfHeight = Math.floor(editorElement.clientHeight / 2);
+                editorElement.style.paddingTop = `${halfHeight}px`;
+                editorElement.style.paddingBottom = `${halfHeight}px`;
+                if (lineNumbersElement) {
+                    lineNumbersElement.style.paddingTop = `${halfHeight}px`;
+                    lineNumbersElement.style.paddingBottom = `${halfHeight}px`;
+                }
+                
+                // 継続的な監視を開始
+                startContinuousCenter();
+            }
+        } else {
+            // 無効な場合もメニューのチェックマークを更新
+            isEnabled = false;
+            updateMenuCheckmark();
+        }
+    } catch (e) {
+        console.warn('Could not load typewriter mode setting:', e);
+        isEnabled = false;
+        updateMenuCheckmark();
+    }
 }

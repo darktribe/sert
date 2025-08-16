@@ -114,6 +114,53 @@ export function handleInput(e) {
 }
 
 /**
+ * 改行時の簡単な自動スクロール
+ */
+function checkBottomLineNewline() {
+    try {
+        const lines = editor.value.split('\n');
+        const totalLines = lines.length;
+        
+        // 前回の行数と比較（改行が発生したかチェック）
+        if (!editor._lastLineCount) {
+            editor._lastLineCount = totalLines;
+            return;
+        }
+        
+        const lineIncreased = totalLines > editor._lastLineCount;
+        editor._lastLineCount = totalLines;
+        
+        if (lineIncreased && totalLines > 3) {
+            // 改行発生時、簡単な判定で自動スクロール
+            setTimeout(() => {
+                const lineHeight = parseFloat(getComputedStyle(editor).lineHeight);
+                const statusBarHeight = 24;
+                const bottomMargin = statusBarHeight + lineHeight;
+                
+                // エディタの現在の状況
+                const contentHeight = editor.scrollHeight;
+                const visibleHeight = editor.clientHeight;
+                const currentScroll = editor.scrollTop;
+                
+                // 最下部近くで改行した場合は上にスクロール
+                const maxVisibleContent = currentScroll + visibleHeight - bottomMargin;
+                
+                if (contentHeight > maxVisibleContent) {
+                    const newScrollTop = currentScroll + lineHeight;
+                    const maxScrollTop = contentHeight - visibleHeight + bottomMargin;
+                    
+                    editor.scrollTop = Math.min(newScrollTop, maxScrollTop);
+                    syncScroll();
+                    console.log('📜 Auto-scrolled for new line:', editor.scrollTop);
+                }
+            }, 100);
+        }
+    } catch (error) {
+        console.warn('⚠️ Bottom line newline check failed:', error);
+    }
+}
+
+/**
  * 改行検知と行ハイライト更新
  */
 function checkNewlineAndHighlight(event) {
