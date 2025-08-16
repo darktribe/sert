@@ -105,20 +105,16 @@ export function handleInput(e) {
     }
 
     updateLineNumbers();
+    // ステータス更新
     updateStatus();
-    // 最下段での改行チェック
-    checkBottomLineNewline();
+    
+    // 改行検知を直接行う
+    checkNewlineAndHighlight(event);
     console.log('=== END INPUT EVENT ===');
 }
 
 /**
- * 最下段での改行時の自動スクロール
- */
-/**
- * 最下段での改行時の自動スクロール
- */
-/**
- * 最下段での改行時の自動スクロール
+ * 改行時の簡単な自動スクロール
  */
 function checkBottomLineNewline() {
     try {
@@ -134,35 +130,90 @@ function checkBottomLineNewline() {
         const lineIncreased = totalLines > editor._lastLineCount;
         editor._lastLineCount = totalLines;
         
-        if (lineIncreased) {
-            // 改行後に自動スクロール調整
-            requestAnimationFrame(() => {
-                const cursorPos = editor.selectionStart;
-                const textBeforeCursor = editor.value.substring(0, cursorPos);
-                const currentLine = textBeforeCursor.split('\n').length;
-                
-                // 現在のカーソル行の位置を計算
-                const computedStyle = getComputedStyle(editor);
-                const lineHeight = parseFloat(computedStyle.lineHeight);
-                const paddingTop = parseFloat(computedStyle.paddingTop);
+        if (lineIncreased && totalLines > 3) {
+            // 改行発生時、簡単な判定で自動スクロール
+            setTimeout(() => {
+                const lineHeight = parseFloat(getComputedStyle(editor).lineHeight);
                 const statusBarHeight = 24;
+                const bottomMargin = statusBarHeight + lineHeight;
                 
-                const cursorLineTop = paddingTop + (currentLine - 1) * lineHeight;
-                const cursorLineBottom = cursorLineTop + lineHeight;
+                // エディタの現在の状況
+                const contentHeight = editor.scrollHeight;
+                const visibleHeight = editor.clientHeight;
+                const currentScroll = editor.scrollTop;
                 
-                // 表示領域の下端（ステータスバーを除く）
-                const visibleBottom = editor.scrollTop + editor.clientHeight - statusBarHeight - 10;
+                // 最下部近くで改行した場合は上にスクロール
+                const maxVisibleContent = currentScroll + visibleHeight - bottomMargin;
                 
-                // カーソル行がステータスバーにかかる場合は上にスクロール
-                if (cursorLineBottom > visibleBottom) {
-                    const newScrollTop = cursorLineBottom - editor.clientHeight + statusBarHeight + 20;
-                    editor.scrollTop = Math.max(0, newScrollTop);
+                if (contentHeight > maxVisibleContent) {
+                    const newScrollTop = currentScroll + lineHeight;
+                    const maxScrollTop = contentHeight - visibleHeight + bottomMargin;
+                    
+                    editor.scrollTop = Math.min(newScrollTop, maxScrollTop);
                     syncScroll();
-                    console.log('📜 Auto-scrolled for new line visibility:', editor.scrollTop);
+                    console.log('📜 Auto-scrolled for new line:', editor.scrollTop);
                 }
-            });
+            }, 100);
         }
     } catch (error) {
         console.warn('⚠️ Bottom line newline check failed:', error);
+    }
+}
+
+/**
+ * 改行検知と行ハイライト更新
+ */
+function checkNewlineAndHighlight(event) {
+    try {
+        // Enterキーによる改行を直接検知
+        if (event.inputType === 'insertLineBreak' || event.inputType === 'insertParagraph') {
+            console.log('🆕 Line break detected via input event');
+            
+            // 改行直後のカーソル位置を確認
+            setTimeout(() => {
+                const cursorPos = editor.selectionStart;
+                const textBeforeCursor = editor.value.substring(0, cursorPos);
+                const currentLine = textBeforeCursor.split('\n').length;
+                const totalLines = editor.value.split('\n').length;
+                
+                console.log(`🎯 After line break: cursor at position ${cursorPos}, line ${currentLine}, total lines: ${totalLines}`);
+                
+                // 行番号と行ハイライトを更新
+                updateLineNumbers();
+                updateLineHighlight();
+                
+                // 自動スクロール判定
+                if (totalLines > 3) {
+                    setTimeout(() => {
+                        const lineHeight = parseFloat(getComputedStyle(editor).lineHeight);
+                        const statusBarHeight = 24;
+                        const bottomMargin = statusBarHeight + lineHeight;
+                        
+                        const contentHeight = editor.scrollHeight;
+                        const visibleHeight = editor.clientHeight;
+                        const currentScroll = editor.scrollTop;
+                        
+                        const maxVisibleContent = currentScroll + visibleHeight - bottomMargin;
+                        
+                        if (contentHeight > maxVisibleContent) {
+                            const newScrollTop = currentScroll + lineHeight;
+                            const maxScrollTop = contentHeight - visibleHeight + bottomMargin;
+                            
+                            editor.scrollTop = Math.min(newScrollTop, maxScrollTop);
+                            syncScroll();
+                            console.log('📜 Auto-scrolled for new line:', editor.scrollTop);
+                            
+                            // スクロール後に確実に行ハイライトを更新
+                            setTimeout(() => {
+                                console.log('🔄 Updating highlight after auto-scroll');
+                                updateLineHighlight();
+                            }, 100);
+                        }
+                    }, 50);
+                }
+            }, 10);
+        }
+    } catch (error) {
+        console.warn('⚠️ Newline check failed:', error);
     }
 }

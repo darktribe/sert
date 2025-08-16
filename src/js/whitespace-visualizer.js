@@ -134,7 +134,7 @@ export function updateWhitespaceMarkers() {
     
     updateScheduled = true;
     
-    // 次のフレームで実行（パフォーマンス最適化）
+    // 次のフレームで実行
     requestAnimationFrame(() => {
         try {
             performWhitespaceMarkersUpdate();
@@ -737,17 +737,20 @@ export function updateWhitespaceMarkersOnScroll() {
     
     updateScheduled = true;
     
-    // スクロール時は全体を即座に再計算
+    // スクロール時は即座に更新
     try {
-        console.log('👁️ Updating whitespace markers on scroll, scrollTop:', editor.scrollTop);
-        
-        // マーカーを一度全てクリアして再作成
-        removeAllMarkers();
         performWhitespaceMarkersUpdate();
-        
-        console.log('👁️ Whitespace markers updated on scroll (immediate)');
+        console.log('👁️ Whitespace markers updated on scroll');
     } catch (error) {
         console.error('❌ Error updating whitespace markers on scroll:', error);
+        
+        // エラー時はマーカーを一度クリアして再試行
+        removeAllMarkers();
+        try {
+            performWhitespaceMarkersUpdate();
+        } catch (retryError) {
+            console.error('❌ Retry also failed:', retryError);
+        }
     } finally {
         updateScheduled = false;
     }

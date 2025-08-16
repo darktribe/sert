@@ -7,7 +7,7 @@
 import { editor } from './globals.js';
 import { handleInput } from './input-handler.js';
 import { handleKeydown } from './keyboard-shortcuts.js';
-import { syncScroll, updateStatus, updateLineHighlight } from './ui-updater.js';
+import { updateLineNumbers, syncScroll, updateLineHighlight, updateStatus } from './ui-updater.js';
 import { handleCompositionStart, handleCompositionEnd, handleCompositionUpdate } from './ime-handler.js';
 import { handleGlobalClick, handleMenuEscape } from './menu-controller.js';
 
@@ -41,13 +41,17 @@ export function setupEventListeners() {
     });
     
     editor.addEventListener('scroll', () => {
-        // スクロール時は即座に全て更新
+        // スクロール時は即座に更新
         syncScroll();
         updateLineHighlight();
         
-        // 空白文字可視化マーカーの更新（即座実行）
+        // 空白文字可視化マーカーの更新
         try {
-            updateWhitespaceMarkersOnScroll();
+            import('./whitespace-visualizer.js').then(module => {
+                if (module && module.updateWhitespaceMarkersOnScroll) {
+                    module.updateWhitespaceMarkersOnScroll();
+                }
+            });
         } catch (error) {
             console.warn('⚠️ Whitespace marker update failed on scroll:', error);
         }
@@ -74,6 +78,7 @@ export function setupEventListeners() {
     editor.addEventListener('keyup', () => {
         updateStatus();
         updateLineHighlight();
+        
         // キー入力後も行番号を更新（テキスト変更による折り返し変更を反映）
         try {
             updateLineNumbers();
@@ -98,7 +103,7 @@ export function setupEventListeners() {
             try {
                 console.log('🖱️ Mouse wheel detected, updating all elements');
                 syncScroll();
-                updateLineHighlight();
+                // updateLineHighlight(); // マウスホイール時は行ハイライト更新しない
                 
                 // 空白文字マーカーを強制的に更新
                 if (window.updateWhitespaceMarkersOnScroll) {

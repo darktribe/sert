@@ -334,6 +334,8 @@ body, html {
   caret-color: var(--editor-cursor-color);
   max-height: calc(100vh - 54px - 10px); /* メニューバー + ステータスバー + 余裕 */
   height: calc(100vh - 54px - 10px);
+  padding-top: 10px; /* 上部に余裕を確保 */
+  scroll-padding-top: 10px; /* スクロール時の上部マージン */
 }
 
 .editor-textarea::selection {
