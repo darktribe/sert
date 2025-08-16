@@ -7,7 +7,7 @@
 import { editor } from './globals.js';
 import { t } from './locales.js';
 import { closeAllMenus } from './menu-controller.js';
-import { updateFontSizeDisplay } from './ui-updater.js';
+import { updateFontSizeDisplay, updateAfterFontChange } from './ui-updater.js';
 import { makeDraggable } from './dialog-utils.js';
 
 // フォント設定の管理
@@ -304,33 +304,8 @@ export function applyFontSettings() {
        element.style.fontFamily = fontSettings.fontFamily;
    });
    
-   // ステータスバーのフォントサイズ表示を更新
-   updateFontSizeDisplay();
-
-   // フォント適用後に少し遅延してタブサイズを更新（重要：改善版）
-   setTimeout(() => {
-       try {
-           updateTabSizeForFont();
-           console.log('✅ Tab size updated after font change');
-           
-           // 空白文字可視化も更新（フォント変更に追従）
-           setTimeout(() => {
-               try {
-                   import('./whitespace-visualizer.js').then(module => {
-                       if (module && module.updateWhitespaceMarkers && window.whitespaceVisualization?.enabled) {
-                           module.updateWhitespaceMarkers();
-                           console.log('✅ Whitespace markers updated after font change');
-                       }
-                   });
-               } catch (error) {
-                   console.warn('⚠️ Whitespace markers update failed after font change:', error);
-               }
-           }, 50);
-           
-       } catch (error) {
-           console.warn('⚠️ Tab size update failed after font change:', error);
-       }
-   }, 150); // フォント適用の完了を待つ
+   // UI全体を更新
+   updateAfterFontChange();
    
    console.log('✅ Font settings applied successfully');
 }
@@ -415,6 +390,7 @@ function createFontSizeInputDialog() {
     
     dialogOverlay.appendChild(dialog);
     document.body.appendChild(dialogOverlay);
+    
     // ダイアログをドラッグ可能にする
     makeDraggable(dialog);
     
@@ -599,6 +575,7 @@ async function createFontSettingsDialog() {
     
     dialogOverlay.appendChild(dialog);
     document.body.appendChild(dialogOverlay);
+    
     // ダイアログをドラッグ可能にする
     makeDraggable(dialog);
     
@@ -794,9 +771,7 @@ export function increaseFontSize() {
         fontSettings.fontSize += 1;
         applyFontSettings();
         saveFontSettings();
-        console.log('🔍 Font size increased to:', fontSettings.fontSize);
-        // タブサイズも更新
-        setTimeout(() => updateTabSizeForFont(), 50);
+        console.log('🔼 Font size increased to:', fontSettings.fontSize);
     }
 }
 
@@ -808,9 +783,7 @@ export function decreaseFontSize() {
         fontSettings.fontSize -= 1;
         applyFontSettings();
         saveFontSettings();
-        console.log('🔍 Font size decreased to:', fontSettings.fontSize);
-        // タブサイズも更新
-        setTimeout(() => updateTabSizeForFont(), 50);
+        console.log('🔽 Font size decreased to:', fontSettings.fontSize);
     }
 }
 
@@ -830,8 +803,6 @@ export async function refreshFontDetection() {
     fontDetectionInProgress = false;
     return await detectSystemFonts();
 }
-
-
 
 /**
  * Canvas APIを使用して現在のフォントの文字幅を測定
@@ -860,7 +831,7 @@ function measureCharacterWidth() {
         
         const averageWidth = totalWidth / testChars.length;
         
-        console.log(`📏 Measured character width: ${averageWidth.toFixed(2)}px (font: ${fontSize} ${fontFamily})`);
+        console.log(`🔍 Measured character width: ${averageWidth.toFixed(2)}px (font: ${fontSize} ${fontFamily})`);
         
         return averageWidth;
         
@@ -892,7 +863,7 @@ function updateCSSTabSize(tabSize) {
            lineNumbers.style.OTabSize = tabSize;
        }
        
-       console.log(`📏 CSS tab-size updated to: ${tabSize}`);
+       console.log(`🔍 CSS tab-size updated to: ${tabSize}`);
        
    } catch (error) {
        console.warn('⚠️ Failed to update CSS tab-size:', error);
@@ -925,7 +896,7 @@ function updateTabSizeForFont() {
     if (!editor) return;
     
     try {
-        console.log('📏 Calculating optimal tab size for current font (high precision)...');
+        console.log('🔍 Calculating optimal tab size for current font (high precision)...');
         
         // 高精度フォントメトリクス測定
         const fontMetrics = measureAdvancedFontMetrics();
@@ -941,8 +912,8 @@ function updateTabSizeForFont() {
         // CSSのtab-sizeを更新
         updateCSSTabSize(optimalTabSize);
         
-        console.log(`📏 Tab size updated (advanced): ${optimalTabSize}`);
-        console.log(`📏 Font metrics:`, fontMetrics);
+        console.log(`🔍 Tab size updated (advanced): ${optimalTabSize}`);
+        console.log(`🔍 Font metrics:`, fontMetrics);
         
     } catch (error) {
         console.warn('⚠️ Failed to update tab size:', error);
@@ -1092,3 +1063,8 @@ function calculateOptimalTabSizeAdvanced(metrics) {
     // 最終的な範囲制限
     return Math.max(2, Math.min(16, Math.round(tabSize)));
 }
+
+/**
+ * タブサイズ更新関数をエクスポート
+ */
+export { updateTabSizeForFont };

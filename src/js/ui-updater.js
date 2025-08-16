@@ -656,4 +656,19 @@ export function updateAfterFontChange() {
     } catch (error) {
         console.warn('⚠️ Tab size update after font change failed:', error);
     }
+    
+    // 空白文字可視化を強制更新（フォント変更対応）
+    try {
+        import('./whitespace-visualizer.js').then(module => {
+            if (module && module.forceUpdateWhitespaceMarkers) {
+                setTimeout(() => {
+                    // フォント適用後に空白文字マーカーを強制更新
+                    module.forceUpdateWhitespaceMarkers();
+                    console.log('✅ Whitespace visualization force updated after font change');
+                }, 150);
+            }
+        });
+    } catch (error) {
+        console.warn('⚠️ Whitespace visualization update after font change failed:', error);
+    }
 }

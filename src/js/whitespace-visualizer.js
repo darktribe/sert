@@ -129,7 +129,7 @@ export function updateWhitespaceMarkers() {
         return;
     }
     
-    // 重複する更新リクエストを防ぐ
+    // 重複する更新リクエストを防ぐ（ただしフォント変更時は強制更新）
     if (updateScheduled) {
         return;
     }
@@ -1145,5 +1145,31 @@ function calculateLogicalLinePositions(lines) {
             top: paddingTop + i * lineHeight,
             height: lineHeight
         }));
+    }
+}
+
+/**
+ * フォント変更時の強制的な空白文字可視化更新
+ */
+export function forceUpdateWhitespaceMarkers() {
+    console.log('🔄 Force updating whitespace markers after font change');
+    
+    // 可視化が無効な場合は何もしない
+    if (!whitespaceVisualization.enabled || !editor || !markersContainer) {
+        return;
+    }
+    
+    // 既存のマーカーを削除
+    removeAllMarkers();
+    
+    // スケジュールフラグをリセット
+    updateScheduled = false;
+    
+    // 即座に更新を実行
+    try {
+        performWhitespaceMarkersUpdate();
+        console.log('✅ Whitespace markers force updated');
+    } catch (error) {
+        console.error('❌ Force update failed:', error);
     }
 }
