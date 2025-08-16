@@ -1120,13 +1120,6 @@ function getCursorCoordinates(position) {
 }
 
 /**
- * 利用可能な拡張機能一覧を取得
- */
-export function getAvailableExtensions() {
-    return [...extensionState.extensions];
-}
-
-/**
  * 拡張機能フォルダをシステムのファイラーで開く
  */
 export async function openExtensionFolder() {
@@ -1253,12 +1246,4 @@ export async function openAppFolder() {
             console.error('Alert not available:', message);
         }
     }
-}
-
-
-/**
- * 有効な拡張機能一覧を取得
- */
-export function getEnabledExtensions() {
-    return [...extensionState.enabledExtensions];
 }

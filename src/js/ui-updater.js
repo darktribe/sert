@@ -102,76 +102,6 @@ function getRealLogicalLinePositionsInternal(lines) {
 }
 
 /**
- * エディタ内でのカーソル座標を取得
- */
-function getCaretCoordinatesInEditor(position) {
-    try {
-        // Selection APIを使用してカーソル位置の座標を取得
-        const selection = window.getSelection();
-        const range = document.createRange();
-        
-        // テキストノードとオフセットを計算
-        const textNode = getTextNodeAtPosition(editor, position);
-        if (textNode && textNode.textContent) {
-            const offset = position - getTextNodeOffset(editor, textNode);
-            range.setStart(textNode, Math.min(offset, textNode.textContent.length));
-            range.setEnd(textNode, Math.min(offset, textNode.textContent.length));
-            
-            const rect = range.getBoundingClientRect();
-            const editorRect = editor.getBoundingClientRect();
-            
-            return {
-                top: rect.top - editorRect.top + editor.scrollTop,
-                left: rect.left - editorRect.left + editor.scrollLeft,
-                height: rect.height || parseFloat(getComputedStyle(editor).lineHeight)
-            };
-        }
-        
-        // フォールバック: 隠しspan要素を使用
-        return getCaretCoordinatesWithSpan(position);
-        
-    } catch (error) {
-        console.error('Error getting caret coordinates:', error);
-        return getCaretCoordinatesWithSpan(position);
-    }
-}
-
-/**
- * 隠しspan要素を使用してカーソル座標を取得（フォールバック）
- */
-function getCaretCoordinatesWithSpan(position) {
-    const computedStyle = getComputedStyle(editor);
-    const paddingTop = parseFloat(computedStyle.paddingTop);
-    const lineHeight = parseFloat(computedStyle.lineHeight);
-    
-    // 大まかな行番号を計算
-    const textBefore = editor.value.substring(0, position);
-    const lineNumber = textBefore.split('\n').length;
-    
-    return {
-        top: paddingTop + (lineNumber - 1) * lineHeight,
-        left: 0,
-        height: lineHeight
-    };
-}
-
-/**
- * 指定位置のテキストノードを取得
- */
-function getTextNodeAtPosition(element, position) {
-    // 簡易実装
-    return element.firstChild;
-}
-
-/**
- * テキストノードのオフセットを取得
- */
-function getTextNodeOffset(element, textNode) {
-    // 簡易実装
-    return 0;
-}
-
-/**
  * 行番号の更新（シンプルスクロール対応版）
  */
 export function updateLineNumbers() {
@@ -341,33 +271,6 @@ export function updateLineHighlight() {
     } catch (error) {
         console.warn('⚠️ Line highlight error:', error);
     }
-}
-
-/**
- * 論理行の正確な位置と高さを計算（後方互換性のため残す）
- */
-function calculateLogicalLinePosition(logicalLineNumber, lineText) {
-    // 新しい統一された方法を使用
-    const lines = editor.value.split('\n');
-    const linePositions = getRealLogicalLinePositionsInternal(lines);
-    
-    const currentLinePosition = linePositions[logicalLineNumber - 1];
-    if (!currentLinePosition) {
-        // フォールバック
-        const computedStyle = window.getComputedStyle(editor);
-        const lineHeight = parseFloat(computedStyle.lineHeight);
-        const paddingTop = parseFloat(computedStyle.paddingTop);
-        
-        return {
-            top: paddingTop + (logicalLineNumber - 1) * lineHeight - editor.scrollTop,
-            height: lineHeight
-        };
-    }
-    
-    return {
-        top: currentLinePosition.top - editor.scrollTop,
-        height: currentLinePosition.height
-    };
 }
 
 /**
