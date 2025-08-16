@@ -234,25 +234,23 @@ function performWhitespaceMarkersUpdate() {
                     markerX = paddingLeft + lineNumbersWidth + actualPositionBeforeChar - scrollLeft;
                     charWidth = realMetrics.halfWidthSpaceWidth;
                 } else if (char === '\t' && whitespaceVisualization.showTab) {
-                    markerType = 'tab';
-                    const textBeforeTab = line.substring(0, charIndex);
-                    const actualPositionBeforeTab = measureActualTextWidth(textBeforeTab);
-                    
-                    // タブサイズを取得
-                    const tabSize = parseInt(getComputedStyle(editor).tabSize) || 4;
-                    const spaceWidth = realMetrics.halfWidthSpaceWidth;
-                    
-                    // 次のタブストップ位置を計算
-                    const currentColumn = Math.floor(actualPositionBeforeTab / spaceWidth);
-                    const nextTabColumn = Math.ceil((currentColumn + 1) / tabSize) * tabSize;
-                    const nextTabPosition = nextTabColumn * spaceWidth;
-                    
-                    // Tab装飾の開始位置と幅
-                    markerX = paddingLeft + lineNumbersWidth + actualPositionBeforeTab - scrollLeft;
-                    charWidth = nextTabPosition - actualPositionBeforeTab;
-                    
-                    console.log(`👁️ Tab line ${lineIndex}: textBefore="${textBeforeTab}", actualPos=${actualPositionBeforeTab}, tabWidth=${charWidth}`);
-                }
+    markerType = 'tab';
+    const textBeforeTab = line.substring(0, charIndex);
+    const textIncludingTab = line.substring(0, charIndex + 1);
+    
+    // Tab文字の開始位置と終了位置を実際のテキスト測定で取得
+    const actualPositionBeforeTab = measureActualTextWidth(textBeforeTab);
+    const actualPositionAfterTab = measureActualTextWidth(textIncludingTab);
+    
+    // Tab文字の実際の幅（エディタのタブストップに基づく）
+    const actualTabWidth = actualPositionAfterTab - actualPositionBeforeTab;
+    
+    // Tab装飾の開始位置と幅
+    markerX = paddingLeft + lineNumbersWidth + actualPositionBeforeTab - scrollLeft;
+    charWidth = actualTabWidth;
+    
+    console.log(`👁️ Tab line ${lineIndex}: textBefore="${textBeforeTab}", beforePos=${actualPositionBeforeTab}, afterPos=${actualPositionAfterTab}, actualTabWidth=${actualTabWidth}`);
+}
                 
                 // マーカーを作成
                 if (markerType) {
@@ -964,6 +962,7 @@ function measureActualTextWidth(text) {
     try {
         // 測定用の隠し要素を作成
         const measurer = document.createElement('div');
+        const computedStyle = getComputedStyle(editor);
         measurer.style.cssText = `
             position: absolute;
             top: -9999px;
@@ -971,13 +970,16 @@ function measureActualTextWidth(text) {
             visibility: hidden;
             pointer-events: none;
             white-space: pre;
-            font-family: ${getComputedStyle(editor).fontFamily};
-            font-size: ${getComputedStyle(editor).fontSize};
-            line-height: ${getComputedStyle(editor).lineHeight};
-            font-variant-numeric: ${getComputedStyle(editor).fontVariantNumeric};
-            letter-spacing: ${getComputedStyle(editor).letterSpacing};
-            word-spacing: ${getComputedStyle(editor).wordSpacing};
-            tab-size: ${getComputedStyle(editor).tabSize};
+            font-family: ${computedStyle.fontFamily};
+            font-size: ${computedStyle.fontSize};
+            line-height: ${computedStyle.lineHeight};
+            font-variant-numeric: ${computedStyle.fontVariantNumeric};
+            letter-spacing: ${computedStyle.letterSpacing};
+            word-spacing: ${computedStyle.wordSpacing};
+            tab-size: ${computedStyle.tabSize};
+            -moz-tab-size: ${computedStyle.tabSize};
+            -webkit-tab-size: ${computedStyle.tabSize};
+            -o-tab-size: ${computedStyle.tabSize};
         `;
         
         document.body.appendChild(measurer);
