@@ -219,43 +219,41 @@ function performWhitespaceMarkersUpdate() {
                 let markerType = null;
                 let charWidth = 0;
                 let markerX = 0;
+                let markerY = displayY;
                 
                 // 空白文字の種類を判定
                 if (char === '\u3000' && whitespaceVisualization.showFullWidthSpace) {
                     markerType = 'fullwidth-space';
-                    const textBeforeChar = line.substring(0, charIndex);
-                    const actualPositionBeforeChar = measureActualTextWidth(textBeforeChar);
-                    markerX = paddingLeft + lineNumbersWidth + actualPositionBeforeChar - scrollLeft;
-                    charWidth = realMetrics.fullWidthSpaceWidth;
+                    
+                    // 文字の正確な位置を取得（折り返し対応）
+                    const charPos = measureCharacterPosition(line, charIndex, linePosition.top);
+                    markerX = paddingLeft + lineNumbersWidth + charPos.x - scrollLeft;
+                    markerY = charPos.y - scrollTop;
+                    charWidth = charPos.width || realMetrics.fullWidthSpaceWidth;
+                    
                 } else if (char === ' ' && whitespaceVisualization.showHalfWidthSpace) {
                     markerType = 'halfwidth-space';
-                    const textBeforeChar = line.substring(0, charIndex);
-                    const actualPositionBeforeChar = measureActualTextWidth(textBeforeChar);
-                    markerX = paddingLeft + lineNumbersWidth + actualPositionBeforeChar - scrollLeft;
-                    charWidth = realMetrics.halfWidthSpaceWidth;
+                    
+                    // 文字の正確な位置を取得（折り返し対応）
+                    const charPos = measureCharacterPosition(line, charIndex, linePosition.top);
+                    markerX = paddingLeft + lineNumbersWidth + charPos.x - scrollLeft;
+                    markerY = charPos.y - scrollTop;
+                    charWidth = charPos.width || realMetrics.halfWidthSpaceWidth;
+                    
                 } else if (char === '\t' && whitespaceVisualization.showTab) {
-    markerType = 'tab';
-    const textBeforeTab = line.substring(0, charIndex);
-    const textIncludingTab = line.substring(0, charIndex + 1);
-    
-    // Tab文字の開始位置と終了位置を実際のテキスト測定で取得
-    const actualPositionBeforeTab = measureActualTextWidth(textBeforeTab);
-    const actualPositionAfterTab = measureActualTextWidth(textIncludingTab);
-    
-    // Tab文字の実際の幅（エディタのタブストップに基づく）
-    const actualTabWidth = actualPositionAfterTab - actualPositionBeforeTab;
-    
-    // Tab装飾の開始位置と幅
-    markerX = paddingLeft + lineNumbersWidth + actualPositionBeforeTab - scrollLeft;
-    charWidth = actualTabWidth;
-    
-    console.log(`👁️ Tab line ${lineIndex}: textBefore="${textBeforeTab}", beforePos=${actualPositionBeforeTab}, afterPos=${actualPositionAfterTab}, actualTabWidth=${actualTabWidth}`);
-}
+                    markerType = 'tab';
+                    
+                    // Tab文字の正確な位置を取得（折り返し対応）
+                    const charPos = measureCharacterPosition(line, charIndex, linePosition.top);
+                    markerX = paddingLeft + lineNumbersWidth + charPos.x - scrollLeft;
+                    markerY = charPos.y - scrollTop;
+                    charWidth = charPos.width || realMetrics.tabStopWidth;
+                    
+                    console.log(`👁️ Tab line ${lineIndex}: charIndex=${charIndex}, x=${charPos.x}, y=${charPos.y}, width=${charWidth}`);
+                }
                 
                 // マーカーを作成
                 if (markerType) {
-                    const markerY = displayY;
-                    
                     // 画面内に表示される範囲のみマーカーを作成
                     if (markerX > -50 && markerX < editor.clientWidth + 50 &&
                         markerY > -50 && markerY < editor.clientHeight + 50) {
@@ -991,6 +989,84 @@ function measureActualTextWidth(text) {
     } catch (error) {
         console.warn('⚠️ DOM text measurement failed:', error);
         return 0;
+    }
+}
+
+/**
+ * 文字の正確な描画位置を計算（折り返し対応）
+ */
+function measureCharacterPosition(lineText, charIndex, lineTopPosition) {
+    if (!lineText || charIndex < 0) return { x: 0, y: lineTopPosition };
+    
+    try {
+        // 測定用の隠し要素を作成（エディタと同じスタイル）
+        const measurer = document.createElement('div');
+        const computedStyle = getComputedStyle(editor);
+        measurer.style.cssText = `
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            visibility: hidden;
+            pointer-events: none;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: ${computedStyle.fontFamily};
+            font-size: ${computedStyle.fontSize};
+            line-height: ${computedStyle.lineHeight};
+            font-variant-numeric: ${computedStyle.fontVariantNumeric};
+            letter-spacing: ${computedStyle.letterSpacing};
+            word-spacing: ${computedStyle.wordSpacing};
+            tab-size: ${computedStyle.tabSize};
+            -moz-tab-size: ${computedStyle.tabSize};
+            -webkit-tab-size: ${computedStyle.tabSize};
+            -o-tab-size: ${computedStyle.tabSize};
+            width: ${editor.clientWidth - parseFloat(computedStyle.paddingLeft) - parseFloat(computedStyle.paddingRight)}px;
+        `;
+        
+        document.body.appendChild(measurer);
+        
+        // 対象文字までのテキストと対象文字を設定
+        const textBeforeChar = lineText.substring(0, charIndex);
+        const targetChar = lineText[charIndex];
+        const textAfterChar = lineText.substring(charIndex + 1);
+        
+        const beforeNode = document.createTextNode(textBeforeChar);
+        const charMarker = document.createElement('span');
+        charMarker.textContent = targetChar;
+        charMarker.style.position = 'relative';
+        const afterNode = document.createTextNode(textAfterChar);
+        
+        measurer.appendChild(beforeNode);
+        measurer.appendChild(charMarker);
+        measurer.appendChild(afterNode);
+        
+        // マーカーの位置を取得
+        const markerRect = charMarker.getBoundingClientRect();
+        const measurerRect = measurer.getBoundingClientRect();
+        
+        const relativeX = markerRect.left - measurerRect.left;
+        const relativeY = markerRect.top - measurerRect.top;
+        
+        document.body.removeChild(measurer);
+        
+        return {
+            x: relativeX,
+            y: lineTopPosition + relativeY,
+            width: markerRect.width,
+            height: markerRect.height
+        };
+        
+    } catch (error) {
+        console.warn('⚠️ Character position measurement failed:', error);
+        
+        // フォールバック: 単純な幅計算
+        const actualPositionBeforeChar = measureActualTextWidth(lineText.substring(0, charIndex));
+        return {
+            x: actualPositionBeforeChar,
+            y: lineTopPosition,
+            width: 8, // デフォルト幅
+            height: parseFloat(getComputedStyle(editor).lineHeight)
+        };
     }
 }
 
