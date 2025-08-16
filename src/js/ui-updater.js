@@ -19,7 +19,7 @@ export function getRealLogicalLinePositions(lines) {
 }
 
 /**
- * エディタから直接各論理行の位置と高さを実測（内部用）
+ * エディタから直接各論理行の位置と高さを実測（修正版）
  */
 function getRealLogicalLinePositionsInternal(lines) {
     const positions = [];
@@ -30,37 +30,51 @@ function getRealLogicalLinePositionsInternal(lines) {
         const originalSelectionEnd = editor.selectionEnd;
         const originalScrollTop = editor.scrollTop;
         
-        let textPosition = 0;
+        // 測定用の隠し要素を作成
+        const measurer = document.createElement('div');
+        const computedStyle = window.getComputedStyle(editor);
+        measurer.style.cssText = `
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            visibility: hidden;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: ${computedStyle.fontFamily};
+            font-size: ${computedStyle.fontSize};
+            line-height: ${computedStyle.lineHeight};
+            padding: 0;
+            margin: 0;
+            border: none;
+            width: ${editor.clientWidth - parseFloat(computedStyle.paddingLeft) - parseFloat(computedStyle.paddingRight)}px;
+        `;
+        
+        document.body.appendChild(measurer);
+        
+        const lineHeight = parseFloat(computedStyle.lineHeight);
+        const paddingTop = parseFloat(computedStyle.paddingTop);
+        let currentTop = paddingTop;
         
         for (let i = 0; i < lines.length; i++) {
-            // 論理行の開始位置にカーソルを移動
-            editor.setSelectionRange(textPosition, textPosition);
-            editor.focus();
+            const line = lines[i];
+            const lineText = line || ' '; // 空行の場合はスペースで測定
             
-            // エディタ内でのカーソル位置を実測
-            const startCoords = getCaretCoordinatesInEditor(textPosition);
+            // 論理行の内容を測定用要素に設定
+            measurer.textContent = lineText;
             
-            // 論理行の終了位置での座標も取得（高さ計算用）
-            const lineEndPosition = textPosition + lines[i].length;
-            if (lines[i].length > 0) {
-                editor.setSelectionRange(lineEndPosition, lineEndPosition);
-                const endCoords = getCaretCoordinatesInEditor(lineEndPosition);
-                
-                positions.push({
-                    top: startCoords.top,
-                    height: Math.max(endCoords.top - startCoords.top + endCoords.height, startCoords.height)
-                });
-            } else {
-                // 空行の場合
-                positions.push({
-                    top: startCoords.top,
-                    height: startCoords.height
-                });
-            }
+            // 折り返しを考慮した実際の高さを取得
+            const measurerHeight = measurer.offsetHeight;
+            const actualHeight = Math.max(measurerHeight, lineHeight);
             
-            // 次の論理行の開始位置（改行文字分も含む）
-            textPosition += lines[i].length + 1;
+            positions.push({
+                top: currentTop,
+                height: actualHeight
+            });
+            
+            currentTop += actualHeight;
         }
+        
+        document.body.removeChild(measurer);
         
         // 元のカーソル位置とスクロール位置を復元
         editor.setSelectionRange(originalSelectionStart, originalSelectionEnd);
@@ -177,8 +191,11 @@ export function updateLineNumbers() {
         const originalSelectionEnd = editor.selectionEnd;
         const originalScrollTop = editor.scrollTop;
         
-        // 各論理行の実測位置と高さを取得
+       // 各論理行の実測位置と高さを取得
         const linePositions = getRealLogicalLinePositionsInternal(lines);
+        
+        // タイプライターモードの検出
+        const isTypewriterMode = editor.style.paddingTop && parseFloat(editor.style.paddingTop) > 20;
         
         // 論理行番号を通常のブロック要素として配置
         let lineNumbersHTML = '';
@@ -186,8 +203,21 @@ export function updateLineNumbers() {
         for (let i = 0; i < lineCount; i++) {
             const linePosition = linePositions[i];
             
-            // 論理行の上端に揃えて配置（実測値使用）
-            lineNumbersHTML += `<div class="line-number" style="height: ${linePosition.height}px; line-height: 1.5; display: flex; align-items: flex-start; justify-content: flex-end; padding-top: 0; box-sizing: border-box;">${i + 1}</div>`;
+            // タイプライターモード判定
+            const isTypewriterModeHere = editor.style.paddingTop && parseFloat(editor.style.paddingTop) > 20;
+            const baseLineHeight = parseFloat(getComputedStyle(editor).lineHeight);
+            
+            if (isTypewriterModeHere) {
+                // タイプライターモード：行番号を論理行の最上部に表示
+                lineNumbersHTML += `<div class="line-number" style="height: ${linePosition.height}px; display: flex; align-items: flex-start; justify-content: flex-end; box-sizing: border-box; position: relative; line-height: ${baseLineHeight}px;">
+                    <span style="position: absolute; top: 0; line-height: ${baseLineHeight}px;">${i + 1}</span>
+                </div>`;
+            } else {
+                // 通常モード：行番号を論理行の最上部に表示
+                lineNumbersHTML += `<div class="line-number" style="height: ${linePosition.height}px; display: flex; align-items: flex-start; justify-content: flex-end; box-sizing: border-box; position: relative; line-height: ${baseLineHeight}px;">
+                    <span style="position: absolute; top: 0; line-height: ${baseLineHeight}px;">${i + 1}</span>
+                </div>`;
+            }
         }
         
         // 元のカーソル位置とスクロール位置を復元
@@ -269,6 +299,12 @@ export function updateLineHighlight() {
         // スクロール位置を考慮した表示位置
         const displayTop = currentLinePosition.top - editor.scrollTop;
         
+        // タイプライターモードの検出
+        const isTypewriterMode = editor.style.paddingTop && parseFloat(editor.style.paddingTop) > 20;
+        
+        // タイプライターモード判定
+        const isTypewriterModeHere = editor.style.paddingTop && parseFloat(editor.style.paddingTop) > 20;
+        
         // ハイライト要素を作成
         const highlight = document.createElement('div');
         highlight.className = 'line-highlight-overlay';
@@ -276,9 +312,12 @@ export function updateLineHighlight() {
         highlight.style.left = '0';
         highlight.style.top = `${displayTop}px`;
         highlight.style.width = `${editor.clientWidth}px`;
-        highlight.style.height = `${currentLinePosition.height}px`;
+        highlight.style.height = `${currentLinePosition.height}px`; // 論理行の実際の高さ（折り返し含む）
         highlight.style.pointerEvents = 'none';
         highlight.style.zIndex = '1';
+        
+        // タイプライターモード時とそうでない時で同じように論理行全体をハイライト
+        console.log(`🎨 Line highlight: line ${currentLogicalLine}, top=${displayTop}, height=${currentLinePosition.height}, typewriter=${isTypewriterModeHere}`);
         
         // 行ハイライトが画面外に出る場合はログに記録
         const editorHeight = editor.clientHeight;
