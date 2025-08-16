@@ -8,6 +8,7 @@ import { editor } from './globals.js';
 import { t } from './locales.js';
 import { closeAllMenus } from './menu-controller.js';
 import { updateFontSizeDisplay } from './ui-updater.js';
+import { makeDraggable } from './dialog-utils.js';
 
 // フォント設定の管理
 let fontSettings = {
@@ -414,6 +415,8 @@ function createFontSizeInputDialog() {
     
     dialogOverlay.appendChild(dialog);
     document.body.appendChild(dialogOverlay);
+    // ダイアログをドラッグ可能にする
+    makeDraggable(dialog);
     
     setupFontSizeInputDialogEvents(dialogOverlay);
     updateFontSizePreview();
@@ -596,6 +599,8 @@ async function createFontSettingsDialog() {
     
     dialogOverlay.appendChild(dialog);
     document.body.appendChild(dialogOverlay);
+    // ダイアログをドラッグ可能にする
+    makeDraggable(dialog);
     
     // フォント検出を開始
     console.log('🔍 Starting font detection for dialog...');

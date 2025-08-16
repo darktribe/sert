@@ -12,6 +12,7 @@ import {
 import { closeAllMenus } from './menu-controller.js';
 import { t } from './locales.js';
 import { getRealLogicalLinePositions } from './ui-updater.js';
+import { makeDraggable } from './dialog-utils.js';
 
 // 可視化マーカーのコンテナ
 let markersContainer = null;
@@ -776,6 +777,8 @@ function example() {
     document.body.appendChild(dialogOverlay);
     
     setupWhitespaceVisualizationDialogEvents(dialogOverlay);
+    // ダイアログをドラッグ可能にする
+    makeDraggable(dialog);
     
     // 有効/無効チェックボックスにフォーカス
     setTimeout(() => {

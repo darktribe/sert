@@ -18,6 +18,7 @@ import { saveToUndoStack } from './undo-redo.js';
 import { closeAllMenus } from './menu-controller.js';
 import { updateLineNumbers, updateStatus } from './ui-updater.js';
 import { t } from './locales.js';
+import { makeDraggable } from './dialog-utils.js';
 
 // 検索状態管理
 let searchState = {
@@ -142,6 +143,8 @@ function createSearchDialog() {
     
     dialogOverlay.appendChild(dialog);
     document.body.appendChild(dialogOverlay);
+    // ダイアログをドラッグ可能にする
+    makeDraggable(dialog);
     
     setupSearchDialogEvents(dialogOverlay);
     
@@ -208,6 +211,8 @@ function createReplaceDialog() {
     
     dialogOverlay.appendChild(dialog);
     document.body.appendChild(dialogOverlay);
+    // ダイアログをドラッグ可能にする
+    makeDraggable(dialog);
     
     setupReplaceDialogEvents(dialogOverlay);
     
@@ -764,6 +769,8 @@ function showMessage(message) {
         
         dialogOverlay.appendChild(dialog);
         document.body.appendChild(dialogOverlay);
+        // ダイアログをドラッグ可能にする
+        makeDraggable(dialog);
         
         const okBtn = document.getElementById('message-ok-btn');
         

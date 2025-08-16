@@ -168,6 +168,8 @@ export async function showOpenFileDialog() {
         // ダイアログの共通処理を呼び出し
         setupDialogNavigation(dialogOverlay, ['save-and-open-btn', 'open-without-saving-btn', 'cancel-open-btn'], 
             ['saveAndOpen', 'openWithoutSaving', 'cancel'], resolve);
+            // ダイアログをドラッグ可能にする
+            makeDraggable(dialog);
     });
 }
 
@@ -268,6 +270,8 @@ export async function showExitDialog() {
         // ダイアログの共通処理を呼び出し
         setupDialogNavigation(dialogOverlay, ['save-and-exit-btn', 'exit-without-saving-btn', 'cancel-exit-btn'], 
             ['saveAndExit', 'exitWithoutSaving', 'cancel'], resolve);
+             // ダイアログをドラッグ可能にする
+            makeDraggable(dialog);
     });
 }
 
@@ -307,6 +311,9 @@ export async function showAboutDialog() {
         document.body.appendChild(dialogOverlay);
         
         setupAboutDialogEvents(dialogOverlay, resolve);
+        
+        // ダイアログをドラッグ可能にする
+        makeDraggable(dialog);
     });
 }
 
@@ -509,4 +516,60 @@ function setupDialogNavigation(dialogOverlay, buttonIds, returnValues, resolve) 
     });
     
     console.log('🚪 Dialog navigation setup complete');
+}
+
+/**
+ * ダイアログをドラッグ可能にする共通機能
+ */
+export function makeDraggable(dialogElement) {
+    const header = dialogElement.querySelector('.search-dialog-header');
+    if (!header) return;
+    
+    header.style.cursor = 'move';
+    header.style.userSelect = 'none';
+    
+    let isDragging = false;
+    let startX, startY, startLeft, startTop;
+    
+    function handleMouseDown(e) {
+        if (e.target !== header) return;
+        
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        
+        const rect = dialogElement.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop = rect.top;
+        
+        dialogElement.style.position = 'fixed';
+        dialogElement.style.left = startLeft + 'px';
+        dialogElement.style.top = startTop + 'px';
+        dialogElement.style.margin = '0';
+        
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        e.preventDefault();
+    }
+    
+    function handleMouseMove(e) {
+        if (!isDragging) return;
+        
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+        
+        const newLeft = Math.max(0, Math.min(window.innerWidth - dialogElement.offsetWidth, startLeft + deltaX));
+        const newTop = Math.max(0, Math.min(window.innerHeight - dialogElement.offsetHeight, startTop + deltaY));
+        
+        dialogElement.style.left = newLeft + 'px';
+        dialogElement.style.top = newTop + 'px';
+    }
+    
+    function handleMouseUp() {
+        isDragging = false;
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+    }
+    
+    header.addEventListener('mousedown', handleMouseDown);
 }

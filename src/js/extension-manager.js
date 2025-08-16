@@ -7,6 +7,7 @@
 import { editor, tauriInvoke } from './globals.js';
 import { closeAllMenus } from './menu-controller.js';
 import { t } from './locales.js';
+import { makeDraggable } from './dialog-utils.js';
 
 // 拡張機能の状態管理
 let extensionState = {
@@ -420,6 +421,8 @@ function createExtensionDialog() {
     
     dialogOverlay.appendChild(dialog);
     document.body.appendChild(dialogOverlay);
+    // ダイアログをドラッグ可能にする
+    makeDraggable(dialog);
     
     setupExtensionDialogEvents(dialogOverlay);
 }

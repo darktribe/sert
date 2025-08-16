@@ -6,6 +6,7 @@
 
 import { t } from './locales.js';
 import { closeAllMenus } from './menu-controller.js';
+import { makeDraggable } from './dialog-utils.js';
 
 // テーマ管理の状態
 let currentTheme = 'dark';
@@ -379,6 +380,8 @@ function createThemeDialog() {
     
     dialogOverlay.appendChild(dialog);
     document.body.appendChild(dialogOverlay);
+    // ダイアログをドラッグ可能にする
+    makeDraggable(dialog);
     
     setupThemeDialogEvents(dialogOverlay);
     
@@ -762,6 +765,8 @@ export async function showLanguageSettingsDialog() {
     
     dialogOverlay.appendChild(dialog);
     document.body.appendChild(dialogOverlay);
+    // ダイアログをドラッグ可能にする
+    makeDraggable(dialog);
     
     // イベントリスナーを設定
     setupLanguageDialogEvents(dialogOverlay, currentLanguage);
