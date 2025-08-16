@@ -41,6 +41,8 @@ export function setIsUndoRedoOperation(value) {
 export let isComposing = false;
 export let compositionStartContent = '';
 export let compositionStartCursor = 0;
+export let justFinishedComposition = false; // この行を追加
+
 export function setIsComposing(value) {
     isComposing = value;
 }

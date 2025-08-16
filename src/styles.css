@@ -1247,7 +1247,13 @@ body, html {
     transform: translateY(0) scale(1);
   }
 }
-  
+
+/*
+ * =====================================================
+ * Responsive Design for Smaller Screens
+ * =====================================================
+ */
+@media (max-width: 768px) {
   .font-size-controls {
     flex-direction: column;
     align-items: stretch;
